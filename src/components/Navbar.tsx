@@ -1,18 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, X, Phone } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/useUser';
-import { UserButton } from '@clerk/nextjs';
-import { useMockAuth } from '@/components/auth/MockClerkProvider';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { Port67Logo } from '@/components/Port67Logo';
 
 export function Navbar() {
-    const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-    const { signOut: mockSignOut } = useMockAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const { isSignedIn, user } = useUser();
+    const { signOut } = useAuth();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -30,9 +29,9 @@ export function Navbar() {
             <div className="container-custom">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                            <Phone className="w-6 h-6 text-white" />
+                    <Link href="/" className="flex items-center gap-2 group">
+                        <div className="group-hover:scale-110 transition-transform">
+                            <Port67Logo size={42} />
                         </div>
                         <span className="text-xl font-bold gradient-text">Port67 Assistant</span>
                     </Link>
@@ -53,6 +52,13 @@ export function Navbar() {
                             Pricing
                             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
                         </Link>
+                        <Link
+                            href="#faq"
+                            className="text-foreground hover:text-primary font-medium transition-colors relative group"
+                        >
+                            Got Questions?
+                            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
+                        </Link>
 
                         {isSignedIn ? (
                             <>
@@ -63,16 +69,13 @@ export function Navbar() {
                                     Dashboard
                                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
                                 </Link>
-                                {isClerkConfigured ? (
-                                    <UserButton afterSignOutUrl="/" />
-                                ) : (
-                                    <button
-                                        onClick={() => mockSignOut()}
-                                        className="text-foreground hover:text-primary font-medium transition-colors"
-                                    >
-                                        Sign Out
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => signOut()}
+                                    className="flex items-center gap-2 text-foreground hover:text-primary font-medium transition-colors"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Sign Out
+                                </button>
                             </>
                         ) : (
                             <>
@@ -122,6 +125,13 @@ export function Navbar() {
                             >
                                 Pricing
                             </Link>
+                            <Link
+                                href="#faq"
+                                className="px-4 py-3 rounded-xl hover:bg-surface text-foreground font-medium transition-colors"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                Got Questions?
+                            </Link>
 
                             {isSignedIn ? (
                                 <>
@@ -133,16 +143,16 @@ export function Navbar() {
                                         Dashboard
                                     </Link>
                                     <div className="px-4 py-3 border-t border-white/5 mt-2">
-                                        {isClerkConfigured ? (
-                                            <UserButton afterSignOutUrl="/" />
-                                        ) : (
-                                            <button
-                                                onClick={() => mockSignOut()}
-                                                className="w-full text-left text-foreground hover:text-primary font-medium transition-colors"
-                                            >
-                                                Sign Out
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => {
+                                                signOut();
+                                                setIsOpen(false);
+                                            }}
+                                            className="w-full text-left text-foreground hover:text-primary font-medium transition-colors flex items-center gap-2"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Sign Out
+                                        </button>
                                     </div>
                                 </>
                             ) : (

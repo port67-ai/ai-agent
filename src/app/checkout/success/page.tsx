@@ -10,46 +10,48 @@ export default function CheckoutSuccessPage() {
 
             <div className="pt-20 pb-16">
                 <div className="container-custom max-w-2xl">
-                    <div className="card bg-white text-center py-12">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-secondary/10 mb-6">
-                            <CheckCircle className="w-12 h-12 text-secondary" />
+                    <div className="card-glass backdrop-blur-xl border border-white/10 text-center py-12 px-8 rounded-3xl shadow-2xl">
+                        {/* Success Icon with gradient background */}
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 mb-6 animate-pulse">
+                            <CheckCircle className="w-12 h-12 text-orange-400" />
                         </div>
 
-                        <h1 className="text-3xl font-bold text-foreground mb-4">
+                        <h1 className="text-4xl font-bold text-white mb-4">
                             Welcome to Port67! 🎉
                         </h1>
 
-                        <p className="text-xl text-muted mb-8">
+                        <p className="text-xl text-slate-300 mb-8 max-w-lg mx-auto">
                             Your business assistant is being set up. We'll be in touch within 24 hours to complete the configuration.
                         </p>
 
-                        <div className="bg-surface rounded-xl p-6 mb-8 text-left">
-                            <h2 className="font-bold text-lg mb-4">What Happens Next:</h2>
-                            <ol className="space-y-3 text-muted">
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-primary">1.</span>
-                                    <span>We'll send you an email with your new UK mobile number</span>
+                        {/* What Happens Next - Dark box with purple accent */}
+                        <div className="bg-[#0a0a0f]/80 backdrop-blur-md rounded-2xl p-8 mb-8 text-left border border-white/5 shadow-xl">
+                            <h2 className="font-black text-xl mb-6 text-white">What Happens Next:</h2>
+                            <ol className="space-y-4">
+                                <li className="flex gap-4 items-start">
+                                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 flex items-center justify-center font-bold text-white text-sm">1</span>
+                                    <span className="text-slate-300 pt-1">We'll send you an email with your new UK mobile number</span>
                                 </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-primary">2.</span>
-                                    <span>Our team will configure your voice assistant based on your business details</span>
+                                <li className="flex gap-4 items-start">
+                                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 flex items-center justify-center font-bold text-white text-sm">2</span>
+                                    <span className="text-slate-300 pt-1">Our team will configure your voice assistant based on your business details</span>
                                 </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-primary">3.</span>
-                                    <span>We'll send you calendar integration links</span>
+                                <li className="flex gap-4 items-start">
+                                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 flex items-center justify-center font-bold text-white text-sm">3</span>
+                                    <span className="text-slate-300 pt-1">We'll send you calendar integration links</span>
                                 </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-primary">4.</span>
-                                    <span>You'll be live and ready to capture every customer!</span>
+                                <li className="flex gap-4 items-start">
+                                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 flex items-center justify-center font-bold text-white text-sm">4</span>
+                                    <span className="text-slate-300 pt-1">You'll be live and ready to capture every customer!</span>
                                 </li>
                             </ol>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link href="/dashboard" className="btn btn-primary">
+                            <Link href="/dashboard" className="btn btn-primary px-8 py-4 text-lg font-black">
                                 Go to Dashboard
                             </Link>
-                            <Link href="/" className="btn btn-outline">
+                            <Link href="/" className="btn btn-outline px-8 py-4 text-lg font-semibold">
                                 Back to Home
                             </Link>
                         </div>

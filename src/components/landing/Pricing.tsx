@@ -24,6 +24,7 @@ const plans = [
         ],
         detailedFeatures: [
             '1 x New UK mobile number',
+            'No Setup Fees',
             '1 x AI Voice agent',
             '1 x Facebook Chatbot',
             '1 x WhatsApp AI agent',
@@ -52,6 +53,7 @@ const plans = [
         ],
         detailedFeatures: [
             '2 x New UK mobile numbers',
+            'No Setup Fees',
             '2 x AI Voice agents',
             '2 x Facebook Chatbots',
             '2 x WhatsApp AI agents',
@@ -89,7 +91,7 @@ const plans = [
             },
             {
                 title: 'Business integration',
-                items: ['Calendar, invoicing, booking, etc']
+                items: ['Calendar, invoicing, booking, etc', 'No Setup Fees']
             }
         ],
         note: 'Get a custom demo to see how we can align with your business goals.'
@@ -100,7 +102,7 @@ export function Pricing() {
     const [expandedPlan, setExpandedPlan] = useState<number | null>(null);
 
     return (
-        <section id="pricing" className="section relative overflow-hidden bg-[#05050a] py-24">
+        <section id="pricing" className="section relative overflow-hidden bg-[#05050a] pt-24 pb-12">
             {/* Ambient Background Glows */}
             <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] -z-10" />
             <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[120px] -z-10" />
@@ -199,7 +201,7 @@ export function Pricing() {
 
                                     {/* CTA Button */}
                                     <Link
-                                        href={`/pricing?plan=${plan.name.toLowerCase()}&step=business-details`}
+                                        href={`/pricing?plan=${plan.name.toLowerCase()}&step=create-account`}
                                         className={`w-full py-5 rounded-2xl text-center font-black text-white shadow-xl transition-all duration-300 transform group-hover:scale-[1.02] active:scale-95 mb-8 ${plan.ctaColor} flex items-center justify-center gap-2`}
                                     >
                                         Get Started
@@ -272,13 +274,6 @@ export function Pricing() {
                     })}
                 </div>
 
-                {/* Bottom Trust Row */}
-                <div className="mt-24 pt-12 border-t border-white/5 flex flex-wrap justify-center gap-12 text-slate-500 font-bold text-sm uppercase tracking-widest">
-                    <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-orange-500 animate-glow-pulse" />
-                        No Setup Fees
-                    </div>
-                </div>
             </div>
         </section>
     );

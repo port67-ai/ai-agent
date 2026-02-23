@@ -4,6 +4,7 @@ import { Features } from "@/components/landing/Features";
 import { Statistics } from "@/components/landing/Statistics";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Pricing } from "@/components/landing/Pricing";
+import { FAQ } from "@/components/landing/FAQ";
 import { Footer } from "@/components/landing/Footer";
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
             <Statistics />
             <HowItWorks />
             <Pricing />
+            <FAQ />
             <Footer />
         </main>
     );

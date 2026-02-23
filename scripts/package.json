@@ -1,0 +1,12 @@
+{
+    "type": "module",
+    "scripts": {
+        "clear-db": "tsx clear-database.ts"
+    },
+    "dependencies": {
+        "firebase-admin": "^13.6.1"
+    },
+    "devDependencies": {
+        "tsx": "^4.21.0"
+    }
+}

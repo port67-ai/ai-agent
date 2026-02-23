@@ -15,8 +15,9 @@ export function CheckoutPlaceholder() {
 
         // Simulate payment processing
         setTimeout(() => {
-            // In mock mode, always succeed
-            router.push('/checkout/success');
+            // Set welcome flag so settings page shows splash
+            localStorage.setItem('showWelcome', 'true');
+            router.push('/dashboard/settings');
         }, 2000);
     };
 

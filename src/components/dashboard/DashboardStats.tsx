@@ -1,9 +1,33 @@
 "use client";
 
-import { PhoneMissed, Sparkles, CalendarCheck, Banknote } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { PhoneMissed, Sparkles, CalendarCheck, Banknote, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useUser } from '@/hooks/useUser';
+import { firebaseDb } from '@/lib/services/firebase-db';
 
 export function DashboardStats() {
+    const { user } = useUser();
+    const [metrics, setMetrics] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user) {
+            firebaseDb.getMetrics(user.uid).then(data => {
+                setMetrics(data);
+                setLoading(false);
+            });
+        }
+    }, [user]);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
         <div className="grid grid-cols-2 gap-4 mb-10 max-w-2xl mx-auto">
             {/* Missed Calls */}
@@ -19,8 +43,8 @@ export function DashboardStats() {
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Missed</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">0</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Stable</span>
+                    <span className="text-3xl font-bold">{metrics?.numberOfCalls || 0}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Total</span>
                 </div>
             </motion.div>
 
@@ -38,8 +62,7 @@ export function DashboardStats() {
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Caught</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold font-mono">12</span>
-                    <span className="text-[10px] font-bold text-emerald-500">+15%</span>
+                    <span className="text-3xl font-bold font-mono">{metrics?.callsCaught || 0}</span>
                 </div>
             </motion.div>
 
@@ -57,8 +80,7 @@ export function DashboardStats() {
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Meetings</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">8</span>
-                    <span className="text-[10px] font-bold text-emerald-500">+2</span>
+                    <span className="text-3xl font-bold">{metrics?.meetingsBooked || 0}</span>
                 </div>
             </motion.div>
 
@@ -73,10 +95,10 @@ export function DashboardStats() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold">
                         <Banknote className="w-4 h-4" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Estimated Revenue</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Est. Revenue</span>
                 </div>
                 <div className="flex items-baseline gap-2 text-emerald-400">
-                    <span className="text-3xl font-bold">£2.4k</span>
+                    <span className="text-3xl font-bold">£{(metrics?.meetingsBooked || 0) * 300}</span>
                 </div>
             </motion.div>
         </div>

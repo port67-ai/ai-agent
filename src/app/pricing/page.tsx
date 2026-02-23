@@ -3,7 +3,9 @@
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/landing/Footer';
+import { AccountCreationForm } from '@/components/checkout/AccountCreationForm';
 import { BusinessDetailsForm } from '@/components/checkout/BusinessDetailsForm';
+import { AIReviewForm } from '@/components/checkout/AIReviewForm';
 import { CheckoutPlaceholder } from '@/components/checkout/CheckoutPlaceholder';
 import { Pricing } from '@/components/landing/Pricing';
 
@@ -20,11 +22,27 @@ export default function PricingPage() {
             <Navbar />
 
             <div className="relative z-10 pt-24 pb-20">
-                {step === 'business-details' ? (
+                {step === 'create-account' ? (
+                    <section className="section py-12">
+                        <div className="container-custom max-w-2xl">
+                            <div className="card card-glass border border-white/10 backdrop-blur-2xl p-8 md:p-12">
+                                <AccountCreationForm />
+                            </div>
+                        </div>
+                    </section>
+                ) : step === 'business-details' ? (
                     <section className="section py-12">
                         <div className="container-custom max-w-3xl">
                             <div className="card card-glass border border-white/10 backdrop-blur-2xl p-8 md:p-12">
                                 <BusinessDetailsForm />
+                            </div>
+                        </div>
+                    </section>
+                ) : step === 'ai-review' ? (
+                    <section className="section py-12">
+                        <div className="container-custom max-w-3xl">
+                            <div className="card card-glass border border-white/10 backdrop-blur-2xl p-8 md:p-12">
+                                <AIReviewForm />
                             </div>
                         </div>
                     </section>

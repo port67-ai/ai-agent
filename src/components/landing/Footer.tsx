@@ -1,7 +1,8 @@
 'use client';
 
-import { Phone, Mail, Facebook, Linkedin, Twitter } from 'lucide-react';
+import { Mail, Phone, Facebook, Linkedin, Twitter } from 'lucide-react';
 import Link from 'next/link';
+import { Port67Logo } from '@/components/Port67Logo';
 
 export function Footer() {
     return (
@@ -26,10 +27,8 @@ export function Footer() {
                 <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
                     {/* Brand Column */}
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                                <Phone className="w-6 h-6 text-white" />
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <Port67Logo size={48} />
                             <span className="text-2xl font-bold">Port67</span>
                         </div>
                         <p className="text-slate-400 leading-relaxed">

@@ -1,10 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { airtableService } from '@/lib/services/airtable';
+import { firebaseDb } from '@/lib/services/firebase-db';
+import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
+// Initialize Firebase Admin SDK
+if (!getApps().length) {
+    try {
+        initializeApp({
+            credential: cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            }),
+        });
+    } catch (error) {
+        console.error('Firebase admin initialization error:', error);
+    }
+}
+
+async function verifyAuthToken(request: NextRequest): Promise<string | null> {
+    try {
+        const authHeader = request.headers.get('authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
+            return null;
+        }
+
+        const token = authHeader.substring(7);
+        const decodedToken = await getAuth().verifyIdToken(token);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return null;
+    }
+}
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await verifyAuthToken(request);
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,7 +50,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const user = await airtableService.getUser(userId);
+        const user = await firebaseDb.getUser(userId);
 
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -33,7 +65,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await verifyAuthToken(request);
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -47,23 +79,36 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Check if user exists
-        let user = await airtableService.getUser(userId);
+        // Transform the business details to match Firestore schema
+        const firestoreBusinessDetails = {
+            businessName: businessDetails.businessName || '',
+            businessType: businessDetails.businessType || '',
+            currentPhoneNumber: businessDetails.phoneNumber || '',
+            assistantPhoneNumber: '', // Will be assigned later
+            bookingDays: businessDetails.workingDays?.reduce((acc: any, day: string) => {
+                acc[day] = true;
+                return acc;
+            }, {
+                Monday: false,
+                Tuesday: false,
+                Wednesday: false,
+                Thursday: false,
+                Friday: false,
+                Saturday: false,
+                Sunday: false,
+            }) || {},
+            startTime: businessDetails.workingHours?.start || '09:00',
+            stopTime: businessDetails.workingHours?.end || '17:00',
+            assistantVoice: businessDetails.assistantVoice || 'rachel',
+            businessLink: businessDetails.businessLink || '',
+            aiBusinessSummary: businessDetails.additionalNotes || '',
+        };
 
-        if (!user) {
-            // Create new user if doesn't exist
-            const email = body.email || 'user@example.com'; // Should come from Clerk
-            user = await airtableService.createUser(userId, email, businessDetails);
-        } else {
-            // Update existing user
-            user = await airtableService.updateUser(userId, { businessDetails });
-        }
+        await firebaseDb.updateBusinessDetails(userId, firestoreBusinessDetails);
 
-        if (!user) {
-            return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
-        }
+        const updatedUser = await firebaseDb.getUser(userId);
 
-        return NextResponse.json(user);
+        return NextResponse.json(updatedUser);
     } catch (error) {
         console.error('Error in PUT /api/users:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

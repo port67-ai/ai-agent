@@ -13,7 +13,7 @@ export function UsageStats() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await fetch(`/api/stats?userId=${user?.id}`);
+                const response = await fetch(`/api/stats?userId=${user?.uid}`);
                 if (response.ok) {
                     const data = await response.json();
                     setStats(data);
@@ -25,10 +25,10 @@ export function UsageStats() {
             }
         };
 
-        if (user?.id) {
+        if (user?.uid) {
             fetchStats();
         }
-    }, [user?.id]);
+    }, [user?.uid]);
 
     if (loading) {
         return (

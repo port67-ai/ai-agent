@@ -1,21 +1,19 @@
 "use client";
 
-import { useUser as useClerkUser } from '@clerk/nextjs';
-import { useUser as useMockUser } from '@/components/auth/MockClerkProvider';
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function useUser() {
-    const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    const { user, profile, loading } = useAuth();
 
-    // We must call both hooks to satisfy the Rules of Hooks, 
-    // but only if the providers are guaranteed to be in the tree.
-    // In our RootLayout, we ensure only one is present.
-    // However, calling a hook that uses a missing context will throw.
-
-    // So we need a safer way.
-
-    if (isClerkConfigured) {
-        return useClerkUser();
-    } else {
-        return useMockUser();
-    }
+    return {
+        user,
+        profile,
+        isSignedIn: !!user,
+        isLoaded: !loading,
+        // Match Clerk-like structure for compatibility
+        id: user?.uid,
+        primaryEmailAddress: user?.email ? { emailAddress: user.email } : null,
+        firstName: profile?.firstName,
+        lastName: profile?.lastName,
+    };
 }

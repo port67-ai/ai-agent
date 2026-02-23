@@ -13,7 +13,7 @@ export function UserProfileComponent() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await fetch(`/api/users?userId=${user?.id}`);
+                const response = await fetch(`/api/users?userId=${user?.uid}`);
                 if (response.ok) {
                     const data = await response.json();
                     setProfile(data);
@@ -25,10 +25,10 @@ export function UserProfileComponent() {
             }
         };
 
-        if (user?.id) {
+        if (user?.uid) {
             fetchProfile();
         }
-    }, [user?.id]);
+    }, [user?.uid]);
 
     if (loading) {
         return (
@@ -60,7 +60,7 @@ export function UserProfileComponent() {
                     </div>
                     <div>
                         <p className="text-sm text-muted">Email</p>
-                        <p className="font-semibold text-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
+                        <p className="font-semibold text-foreground">{user?.email}</p>
                     </div>
                 </div>
 

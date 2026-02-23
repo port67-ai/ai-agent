@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 import { BusinessDetailsFormData } from '@/types/checkout';
-import { Check, Loader2, Phone, Clock, Play, Pause, Building2, Shield, Calendar } from 'lucide-react';
+import { Check, Loader2, Phone, Clock, Play, Pause, Building2, Shield, Calendar, CalendarClock, CalendarCheck } from 'lucide-react';
+import { firebaseDb } from '@/lib/services/firebase-db';
 
 const businessTypes = ['Plumber', 'Electrician', 'Gardener', 'Carpenter', 'Other'] as const;
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -29,30 +30,59 @@ export function BusinessDetailsForm() {
         businessLink: '',
         assistantVoice: '',
         additionalNotes: '',
+        appointment1Name: '',
+        appointment1Duration: 30,
+        appointment2Name: '',
+        appointment2Duration: 30,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!user) {
+            alert('You must be signed in to save business details.');
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const response = await fetch('/api/users', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user?.id,
-                    businessDetails: formData,
+            // Transform the form data to match Firestore schema
+            const firestoreBusinessDetails = {
+                businessName: formData.businessName,
+                businessType: formData.businessType,
+                currentPhoneNumber: formData.phoneNumber,
+                assistantPhoneNumber: '', // Will be assigned later
+                bookingDays: formData.workingDays.reduce((acc: any, day: string) => {
+                    acc[day] = true;
+                    return acc;
+                }, {
+                    Monday: false,
+                    Tuesday: false,
+                    Wednesday: false,
+                    Thursday: false,
+                    Friday: false,
+                    Saturday: false,
+                    Sunday: false,
                 }),
-            });
+                startTime: formData.workingHours.start,
+                stopTime: formData.workingHours.end,
+                assistantVoice: formData.assistantVoice,
+                businessLink: formData.businessLink,
+                aiBusinessSummary: formData.additionalNotes || '',
+                appointment1Name: formData.appointment1Name || '',
+                appointment1Duration: formData.appointment1Duration || 30,
+                appointment2Name: formData.appointment2Name || '',
+                appointment2Duration: formData.appointment2Duration || 30,
+            };
 
-            if (response.ok) {
-                router.push('/pricing?step=checkout');
-            } else {
-                alert('Failed to save business details. Please try again.');
-            }
+            await firebaseDb.updateBusinessDetails(user.uid, firestoreBusinessDetails);
+
+            // Redirect to AI review step (webhook fires from there)
+            router.push('/pricing?step=ai-review');
         } catch (error) {
             console.error('Error saving business details:', error);
-            alert('An error occurred. Please try again.');
+            alert('Failed to save business details. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -218,6 +248,102 @@ export function BusinessDetailsForm() {
                     <div className="grid grid-cols-2 gap-4">
                         <TimePicker type="start" label="Start Time *" />
                         <TimePicker type="end" label="End Time *" />
+                    </div>
+
+                    {/* Appointment 1 */}
+                    <div className="pt-6 border-t border-white/5">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-7 h-7 rounded-xl bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                                <CalendarClock className="w-3.5 h-3.5" />
+                            </div>
+                            <h4 className="text-[15px] font-bold text-white uppercase tracking-tight">Appointment 1</h4>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mb-5 uppercase font-bold italic tracking-wider">
+                            Define how this appointment type appears in your diary
+                        </p>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="appointment1Name" className="label text-[11px] font-black tracking-widest mb-2">
+                                    APPOINTMENT NAME
+                                </label>
+                                <input
+                                    id="appointment1Name"
+                                    type="text"
+                                    className="input bg-white/2 border-white/5 focus:bg-white/5 focus:border-primary/30"
+                                    value={formData.appointment1Name || ''}
+                                    onChange={(e) => setFormData({ ...formData, appointment1Name: e.target.value })}
+                                    placeholder="e.g., 30 min Job Quote"
+                                />
+                                <p className="text-[10px] text-slate-500 mt-2 italic">
+                                    This is what you will see in your diary when a user books a slot i.e. 30 min Job Quote
+                                </p>
+                            </div>
+                            <div>
+                                <label htmlFor="appointment1Duration" className="label text-[11px] font-black tracking-widest mb-2">
+                                    APPOINTMENT DURATION
+                                </label>
+                                <select
+                                    id="appointment1Duration"
+                                    className="input bg-white/2 border-white/5 focus:bg-white/5 focus:border-primary/30"
+                                    value={formData.appointment1Duration || 30}
+                                    onChange={(e) => setFormData({ ...formData, appointment1Duration: parseInt(e.target.value) })}
+                                >
+                                    {[15, 30, 45, 60, 90, 120].map((mins) => (
+                                        <option key={mins} value={mins} className="bg-slate-900">
+                                            {mins < 60 ? `${mins} minutes` : `${mins / 60} hour${mins > 60 ? 's' : ''}`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Appointment 2 */}
+                    <div className="pt-6 border-t border-white/5">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-7 h-7 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary flex-shrink-0">
+                                <CalendarCheck className="w-3.5 h-3.5" />
+                            </div>
+                            <h4 className="text-[15px] font-bold text-white uppercase tracking-tight">Appointment 2</h4>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mb-5 uppercase font-bold italic tracking-wider">
+                            Define how this appointment type appears in your diary
+                        </p>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="appointment2Name" className="label text-[11px] font-black tracking-widest mb-2">
+                                    APPOINTMENT NAME
+                                </label>
+                                <input
+                                    id="appointment2Name"
+                                    type="text"
+                                    className="input bg-white/2 border-white/5 focus:bg-white/5 focus:border-primary/30"
+                                    value={formData.appointment2Name || ''}
+                                    onChange={(e) => setFormData({ ...formData, appointment2Name: e.target.value })}
+                                    placeholder="e.g., 60 min Full Assessment"
+                                />
+                                <p className="text-[10px] text-slate-500 mt-2 italic">
+                                    This is what you will see in your diary when a user books a slot i.e. 60 min Full Assessment
+                                </p>
+                            </div>
+                            <div>
+                                <label htmlFor="appointment2Duration" className="label text-[11px] font-black tracking-widest mb-2">
+                                    APPOINTMENT DURATION
+                                </label>
+                                <select
+                                    id="appointment2Duration"
+                                    className="input bg-white/2 border-white/5 focus:bg-white/5 focus:border-primary/30"
+                                    value={formData.appointment2Duration || 30}
+                                    onChange={(e) => setFormData({ ...formData, appointment2Duration: parseInt(e.target.value) })}
+                                >
+                                    {[15, 30, 45, 60, 90, 120].map((mins) => (
+                                        <option key={mins} value={mins} className="bg-slate-900">
+                                            {mins < 60 ? `${mins} minutes` : `${mins / 60} hour${mins > 60 ? 's' : ''}`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

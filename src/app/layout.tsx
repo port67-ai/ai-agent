@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
-import { MockClerkProvider } from "@/components/auth/MockClerkProvider";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,20 +19,12 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
     return (
         <html lang="en">
             <body className={`${inter.variable} font-sans`}>
-                {isClerkConfigured ? (
-                    <ClerkProvider>
-                        {children}
-                    </ClerkProvider>
-                ) : (
-                    <MockClerkProvider>
-                        {children}
-                    </MockClerkProvider>
-                )}
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
             </body>
         </html>
     );

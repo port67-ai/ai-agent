@@ -7,14 +7,14 @@ export interface UserProfile {
 
 export interface BusinessDetails {
     businessName: string;
-    businessType: 'Plumber' | 'Electrician' | 'Gardener' | 'Carpenter' | 'Other';
+    businessType: 'Plumber' | 'Electrician' | 'Gardener' | 'Carpenter' | 'Other' | '';
     phoneNumber: string;
     workingDays: string[];
     workingHours: {
         start: string;
         end: string;
     };
-    serviceArea: string;
+    serviceArea?: string;
     assistantVoice?: string;
     additionalNotes?: string;
 }
