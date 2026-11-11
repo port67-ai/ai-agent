@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "clear-users": "tsx scripts/clear-all-users.ts",
-    "clear-db": "tsx scripts/clear-database.ts"
+    "clear-db": "tsx scripts/clear-database.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "governance:check": "node scripts/check-governance.mjs",
+    "format:check": "prettier --check PRD.md AGENTS.md CLAUDE.md GEMINI.md \"docs/**/*.md\" \".github/**/*.md\" \".github/workflows/*.yml\" scripts/check-governance.mjs \"tests/**/*.mjs\" package.json"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
@@ -32,6 +36,7 @@
     "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prettier": "3.6.2",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
