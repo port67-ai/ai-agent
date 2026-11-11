@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "clear-users": "tsx scripts/clear-all-users.ts",
-    "clear-db": "tsx scripts/clear-database.ts"
+    "clear-db": "tsx scripts/clear-database.ts",
+    "test": "tsx tests/enquiries.test.ts && tsx tests/enquiry-route.test.ts && tsx tests/studio-render.test.tsx && tsx tests/enquiry-attempt.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
