@@ -84,3 +84,5 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-WFL-009 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-010 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-011 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+
+CHG-0002: integrated studio website commit a5e8ceb while resolving README conflict. Factory acceptance status unchanged; studio tests do not verify Factory capabilities.
