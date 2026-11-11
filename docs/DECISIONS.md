@@ -21,3 +21,7 @@ GitHub Actions cannot activate branch protection through a workflow file. An adm
 ## Outstanding product decisions
 
 Define the scope of the wider Port67 Factory, approve application feature IDs/acceptance criteria, resolve Firebase versus legacy Clerk, define tenant and role boundaries, audit retention and cost attribution. No decision is implied by this list.
+
+## DEC-005 — Minimal Render prerender correction (2026-11-11)
+
+DEP-001 wraps query-dependent sign-in and pricing content with React Suspense instead of disabling static prerender checks or forcing every route dynamic. Both existing useSearchParams consumers were inspected and tested. Test rendering replaces external navigation/services/UI dependencies to avoid contacting Firebase, Make or payment providers; it does not verify those integrations. A test-only Google font response may isolate the production prerender check from this cloud machine's blocked font access; it must never be saved as Render configuration or described as verification of real font delivery. Missing Admin credentials are a separate configuration issue, not the reported fatal sign-in export failure.

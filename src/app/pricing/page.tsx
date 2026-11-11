@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/landing/Footer';
@@ -9,7 +10,7 @@ import { AIReviewForm } from '@/components/checkout/AIReviewForm';
 import { CheckoutPlaceholder } from '@/components/checkout/CheckoutPlaceholder';
 import { Pricing } from '@/components/landing/Pricing';
 
-export default function PricingPage() {
+function PricingContent() {
     const searchParams = useSearchParams();
     const step = searchParams.get('step');
 
@@ -59,5 +60,13 @@ export default function PricingPage() {
 
             <Footer />
         </main>
+    );
+}
+
+export default function PricingPage() {
+    return (
+        <Suspense fallback={<p role="status">Loading pricing…</p>}>
+            <PricingContent />
+        </Suspense>
     );
 }

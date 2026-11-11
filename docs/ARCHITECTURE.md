@@ -1,6 +1,6 @@
 # Current architecture
 
-Inspected baseline: commit 26ab3be6e75a408b79fb6f1f66b894a7f5402113, 2026-11-11. Governance tooling adds no application runtime behavior.
+Inspected baseline: commit 26ab3be6e75a408b79fb6f1f66b894a7f5402113, 2026-11-11. The governance baseline added no application runtime behavior. DEP-001 adds Suspense boundaries for sign-in/pricing prerendering.
 
 ## Application
 
@@ -19,10 +19,14 @@ AuthProvider uses firebase-auth.ts for Firebase Auth and firebase-db.ts for clie
 
 Firestore currently allows any authenticated user to read/write any document. Tenant ownership is not enforced by the deployed-rule source. No organization/tenant membership model, durable audit trail, or provider-cost ledger was identified. Do not infer those controls from route ownership comparisons or dashboard metrics.
 
-Firebase client configuration uses NEXT*PUBLIC_FIREBASE_API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID and APP_ID with the NEXT_PUBLIC_FIREBASE* prefix on each. Admin uses FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY. Optional integration variables are STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME and NEXT_PUBLIC_APP_URL. Legacy Clerk paths may also require Clerk settings but the migration must be resolved before calling them supported.
+Firebase client configuration uses `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` and `NEXT_PUBLIC_FIREBASE_APP_ID`. Admin uses FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY. Optional integration variables are STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME and NEXT_PUBLIC_APP_URL. Legacy Clerk paths may also require Clerk settings but the migration must be resolved before calling them supported.
 
 Google font fetching requires fonts.googleapis.com and fonts.gstatic.com. Local development uses npm run dev; live processes do not survive cloud snapshots. No deployment or database change is part of governance setup.
 
 ## Governance tooling
 
 scripts/check-governance.mjs is a dependency-free Node validator. GitHub Actions run it against the PR base diff, plus formatting, lint, type checks and tests in separate jobs. Tests use Node's built-in runner. Prettier is a pinned development dependency. File-path heuristics deliberately require review of architecture/data changes; they cannot prove semantic correctness. Branch rules are configured separately in GitHub; see TESTING.md.
+
+## Query-dependent rendering (DEP-001)
+
+/sign-in and /pricing export page wrappers with React Suspense and accessible loading status text. Their existing content components read useSearchParams beneath those boundaries. This preserves client-side query selection and lets Next.js prerender the shell without an uncaught query-parameter suspension. Authentication, pricing steps, data storage and provider integrations are unchanged. See DEPLOYMENT.md for Render staging configuration and unresolved service prerequisites.

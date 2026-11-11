@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 — Render prerender fix (DEP-001)
+
+- Added Suspense wrappers around /sign-in and /pricing query-dependent content with accessible loading fallbacks.
+- Added nine rendering regression tests covering suspension, sign-in/reset selection and all pricing query steps. External services are not invoked by these tests.
+- Added Render/Firebase staging instructions and recorded the actual deployment failure and remaining credentials/security blockers. No Firebase schema, rules, authentication handlers, payments or live services were changed.
+- Base commit: 1a6aa26f65c2ad05166bfbf0dad9afd9fa59981a; governance PR #1 exists at https://github.com/port67-ai/ai-agent/pull/1. This fix is prepared on fix/render-prerender and is not a verified remote deployment.
+
 ## 2026-11-11 — Governance baseline (GOV-001 through GOV-006)
 
 - Added canonical PRD, universal agent instructions, architecture, Firebase data model, decisions, implementation status, testing and mandatory handover.

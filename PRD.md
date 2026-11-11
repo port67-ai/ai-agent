@@ -42,6 +42,14 @@ Preserve tenant isolation, auditability, cost tracking and security controls thr
 
 Acceptance: changes include relevant ownership/access tests and document audit/cost impact. Existing vulnerabilities cannot be represented as verified controls. Full production isolation, audit and cost readiness remain unverified in the current application.
 
+## Staging deployment requirements
+
+### DEP-001 — Render staging build and query-dependent pages
+
+Approved source: user's request to set up Render and Firebase using the Port67 Google account, and the reported Render build failure on 2026-11-11. Deploy the existing Next.js application as a Render Node web service using Firebase project ai-agency-3671b. This requirement does not approve live payments, production database access, broad auth migration or a new Factory product feature.
+
+Acceptance: production prerendering supports /sign-in and /pricing with Suspense boundaries around query-dependent content; the normal sign-in form, resetPassword/oobCode selection and all existing pricing step selections are preserved in regression tests. Render builds the fixed Git commit using npm ci and starts on its supplied PORT. The Render build and HTTP checks must be verified remotely before staging is called ready. Firebase Admin credentials, authorized domains and owner-scoped Firestore rules must be configured and tested separately before authenticated database workflows are claimed working. No production-readiness claim follows from a successful staging build.
+
 ## Observed application baseline — not approved feature acceptance
 
 The source contains landing/pricing pages, Firebase sign-in/sign-up, business details and AI review forms, dashboards, Firestore user/metrics/call history operations, Stripe and Airtable integrations with mock paths, and legacy Clerk-backed routes. These are source observations, not evidence that full workflows or 24/7 voice/WhatsApp/Facebook booking services work. No approved IDs or end-to-end acceptance criteria for those product features have been supplied.
