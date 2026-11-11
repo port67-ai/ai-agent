@@ -2,14 +2,14 @@
 
 Last inspected: 2026-11-11. Milestone: governance baseline. Source base: 26ab3be6e75a408b79fb6f1f66b894a7f5402113. No product milestone is claimed complete.
 
-| Requirement | State                                          | Evidence / remaining acceptance                                                                                                                       |
-| ----------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GOV-001     | Implemented locally, not published to GitHub   | Canonical documents and Claude/Gemini pointers created; source inspected                                                                              |
-| GOV-002     | Applied to this task                           | Clean working tree checked; feature branch chore/engineering-governance; requirement IDs and bounded scope recorded                                   |
-| GOV-003     | Local evidence recorded; remote review pending | Handover records 11 passing tests, formatting/type/document checks, known lint failures and external blockers; commit and remote review still pending |
-| GOV-004     | Implemented locally; CI execution pending      | Validator, negative tests, workflow and PR template; no remote run claimed                                                                            |
-| GOV-005     | Outstanding                                    | GitHub branch protection has not been configured or verified                                                                                          |
-| GOV-006     | Unverified; existing isolation gap             | Authenticated-wide Firestore access, mixed auth, no identified durable audit/cost model; no application fix in this task                              |
+| Requirement | State                                          | Evidence / remaining acceptance                                                                                                                                                            |
+| ----------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GOV-001     | Published to feature branch; merge pending     | Canonical documents and Claude/Gemini pointers created; source inspected                                                                                                                   |
+| GOV-002     | Applied to this task                           | Clean working tree checked; feature branch chore/engineering-governance; requirement IDs and bounded scope recorded                                                                        |
+| GOV-003     | Local evidence recorded; remote review pending | Handover records 11 passing tests, formatting/type/document checks, known lint failures and external blockers; implementation committed as 48aeffa and pushed; remote review still pending |
+| GOV-004     | Implemented locally; CI execution pending      | Validator, negative tests, workflow and PR template; no remote run claimed                                                                                                                 |
+| GOV-005     | Outstanding                                    | GitHub branch protection has not been configured or verified                                                                                                                               |
+| GOV-006     | Unverified; existing isolation gap             | Authenticated-wide Firestore access, mixed auth, no identified durable audit/cost model; no application fix in this task                                                                   |
 
 ## Application baseline and blockers
 

@@ -9,4 +9,4 @@
 - Kept application source, Firestore rules and runtime behavior unchanged. Documented existing failures and security gaps rather than treating them as implemented governance controls.
 - Remote CI execution, branch protection, publication and product workflow readiness remain unverified. See TESTING.md and HANDOVER.md for actual checks and exact next actions.
 
-Base commit: 26ab3be6e75a408b79fb6f1f66b894a7f5402113. The containing Git commit records this change; no PR URL exists yet.
+Base commit: 26ab3be6e75a408b79fb6f1f66b894a7f5402113. Implementation commit: 48aeffac48e1414124bec35d59cf2850e8cf4282, pushed to chore/engineering-governance. This follow-up records publication and committed-diff verification; no PR URL exists yet.
