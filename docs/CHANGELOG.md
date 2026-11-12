@@ -81,3 +81,11 @@ Single ongoing ledger. Historical imported PRD section 26 is a baseline record o
 - Status: prepared on feat/accounts-provider-costs; exact commit/PR/merge and checks are in Git/GitHub, not inferred from this entry.
 
 CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run43209732747); preserve original Firebase sign-in time in server sessions so a concurrent token revocation is not hidden by a later cookie exchange timestamp. Identity regression RED→GREEN; no PRD scope change.
+
+## CHG-0010 — 2026-11-12 — Show the actual sign-up setup blocker
+- Author/harness: Codex; owner reports account creation failure and confirms deployed auth-config responds “Account sign-in is not configured”.
+- What/why: replace catch-all account error with allowlisted phase-specific messages for missing web configuration, disabled Email/Password, invalid Firebase configuration, password policy, connectivity, verification and server-session handoff. Never show raw SDK messages or distinguish unknown-user/wrong-password.
+- Requirements: FAC-TEN-008. PRD impact: none; restore understandable failure handling for existing sign-up requirement, no scope change or authentication bypass.
+- Evidence: missing/disabled configuration browser regressions, safe error mapping tests, full suite/lint/types/build/browser checks; exact remote results in GitHub. Unit test first failed before implementation.
+- Runtime/configuration: user-confirmed live failure is missing/rejected Render Firebase web-auth settings; changing UI does not provision those settings. Owner must configure dedicated web apiKey/authDomain and enable Email/Password, then redeploy. No credentials or real user records changed; no paid calls.
+- Status: prepared on fix/signup-diagnostics; consult Git/GitHub for exact commit/PR/merge evidence.
