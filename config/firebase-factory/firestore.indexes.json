@@ -1,0 +1,10 @@
+{"indexes":[],"fieldOverrides":[
+ {"collectionGroup":"projects","fieldPath":"brief","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"sources","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"insights","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"strategies","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"tasks","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"assets","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"runs","indexes":[]},
+ {"collectionGroup":"projects","fieldPath":"audit","indexes":[]}
+]}

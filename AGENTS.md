@@ -15,6 +15,8 @@ Applies to Codex, Claude, Gemini, other harnesses and human contributors.
 - Record material decisions and discrepancies. Preserve historical entries; supersede decisions explicitly.
 - Never commit secrets, client data or credentials. Do not deploy, provision paid resources or change production as part of documentation work.
 
+- All new paid model/tool API calls must use the Factory metering gateway; preserve unknown costs, account/project/run lineage and owner-only ledger access. Customer data ownership is server-derived. Never accept client-posted roles/account IDs or expose admin costs in customer/producer views. See docs/ACCOUNTS_PROVIDERS_COSTS.md.
+
 ## Finish every substantive change
 1. Run appropriate checks; record exact commands, outcomes and limitations.
 2. Update PRD.md when intended requirements change. Otherwise record `PRD impact: none` with a reason in the central changelog.

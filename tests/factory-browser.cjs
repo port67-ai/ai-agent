@@ -20,6 +20,7 @@ require("node:fs").mkdirSync("work/screenshots", { recursive: true });
     (process.env.PORT67_TEST_ORIGIN || "http://localhost:3000") + "/portal",
   );
   await page.getByRole("button", { name: "Explore the demo" }).click();
+  assert.equal(await page.getByRole("button",{name:"Private API costs",exact:true}).count(),0);
   await page
     .getByRole("heading", { name: "Good work starts with understanding." })
     .waitFor();

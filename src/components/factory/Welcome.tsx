@@ -2,16 +2,19 @@
 import { ArrowUpRight, ArrowRight, Layers3 } from "lucide-react";
 import { Field } from "./shared";
 import Link from "next/link";
+import { AccountLogin } from "./AccountLogin";
 export function PortalWelcome({
   busy,
   onDemo,
   onLogin,
   error,
+  onAuthenticated,
 }: {
   busy: boolean;
   onDemo: () => void;
   onLogin: (password: string) => void;
   error: string;
+  onAuthenticated?: (idToken:string)=>Promise<void>;
 }) {
   return (
     <main className="f-welcome">
@@ -53,6 +56,8 @@ export function PortalWelcome({
             Port67 manages the production. You bring the ambition and approve
             what comes next.
           </p>
+          {onAuthenticated && <AccountLogin onAuthenticated={onAuthenticated} />}
+          <details className="f-legacy-login"><summary>Producer password access</summary>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -72,10 +77,9 @@ export function PortalWelcome({
             <button className="f-button secondary" disabled={busy}>
               Sign in <ArrowRight size={17} />
             </button>
-          </form>
+          </form></details>
           <p className="f-small">
-            Customers enter through their private invitation link. Live access
-            requires server configuration.
+            Create an account or use a private project invitation. Live access requires server configuration.
           </p>
         </section>
       </div>

@@ -22,13 +22,14 @@ import {
   Menu,
   RefreshCw,
 } from "lucide-react";
-import type { Principal, Project } from "@/lib/factory/model";
+import type { Account, Principal, Project } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
 import Link from "next/link";
 import { PortalWelcome } from "./Welcome";
 export { PortalWelcome } from "./Welcome";
 import Research from "./Research";
 import WorkspaceSetup from "./WorkspaceSetup";
+import AdminCosts from "./AdminCosts";
 import Direction from "./Direction";
 import Assets from "./Assets";
 import Capabilities from "./Capabilities";
@@ -50,7 +51,8 @@ type Tab =
   | "assets"
   | "learning"
   | "capabilities"
-  | "setup";
+  | "setup"
+  | "admin";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
   { id: "brief", label: "Business brief", icon: FileText },
@@ -61,6 +63,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "learning", label: "Performance learning", icon: ChartNoAxesCombined },
   { id: "capabilities", label: "Capabilities", icon: Settings2 },
   { id: "setup", label: "Workspace setup", icon: Settings2 },
+  { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
 async function api(path: string, data?: unknown) {
   const response = await fetch("/api/factory/" + path, {
@@ -77,6 +80,7 @@ export default function Portal() {
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [config, setConfig] = useState<Config>();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [accounts,setAccounts]=useState<Account[]>([]);
   const [selected, setSelected] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
   const [busy, setBusy] = useState(false);
@@ -95,6 +99,8 @@ export default function Portal() {
     if (session.principal) {
       const data = await api("projects");
       setProjects(data.projects);
+      if(session.principal.identity === "firebase" && session.principal.role === "operator") setAccounts((await api("accounts")).accounts);
+      else setAccounts([]);
     } else setProjects([]);
   }, []);
   useEffect(() => {
@@ -167,6 +173,7 @@ export default function Portal() {
         error={error}
         onDemo={() => void run(() => api("demo", {}))}
         onLogin={(password) => void run(() => api("login", { password }))}
+        onAuthenticated={async(idToken)=>{if(!await run(()=>api("identity-login",{idToken}))) throw Error("Sign in failed");}}
       />
     );
   const strategy = p?.strategies.at(-1);
@@ -203,7 +210,7 @@ export default function Portal() {
           {nav
             .filter(
               (n) =>
-                operator ||
+                n.id === "admin" ? !!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
                 !["production", "capabilities", "setup"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
@@ -311,6 +318,10 @@ export default function Portal() {
               </p>
             </div>
             <div className="f-project-tools">
+              {operator && principal.identity === "firebase" && <select aria-label="Select customer account" value={principal.workspaceId} onChange={e=>void run(async()=>{await api("accounts",{accountId:e.target.value});setSelected("");setInvite("");},"Account selected")}>
+                {accounts.map(account=><option key={account.id} value={account.id}>{account.email || account.id}</option>)}
+              </select>}
+
               <select
                 aria-label="Select project"
                 value={p?.id || ""}
@@ -325,7 +336,7 @@ export default function Portal() {
                   </option>
                 ))}
               </select>
-              {operator && (
+              {(operator || principal.identity === "firebase") && (
                 <button
                   className="f-button small"
                   onClick={() => setNewProject(true)}
@@ -349,12 +360,13 @@ export default function Portal() {
               {notice}
             </div>
           )}
-          {tab === "setup" ? (
+          {tab === "admin" && principal.admin ? (
+            <AdminCosts />
+          ) : tab === "setup" && operator ? (
             <WorkspaceSetup />
           ) : !p ? (
             <Empty title="Your next project starts here">
-              Create a brief, invite your customer and build the evidence behind
-              the campaign.
+              Create a brief to start your campaign. Your account keeps its research, production and assets together.
             </Empty>
           ) : (
             <>

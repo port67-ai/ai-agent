@@ -80,3 +80,6 @@ assert.equal(
   false,
   "the temporary root itself must be rejected",
 );
+const gemini=configurationStatus({...configured,PORT67_RESEARCH_PROVIDER:'gemini',PORT67_GEMINI_API_KEY:'private-gemini-key',PORT67_RESEARCH_MODEL:'test-model',PORT67_RESEARCH_ENABLED:'true'});
+assert.equal(gemini.checks.find(x=>x.id==='research')?.state,'ready','readiness follows selected provider');
+assert.ok(!JSON.stringify(gemini).includes('private-gemini-key'));

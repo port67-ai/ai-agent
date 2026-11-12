@@ -12,3 +12,5 @@ Use the existing **ai-agent** Render service tracking **port67-ai/ai-agent main*
 No Firebase project, paid provider invocation, disk or Render secret was provisioned in this implementation: credentials were unavailable. Do not claim live integration verification until the above smoke tests are recorded. Shared producer authentication, bearer invitations, snapshot storage, missing monetary budget enforcement and limited media formats remain MVP constraints. Per-person accounts/MFA, rendered video and phase-two analytics/publishing remain future work.
 
 References checked 2026-11-12: https://render.com/docs/configure-environment-variables and https://render.com/docs/disks.
+
+CHG-0009 supersedes the OpenAI-only/provider and invitation-only account assumptions above. Follow ACCOUNTS_PROVIDERS_COSTS.md for individual Firebase sign-in, ai-agency-3671b dedicated layout, four-provider selection, owner UID bootstrap and private pricing/ledger activation. Initial steps remain relevant for origin/secrets/storage launch gates.

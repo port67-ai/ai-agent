@@ -1,4 +1,7 @@
-import { firebaseCredentialMode } from "./config";
+import { linkProjectOwnership } from "./accounts";
+import { getFactoryFirebaseApp } from "./firebase-admin";
+import { serializeAccount, hydrateAccount, type AccountMetadata } from "./storage-schema";
+import type { Firestore, DocumentReference, Transaction } from "firebase-admin/firestore";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -54,6 +57,7 @@ export class LocalRepository implements Repository {
         await mkdir(this.directory, { recursive: true, mode: 0o700 });
         const db = await this.read(workspace);
         const result = fn(db);
+        db.projects = db.projects.map(linkProjectOwnership);
         const serialized = JSON.stringify(db);
         if (Buffer.byteLength(serialized) > snapshotLimit(db))
           throw new Error(
@@ -74,56 +78,41 @@ export class LocalRepository implements Repository {
 }
 // Dedicated Factory project only. Server-side authz remains required for every request.
 export class FirebaseRepository implements Repository {
+  constructor(private database?: Firestore) {}
   private async ref(workspace: string) {
-    const [
-      { getApps, initializeApp, cert, applicationDefault },
-      { getFirestore },
-    ] = await Promise.all([
-      import("firebase-admin/app"),
-      import("firebase-admin/firestore"),
-    ]);
-    const projectId = process.env.PORT67_FIREBASE_PROJECT_ID;
-    if (!projectId)
-      throw new Error("Dedicated Factory Firebase project is not configured");
-    const name = "port67-factory";
-    const credentials =
-      firebaseCredentialMode() === "adc"
-        ? undefined
-        : process.env.PORT67_FIREBASE_SERVICE_ACCOUNT;
-    if (firebaseCredentialMode() === "service-account" && !credentials)
-      throw new Error("Dedicated Factory service account is not configured");
-    const app =
-      getApps().find((a) => a.name === name) ||
-      initializeApp(
-        {
-          projectId,
-          credential: credentials
-            ? cert(JSON.parse(credentials))
-            : applicationDefault(),
-        },
-        name,
-      );
-    return getFirestore(
-      app,
-      process.env.PORT67_FIREBASE_DATABASE || "(default)",
-    )
-      .collection("factory_workspaces_v1")
-      .doc(safe(workspace));
+    const db=this.database || (await import("firebase-admin/firestore")).getFirestore(getFactoryFirebaseApp(),process.env.PORT67_FIREBASE_DATABASE || "(default)");
+    const collection=workspace.startsWith("acct_") ? "factory_accounts_v2" : workspace.startsWith("factory-") ? "factory_system_v1" : "factory_workspaces_v1";
+    return db.collection(collection).doc(safe(workspace));
+  }
+  private async load(tx:Transaction,ref:DocumentReference,workspace:string):Promise<Database>{
+    const snapshot=await tx.get(ref);
+    if(!snapshot.exists) return empty();
+    if(!workspace.startsWith("acct_")) return snapshot.data() as Database;
+    const metadata=snapshot.data() as AccountMetadata;
+    if(!Array.isArray(metadata.projectIds) || metadata.projectIds.length>20) throw Error("Invalid account project index");
+    const docs=metadata.projectIds.length ? await tx.getAll(...metadata.projectIds.map(id=>ref.collection("projects").doc(safe(id)))) : [];
+    return hydrateAccount(workspace,metadata,docs.filter(d=>d.exists).map(d=>d.data() as Database['projects'][number]));
   }
   async read(workspace: string) {
-    const snapshot = await (await this.ref(workspace)).get();
-    return snapshot.exists ? (snapshot.data() as Database) : empty();
+    const ref=await this.ref(workspace);
+    return ref.firestore.runTransaction(tx=>this.load(tx,ref,workspace));
   }
   async mutate<T>(workspace: string, fn: (db: Database) => T) {
-    const ref = await this.ref(workspace);
-    return ref.firestore.runTransaction(async (tx) => {
-      const snapshot = await tx.get(ref);
-      const db = snapshot.exists ? (snapshot.data() as Database) : empty();
-      const result = fn(db);
-      const serialized = JSON.stringify(db);
-      if (Buffer.byteLength(serialized) > snapshotLimit(db))
-        throw new Error("Workspace storage limit reached");
-      tx.set(ref, JSON.parse(serialized));
+    const ref=await this.ref(workspace);
+    return ref.firestore.runTransaction(async tx=>{
+      const db=await this.load(tx,ref,workspace);
+      const before=new Map(db.projects.map(p=>[p.id,JSON.stringify(p)]));
+      const result=fn(db);
+      db.projects=db.projects.map(linkProjectOwnership);
+      const serialized=JSON.stringify(db);
+      if(Buffer.byteLength(serialized)>snapshotLimit(db)) throw Error("Workspace storage limit reached");
+      if(workspace.startsWith("acct_")) {
+        const stored=serializeAccount(workspace,db);
+        // No deletion is implicit: archival/migration needs a separate explicit operation.
+        if([...before.keys()].some(id=>!stored.metadata.projectIds.includes(id))) throw Error("Project deletion requires explicit archival");
+        tx.set(ref,JSON.parse(JSON.stringify(stored.metadata)));
+        for(const p of stored.projects) if(before.get(p.id)!==JSON.stringify(p)) tx.set(ref.collection("projects").doc(p.id),JSON.parse(JSON.stringify(p)));
+      } else tx.set(ref,JSON.parse(serialized));
       return result;
     });
   }

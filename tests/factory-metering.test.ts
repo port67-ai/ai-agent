@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import { mkdtemp,rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';import {join} from 'node:path';
+import { LocalRepository, type Repository } from '../src/lib/factory/repository';
+import { meteredModelCall } from '../src/lib/factory/metering';
+import {adminCostReport} from '../src/lib/factory/costs';
+import {createProject} from '../src/lib/factory/engine';
+import type {Principal,ResearchRun} from '../src/lib/factory/model';
+async function main(){
+ const dir=await mkdtemp(join(tmpdir(),'port67-meter-'));const repo=new LocalRepository(dir);
+ const a:Principal={subject:'producer',role:'operator',workspaceId:'acct_test',accountId:'acct_test'};
+ const p=createProject({business:'test',objective:'test',contact:'x@y.test'},a);
+ const run:ResearchRun={id:'r1',at:new Date().toISOString(),status:'running',provider:'gemini',model:'test',stage:'insights'};
+ let calls=0;
+ await meteredModelCall(repo,a,p,run,async()=>{calls++;assert.equal((await adminCostReport(repo)).summary.unknownCount,1);return{usage:{input_tokens:5,output_tokens:2},error:'Invalid output'};});
+ let report=await adminCostReport(repo);assert.equal(report.rows[0].status,'failed');assert.equal(report.rows[0].accountId,p.accountId);assert.equal(report.summary.unknownCount,1);
+ const broken:Repository={read:repo.read.bind(repo),mutate:async()=>{throw Error('disk unavailable')}};
+ await assert.rejects(()=>meteredModelCall(broken,a,p,run,async()=>{calls++;return{usage:{}}}),/disk unavailable/);assert.equal(calls,1);
+ await assert.rejects(()=>meteredModelCall(repo,a,p,{...run,id:'r2'},async()=>{throw Error('timeout')}),/timeout/);
+ report=await adminCostReport(repo);assert.equal(report.summary.callCount,2);assert.equal(report.summary.unknownCount,2);
+ await rm(dir,{recursive:true,force:true});console.log('Metered invocation contracts passed');
+}void main();

@@ -1,3 +1,4 @@
+import { accountScope, canCreateProject, linkProjectOwnership } from "./accounts";
 import { productionCapabilities } from "./registry";
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -55,9 +56,11 @@ export function publicUrl(value: unknown): string {
   return u.href;
 }
 export function access(p: Project, a: Principal) {
+  accountScope(a);
   if (
     p.workspaceId !== a.workspaceId ||
-    (a.role === "customer" && a.projectId !== p.id)
+    (p.accountId !== undefined && p.accountId !== (a.accountId || a.workspaceId)) ||
+    (a.role === "customer" && a.identity !== "firebase" && a.projectId !== p.id)
   )
     throw new Error("Forbidden: project access");
 }
@@ -87,7 +90,7 @@ export function createProject(
   a: Principal,
   projectId: string = id(),
 ): Project {
-  operator(a);
+  if (!canCreateProject(a)) operator(a);
   const brief: Brief = {
     business: text(input.business, "business", 120, true),
     objective: text(input.objective, "objective", 1200, true),
@@ -121,6 +124,8 @@ export function createProject(
   return {
     id: projectId,
     workspaceId: a.workspaceId,
+    accountId: accountScope(a),
+    createdBy: a.subject,
     createdAt: now(),
     updatedAt: now(),
     revision: 1,
@@ -559,7 +564,7 @@ export function transition(
 }
 export function projectView(input: Project, a: Principal): Project {
   access(input, a);
-  const p = structuredClone(input);
+  const p = linkProjectOwnership(input);
   if (a.role === "operator") {
     p.aiAuthorised = hasProviderConsent(p);
     return p;
