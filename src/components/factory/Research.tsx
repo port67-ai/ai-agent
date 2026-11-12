@@ -12,6 +12,8 @@ import {
   Actions,
 } from "./shared";
 import InsightEditor from "./InsightEditor";
+const gapsFor = (p: { runs: { segment?: string; status: string; gaps?: string[] }[] }, segment: string) =>
+  [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
 export default function Research({
   p,
   operator,
@@ -104,6 +106,16 @@ export default function Research({
               </button>
             )}
           </div>
+          {gapsFor(p, segment).length > 0 && (
+            <div className="f-callout">
+              <strong>Not found or unverified:</strong>
+              <ul>
+                {gapsFor(p, segment).map((g) => (
+                  <li key={g}>{g}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {p.sources
             .filter((s) => s.segment === segment)
             .map((s) => (
@@ -125,6 +137,7 @@ export default function Research({
                         : s.status}
                   </Tag>
                   <small>
+                    {s.confidence ? s.confidence + " support · " : ""}
                     {new Date(s.collectedAt).toLocaleDateString("en-GB")}
                   </small>
                 </div>

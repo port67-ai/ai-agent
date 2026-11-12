@@ -25,10 +25,11 @@ export const SLOTS = [
   { id: "research:creative", stage: "research", label: "Research: creative conventions", hint: "Creative and channel conventions in the category." },
   { id: "synthesis:insights", stage: "synthesis", label: "Drafting: insights", hint: "Turns reviewed sources into draft insights." },
   { id: "synthesis:strategy", stage: "synthesis", label: "Drafting: campaign direction", hint: "Drafts message, reasoning and creative direction." },
+  { id: "synthesis:content", stage: "synthesis", label: "Drafting: copy pack", hint: "Writes channel copy from the approved direction and its evidence." },
 ] as const satisfies readonly { id: string; stage: ProviderStage; label: string; hint: string }[];
 export type SlotId = (typeof SLOTS)[number]["id"];
 export const researchSlot = (segment: string) => `research:${segment}` as SlotId;
-export const synthesisSlot = (stage: string) => (stage === "insights" ? "synthesis:insights" : "synthesis:strategy") as SlotId;
+export const synthesisSlot = (stage: string) => (stage === "insights" ? "synthesis:insights" : stage === "content" ? "synthesis:content" : "synthesis:strategy") as SlotId;
 const MODEL = /^[a-zA-Z0-9._:/-]{1,180}$/;
 const PRICE_KEY = /^(openai|anthropic|deepseek|gemini):[a-zA-Z0-9._:/-]{1,180}$/;
 const MAX_PRICES = 40;
@@ -158,6 +159,55 @@ function hasPrice(config: AiRoutingConfig, provider: string, model: string, env:
     return false;
   }
 }
+type ModelListing = { url: string; headers: Record<string, string>; ids: (d: unknown) => string[]; keep: RegExp; drop: RegExp };
+const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+const field = (o: unknown, k: string): unknown => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined);
+const LISTINGS = (key: string): Record<Provider, ModelListing> => ({
+  openai: { url: "https://api.openai.com/v1/models", headers: { authorization: `Bearer ${key}` }, ids: (d) => arr(field(d, "data")).map((m) => String(field(m, "id"))), keep: /^(gpt-|o\d)/, drop: /(image|audio|realtime|tts|transcribe|embedding|search|moderation|instruct|codex|chat-latest|dall)/ },
+  gemini: {
+    url: "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+    headers: { "x-goog-api-key": key },
+    ids: (d) => arr(field(d, "models")).filter((m) => arr(field(m, "supportedGenerationMethods")).includes("generateContent")).map((m) => String(field(m, "name")).replace(/^models\//, "")),
+    keep: /^gemini-/,
+    drop: /(image|tts|audio|live|embedding|robotics|computer|learnlm|veo|imagen|native)/,
+  },
+  anthropic: { url: "https://api.anthropic.com/v1/models?limit=100", headers: { "x-api-key": key, "anthropic-version": "2023-06-01" }, ids: (d) => arr(field(d, "data")).map((m) => String(field(m, "id"))), keep: /^claude-/, drop: /^$/ },
+  deepseek: { url: "https://api.deepseek.com/models", headers: { authorization: `Bearer ${key}` }, ids: (d) => arr(field(d, "data")).map((m) => String(field(m, "id"))), keep: /^deepseek-/, drop: /^$/ },
+});
+const BALANCED: Record<Provider, RegExp> = { openai: /mini/, gemini: /flash(?!-lite)/, anthropic: /sonnet/, deepseek: /chat/ };
+const rank = (id: string) => (parseFloat(id.match(/(\d+(?:\.\d+)?)/)?.[1] || "0") * 1000 - (/preview|exp|latest/.test(id) ? 1 : 0) - id.length / 1000);
+/** Models the provider reports for this key. Only IDs the provider itself lists, so a suggestion cannot be an invented name. */
+export async function listProviderModels(provider: Provider, env: Env = process.env, fetcher: typeof fetch = fetch): Promise<string[]> {
+  const key = env[keyNames[provider]]?.trim();
+  if (!key) return [];
+  const spec = LISTINGS(key)[provider];
+  try {
+    const response = await fetcher(spec.url, { headers: spec.headers, signal: AbortSignal.timeout(15000) });
+    if (!response.ok) return [];
+    return [...new Set(spec.ids(await response.json()).filter((id) => MODEL.test(id) && spec.keep.test(id) && !spec.drop.test(id)))].sort((a, b) => rank(b) - rank(a));
+  } catch {
+    return [];
+  }
+}
+/**
+ * A starting point, not a benchmark result: the newest mid-tier model (fast and low cost) from a provider that has a key.
+ * Research prefers Gemini when keyed; drafting uses the same provider unless only the other one is keyed.
+ */
+export async function suggestSetup(env: Env = process.env, fetcher: typeof fetch = fetch) {
+  const models = {} as Record<Provider, string[]>;
+  for (const p of PROVIDERS) models[p.id] = await listProviderModels(p.id, env, fetcher);
+  const best = (p: Provider) => models[p].find((m) => BALANCED[p].test(m));
+  const research = (["gemini", "openai"] as const).find((p) => best(p));
+  const drafting = (["gemini", "openai", "anthropic", "deepseek"] as const).find((p) => best(p) && (p === research || !research)) || (["gemini", "openai", "anthropic", "deepseek"] as const).find((p) => best(p));
+  const route = (p?: Provider) => (p ? { provider: p, model: best(p)! } : null);
+  const notes: string[] = [];
+  if (!research) notes.push("No web-search provider has a working key and model list, so research cannot be suggested. Set PORT67_GEMINI_API_KEY or PORT67_OPENAI_API_KEY in Render.");
+  else notes.push(`Research: ${research} ${best(research)}, the newest fast mid-tier model it lists. Gemini is preferred for search because its grounded search is billed per query with a free monthly allowance.`);
+  if (drafting) notes.push(`Drafting: ${drafting} ${best(drafting)}, same tier so a full run stays well under the cap.`);
+  notes.push("This is a cost-sensible starting point, not a quality ranking: I found no reliable independent benchmark. Run the same brief with two models on a job and compare, then change that job's row.");
+  const bestByProvider = Object.fromEntries(PROVIDERS.map((p) => [p.id, best(p.id)])) as Record<Provider, string | undefined>;
+  return { models, best: bestByProvider, suggested: { research: route(research), synthesis: route(drafting) }, notes };
+}
 export const PUBLIC_PRICE_SOURCE = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json";
 type Catalogue = Record<string, { input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number; cache_creation_input_token_cost?: number }>;
 const perMillion = (v?: number) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v * 1e12) / 1e6 : undefined);
@@ -205,7 +255,8 @@ export async function routingOverview(repo: Repository, env: Env = process.env) 
       const s = await resolveSelection(repo, slot.id, env);
       effective.push({ slot: slot.id, provider: s.provider, model: s.model, source: s.source, priced: hasPrice(config, s.provider, s.model, env) });
     } catch (e) {
-      effective.push({ slot: slot.id, error: (e as Error).message });
+      const m = (e as Error).message;
+      effective.push({ slot: slot.id, error: /requires a model and API key|Unsupported AI provider/.test(m) ? "No model chosen yet" : m });
     }
   }
   const envDefault = (stage: ProviderStage) => {

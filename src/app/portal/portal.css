@@ -1533,3 +1533,6 @@
 .f-ai-price label{display:flex;flex-direction:column;gap:4px;font-size:.8rem}
 .f-ai-price input{padding:7px;border:1px solid #cfd6df;border-radius:8px;font:inherit;min-width:0}
 .f-ai-price>.f-small{grid-column:1/-1}
+
+/* Rendered video actions */
+.f-video{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}

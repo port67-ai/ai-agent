@@ -54,6 +54,16 @@ export const capabilityRegistry: readonly CapabilityDefinition[] = [
     approvalRequired: true,
   },
   {
+    id: "drafting.content",
+    version: "1.0.0",
+    name: "Copy pack drafter",
+    kind: "synthesis",
+    inputContract: "Approved CampaignStrategy/1.0 with key messages + its reviewed Source[]",
+    outputContract: "Unshared channel copy pack Asset/1.0",
+    permissions: ["model-call-public-data"],
+    approvalRequired: true,
+  },
+  {
     id: "production.visual",
     version: "1.0.0",
     name: "Visual designer",

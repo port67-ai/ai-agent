@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Cpu, Download, Save } from "lucide-react";
+import { Cpu, Download, Save, Sparkles } from "lucide-react";
 import type { AiRoutingConfig, AiRoute } from "@/lib/factory/model";
 import type { Pricing } from "@/lib/factory/costs";
 
@@ -44,6 +44,9 @@ export default function AiModels() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [models, setModels] = useState<Record<string, string[]>>({});
+  const [best, setBest] = useState<Record<string, string | undefined>>({});
+  const [notes, setNotes] = useState<string[]>([]);
 
   function load(d: Overview) {
     setData(d);
@@ -62,7 +65,12 @@ export default function AiModels() {
   useEffect(() => {
     let active = true;
     call()
-      .then((d) => active && load(d))
+      .then((d) => {
+        if (!active) return;
+        load(d);
+        if (!d.config.defaults?.research && !d.config.defaults?.synthesis && !Object.keys(d.config.slots || {}).length) void suggest(true);
+        else void call<{ models: Record<string, string[]>; best: Record<string, string | undefined> }>({ action: "suggest" }).then((r) => active && (setModels(r.models), setBest(r.best))).catch(() => {});
+      })
       .catch((e: Error) => active && setError(e.message));
     return () => {
       active = false;
@@ -81,12 +89,38 @@ export default function AiModels() {
   const setPrice = (key: string, patch: Partial<PriceDraft>) =>
     setPrices((p) => ({ ...p, [key]: { ...(p[key] || { input: "", output: "", cached: "", tool: "", updatedAt: new Date().toISOString().slice(0, 10) }), ...patch } }));
 
-  async function fetchPublic() {
+  async function suggest(auto: boolean) {
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      const models = inUse.map((k) => ({ provider: k.split(":")[0], model: k.slice(k.indexOf(":") + 1) }));
+      const r = await call<{
+        models: Record<string, string[]>;
+        best: Record<string, string | undefined>;
+        suggested: { research: AiRoute | null; synthesis: AiRoute | null };
+        notes: string[];
+      }>({ action: "suggest" });
+      setModels(r.models);
+      setBest(r.best);
+      setNotes(r.notes);
+      const picks = [r.suggested.research, r.suggested.synthesis].filter((x): x is AiRoute => !!x);
+      if (r.suggested.research) setRoute("default:research", r.suggested.research);
+      if (r.suggested.synthesis) setRoute("default:synthesis", r.suggested.synthesis);
+      if (picks.length) {
+        setNotice(auto ? "Suggested defaults are filled in below but not saved yet. Review, then save." : "Suggested defaults filled in. Review, then save.");
+        await fetchPublic(picks.map((x) => `${x.provider}:${x.model}`));
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function fetchPublic(keys: string[] = inUse) {
+    setBusy(true);
+    setError("");
+    try {
+      const models = keys.map((k) => ({ provider: k.split(":")[0], model: k.slice(k.indexOf(":") + 1) }));
       const result = await call<{ fetchedAt: string; prices: { key: string; found: boolean; pricing?: Pricing }[] }>({ action: "public-prices", models });
       let found = 0;
       for (const p of result.prices) {
@@ -95,7 +129,7 @@ export default function AiModels() {
           setPrices((cur) => ({ ...cur, [p.key]: { ...toDraft(p.pricing!), tool: cur[p.key]?.tool || "", note: "Public list price" } }));
         }
       }
-      setNotice(`Filled ${found} of ${models.length} prices from the public list (${result.fetchedAt}). Review, edit if needed, then save. Search tool fees are never in the public list; enter them yourself.`);
+      setNotice((n) => (n.startsWith("Suggested") ? n + " " : "") + `Filled ${found} of ${models.length} prices from the public list (${result.fetchedAt}). Review, edit if needed, then save. Search tool fees are never in the public list; enter them yourself.`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -107,7 +141,7 @@ export default function AiModels() {
     setError("");
     setNotice("");
     try {
-      const route = (k: string) => (routes[k]?.provider ? { provider: routes[k].provider, model: routes[k].model } : null);
+      const route = (k: string) => (routes[k]?.provider && routes[k].model.trim() ? { provider: routes[k].provider, model: routes[k].model } : null);
       const settings = {
         defaults: { research: route("default:research"), synthesis: route("default:synthesis") },
         slots: Object.fromEntries((data?.slots || []).flatMap((s) => (route(s.id) ? [[s.id, route(s.id)]] : []))),
@@ -141,7 +175,7 @@ export default function AiModels() {
     const r = routes[key] || blank;
     return (
       <div className="f-ai-pick">
-        <select aria-label="Provider" value={r.provider} disabled={busy} onChange={(e) => setRoute(key, { provider: e.target.value })}>
+        <select aria-label="Provider" value={r.provider} disabled={busy} onChange={(e) => setRoute(key, { provider: e.target.value, model: e.target.value ? best[e.target.value] || "" : "" })}>
           <option value="">{inheritLabel}</option>
           {data.providers
             .filter((p) => stage !== "research" || p.research)
@@ -152,7 +186,7 @@ export default function AiModels() {
               </option>
             ))}
         </select>
-        <input aria-label="Model ID" placeholder="Exact model ID" maxLength={180} value={r.model} disabled={busy || !r.provider} onChange={(e) => setRoute(key, { model: e.target.value })} />
+        <input aria-label="Model ID" list={"models-" + (r.provider || "none")} placeholder="Exact model ID" maxLength={180} value={r.model} disabled={busy || !r.provider} onChange={(e) => setRoute(key, { model: e.target.value })} />
       </div>
     );
   };
@@ -174,6 +208,21 @@ export default function AiModels() {
             Master switches in Render: research {data.switches.research ? "on" : "off"}, drafting {data.switches.synthesis ? "on" : "off"} (PORT67_RESEARCH_ENABLED, PORT67_SYNTHESIS_ENABLED).
           </p>
         )}
+        {Object.entries(models).map(([p, ids]) => (
+          <datalist key={p} id={"models-" + p}>
+            {ids.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
+        ))}
+        <button className="f-button small" disabled={busy} onClick={() => void suggest(false)}>
+          <Sparkles size={16} /> Suggest best setup
+        </button>
+        {notes.map((n) => (
+          <p key={n} className="f-small">
+            {n}
+          </p>
+        ))}
         <h3>Stage defaults</h3>
         <div className="f-ai-grid">
           <div>
@@ -209,7 +258,7 @@ export default function AiModels() {
       <section className="f-panel">
         <div className="f-section-heading">
           <h2>Prices (USD per million tokens)</h2>
-          <button className="f-button small" disabled={busy || inUse.length === 0} onClick={() => void fetchPublic()}>
+          <button className="f-button small" disabled={busy || inUse.length === 0} onClick={() => void fetchPublic(inUse)}>
             <Download size={16} /> Fetch public prices
           </button>
         </div>

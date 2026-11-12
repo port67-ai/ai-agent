@@ -136,6 +136,9 @@ CHG-0006: first remote application run passed npm ci, tests, lint, types and bui
 | FAC-MKT-013 | Authorised next-stage scope | IN_PROGRESS | Exact-brief consent/revocation implemented and regression-tested; live provider unverified |
 | FAC-MKT-014 | Authorised next-stage scope | IN_PROGRESS | Reviewed source-grounded AI insight/direction drafting with human gates; model transport stubbed |
 | FAC-MKT-015 | Authorised next-stage scope | IN_PROGRESS | Producer setup and production configuration gates tested; actual Render storage/cloud activation pending |
+| FAC-MKT-016 | Owner-requested 2026-11-12 (CHG-0020) | IN_PROGRESS | Finding parser, per-source claims, gaps and confidence covered with stubbed transport; live provider behaviour with the new format unverified |
+| FAC-MKT-017 | Owner-requested 2026-11-12 (CHG-0021) | IN_PROGRESS | Strategy fields, key-message proof validation, AI contract and Direction page covered by tests; live model quality unverified |
+| FAC-MKT-018 | Owner-requested 2026-11-12 (CHG-0022) | IN_PROGRESS | Copy pack gates, evidence-bound validation and metered draft asset covered with stubbed transport; live output quality and the portal button in a browser unverified |
 | FAC-DEV-008 | Authorised next-stage scope | IN_PROGRESS | Local audit 0 high/critical, CI gate added; remote result in GitHub; 15 moderate findings tracked |
 
 FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION is not implied: see FOUNDATION_VERIFICATION.md for exact local evidence and RENDER_ACTIVATION.md for outstanding infrastructure tests. Earlier “acceptance pending” entries describe full requirements, not absence of bounded local tests.
@@ -148,6 +151,7 @@ FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION i
 | FAC-CST-009 | Owner-requested 2026-11-12 | IN_PROGRESS | Pre-dispatch metering, usage/pricing/unknowns, admin-only API, cache/tool accounting, export/archive and reconciliation tested; actual provider invoice comparison pending |
 | FAC-HAR-004 | Owner-requested 2026-11-12 | IN_PROGRESS | All four drafting adapters and grounded OpenAI/Gemini adapters tested with explicit transport fixtures; selected live models unverified |
 | FAC-HAR-005 | Owner-requested 2026-11-12 (CHG-0016) | IN_PROGRESS | Admin AI models page, per-job routing, public price suggestions and owner price overrides covered by tests/factory-ai-routing.test.ts; live public-price fetch and live providers unverified |
+| FAC-ART-006 | Owner-requested 2026-11-12 (CHG-0019) | IN_PROGRESS | Template MP4 render, approval gates, local store and download covered by tests/factory-video.test.ts with a real encode; Firebase Storage upload, memory use on the production instance and the portal buttons in a browser unverified |
 | FAC-TEN-009 | Owner-requested 2026-11-12 (CHG-0014) | IN_PROGRESS | Admin-managed producer registry by verified email, immediate revocation, no admin escalation, fail-closed registry and audit trail tested with fixtures; live Firebase/Firestore behaviour, staff MFA and client sign-up approval not yet verified |
 
 Supporting FAC-TEN-001/002/003/006, FAC-CST-001/002/004/008 and FAC-HAR-001/002 have additional working subsets. No full requirement is promoted to VERIFIED: no authenticated cloud provisioning or paid campaign occurred. See ACCOUNTS_VERIFICATION.md and ACCOUNTS_PROVIDERS_COSTS.md. One initial account per user; enterprise assignments/team RBAC and large media/cost infrastructure remain gaps.

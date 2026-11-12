@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.5.0  
+**Version:** 1.7.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1359,6 +1359,9 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | FAC-MKT-013 | Before a paid provider invocation, a producer explicitly authorises the exact current brief as PUBLIC. Brief changes revoke that authorisation; revocation or changed context prevents accepting late results. Structured contact/logo fields are excluded from synthesis. Free-text data must be reviewed by the producer. |
 | FAC-MKT-014 | Optional bounded AI insight and direction drafting uses reviewed public sources and accepted insights with validated reference IDs. Generated insights require producer acceptance; generated direction remains unshared until producer review, then customer approval. Record model/capability versions, input lineage, usage and failures. Preserve concurrent human edits. |
 | FAC-MKT-015 | Provide a producer-only setup/readiness view with variable names and safe status, never secret values. Production live access requires canonical HTTPS origin, durable-storage confirmation, strong session credentials and an explicit launch switch. Render remains the selected host. Configuration presence is not connection verification. |
+| FAC-MKT-016 | Grounded research returns claim-level findings: each finding is a single claim tied to the page it cites, with a short quote, so a reviewer approves or rejects claims through their own source rather than a pasted answer. A finding counts only if its page was a real citation. Research also records what it could not find (gaps) and a confidence rating, shown to producers. Research prompts are specific per segment and require the business website as a source for the business segment. |
+| FAC-MKT-017 | The campaign direction carries a positioning statement, audience segments with needs, key messages each with proof and the reviewed source IDs that support it, a tone of voice, and claims to avoid, in addition to the earlier fields. AI drafting must supply all of them and is rejected if a key message cites a source outside the direction's evidence. Earlier directions without these fields remain valid and keep their fingerprints. |
+| FAC-MKT-018 | A producer can draft an AI copy pack for an approved direction that has key messages and production drafts. Copy is written only from the approved direction and its reviewed sources; each item must express one of the direction's key messages, cite only that message's sources and contain no number absent from the supplied material, or the output is rejected with usage retained. The pack is a draft asset that follows the normal producer and customer approval; it is metered, capped and routed through the AI models page. Image, video and audio generation by a model are not implemented. |
 | FAC-DEV-008 | Gate CI on dependency audits with no high or critical findings. Document remaining findings and compatibility constraints; do not force unreviewed major migrations. |
 
 ## 25.2 Account-owned production and private costs — owner-requested extension
@@ -1375,10 +1378,11 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | ID | Requirement |
 |---|---|
 | FAC-TEN-009 | Three server-enforced access tiers, each requiring a verified individual sign-in: admin (the owner), producer (Port67 staff) and client (any verified sign-up, limited to their own account). Admins are set only through deployment configuration and can never be granted by the application. The admin adds and removes producers inside the app by verified email, with no redeploy. The role is re-evaluated on every request, so removing a producer, disabling a user or losing email verification takes effect immediately, and an unreadable staff registry never promotes anyone. Producers cannot read costs or manage the team. Team changes are recorded in an audit trail. Staff multi-factor authentication and approval of client sign-ups are future scope, not implemented. |
+| FAC-ART-006 | A producer can render an approved motion storyboard to an MP4 from the current approved direction. The render is a deterministic template render (brand colour, logo, direction text; no AI model and no third-party media) of three scenes totalling 15 seconds, so it has no model cost. Only a storyboard approved against the current approved direction can be rendered; the render is audited, one render runs at a time, and a project holds at most ten videos. The file is stored outside the workspace document (Firebase Storage in production) and is downloadable only through the authorised API: producers always, customers only for approved assets while delivery is not paused. Photographic or AI-generated video, audio and captions are future scope, not implemented. |
 
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, and CHG-0016 for 1.5.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, and CHG-0020 to CHG-0022 for 1.7.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

@@ -64,6 +64,30 @@ export default function Direction({
         >
           {[
             {
+              name: "positioning",
+              label: "Positioning statement",
+              value: s?.positioning || "",
+              rows: 2,
+            },
+            {
+              name: "audienceSegments",
+              label: "Audience segments and their needs",
+              value: s?.audienceSegments || "",
+              rows: 3,
+            },
+            {
+              name: "tone",
+              label: "Tone of voice",
+              value: s?.tone || "",
+              rows: 2,
+            },
+            {
+              name: "doNotClaim",
+              label: "Claims to avoid",
+              value: s?.doNotClaim || "",
+              rows: 2,
+            },
+            {
               name: "message",
               label: "Campaign message",
               value: s?.message || p.brief.objective,
@@ -124,7 +148,7 @@ export default function Direction({
                 defaultValue={f.value}
                 rows={f.rows}
                 maxLength={
-                  f.name === "cta" ? 100 : f.name === "message" ? 600 : 6000
+                  f.name === "cta" ? 100 : f.name === "message" || f.name === "positioning" || f.name === "tone" ? 600 : f.name === "doNotClaim" ? 1500 : f.name === "audienceSegments" ? 2500 : 6000
                 }
               />
             </Field>
@@ -175,6 +199,43 @@ export default function Direction({
           </span>
         </div>
         <h2 className="f-direction-message">{s.message}</h2>
+        {s.positioning && (
+          <div className="f-detail">
+            <span>Positioning</span>
+            <p>{s.positioning}</p>
+          </div>
+        )}
+        {s.keyMessages && s.keyMessages.length > 0 && (
+          <div className="f-detail">
+            <span>Key messages and their proof</span>
+            <ul>
+              {s.keyMessages.map((k) => (
+                <li key={k.message}>
+                  <strong>{k.message}</strong>
+                  <br />
+                  <small>
+                    Proof: {k.proof} ({k.sourceIds.length} source{k.sourceIds.length === 1 ? "" : "s"})
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {s.audienceSegments && (
+          <div className="f-detail">
+            <span>Audience segments</span>
+            <p className="f-prewrap">{s.audienceSegments}</p>
+          </div>
+        )}
+        {s.tone && (
+          <div className="f-detail">
+            <span>Tone of voice</span>
+            <p>{s.tone}</p>
+          </div>
+        )}
+        {s.doNotClaim && (
+          <div className="f-callout">Claims we will not make: {s.doNotClaim}</div>
+        )}
         <div className="f-detail">
           <span>Who we want to reach</span>
           <p>{s.audience}</p>

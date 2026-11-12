@@ -4,7 +4,10 @@ import { addTeamMember, listTeam, removeTeamMember, withTeamRole } from "./team"
 import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVerifier, type FactoryUserLookup } from "./identity";
 import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
 import { safeProviderConfiguration } from "./providers";
-import { resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices } from "./ai-routing";
+import { runContent } from "./content-run";
+import { renderVideo, SCENE_SECONDS } from "./video";
+import { getVideo, putVideo, videoKey } from "./video-store";
+import { resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
 import { runSynthesis } from "./synthesis-run";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
@@ -39,6 +42,7 @@ import {
   type Project,
   type ResearchRun,
   type Segment,
+  type Video,
 } from "./model";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
@@ -388,6 +392,7 @@ export async function handleFactory(
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       if(request.method==="GET") return json(await routingOverview(repository));
       if(data.action==="save") { await saveRouting(repository,data.settings,a.subject); return json(await routingOverview(repository)); }
+      if(data.action==="suggest") return json(await suggestSetup());
       if(data.action==="public-prices") return json(await suggestPublicPrices(Array.isArray(data.models)?data.models:[]));
       return json({error:"Unknown AI models action"},400);
     }
@@ -532,6 +537,38 @@ export async function handleFactory(
           },
         });
       }
+      if (path[2] === "video" && request.method === "POST") {
+        operator(a);
+        if (a.demo) throw new Error("Video rendering is disabled in synthetic demo");
+        const asset = p.assets.find((x) => x.id === data.assetId);
+        const strategy = p.strategies.at(-1);
+        if (!asset || asset.kind !== "motion") throw new Error("Choose a motion storyboard to render");
+        if (asset.status !== "approved" || !strategy || strategy.status !== "approved" || strategy.hash !== asset.strategyHash)
+          throw new Error("Only a storyboard approved against the current approved direction can be rendered");
+        if ((p.videos || []).length >= 10) throw new Error("This project has reached its video limit");
+        const bytes = await renderVideo(p, strategy);
+        const videoId = id();
+        const video: Video = { id: videoId, assetId: asset.id, assetHash: asset.hash, strategyHash: asset.strategyHash, key: videoKey(a.workspaceId, p.id, videoId), bytes: bytes.length, seconds: SCENE_SECONDS * 3, createdAt: new Date().toISOString(), createdBy: a.subject };
+        await putVideo(video.key, bytes);
+        await repo(a).mutate(a.workspaceId, (state) => {
+          const current = find(state.projects, projectId, a);
+          const live = current.assets.find((x) => x.id === asset.id);
+          if (!live || live.hash !== asset.hash || live.status !== "approved") throw new Error("Storyboard changed during render; render again");
+          (current.videos ||= []).push(video);
+          current.audit.push({ id: id(), at: video.createdAt, actor: a.subject, role: a.role, action: "video_rendered", detail: `Rendered ${video.seconds}s MP4 from ${asset.id}` });
+          current.revision++;
+        });
+        return json({ ok: true, video });
+      }
+      if (path[2] === "video" && path[3] && request.method === "GET") {
+        const view = projectView(p, a);
+        const video = (view.videos || []).find((x) => x.id === path[3]);
+        if (!video) throw new Error("Forbidden: video access");
+        if (a.role === "customer" && view.deliveryPaused) throw new Error("Asset depends on superseded direction");
+        return new Response(new Uint8Array(await getVideo(video.key)), {
+          headers: { "content-type": "video/mp4", "content-disposition": `attachment; filename="port67-${video.id}.mp4"`, "cache-control": "no-store", "x-content-type-options": "nosniff" },
+        });
+      }
       if (path[2] === "synthesis" && request.method === "POST") {
         operator(a);
         if (a.demo)
@@ -544,6 +581,8 @@ export async function handleFactory(
             },
             503,
           );
+        if (data.stage === "content")
+          return json({ project: projectView(await runContent(repo(a), a, projectId), a) });
         if (data.stage !== "insights" && data.stage !== "strategy")
           throw new Error("Unknown AI drafting stage");
         return json({
@@ -671,7 +710,8 @@ export async function handleFactory(
                 : "");
             record.status = error ? "failed" : "completed";
             if (error) record.error = error;
-            else
+            else if (result.gaps?.length) record.gaps = result.gaps;
+            if (!error)
               current.sources.push(
                 ...result.sources.map((source) => ({
                   ...source,

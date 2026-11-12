@@ -46,6 +46,9 @@ export type Source = {
   status: "unreviewed" | "supported" | "rejected";
   collectedAt: string;
   method: string;
+  /** Claim-level findings from grounded research, each tied to this source's URL. */
+  findings?: { claim: string; quote?: string }[];
+  confidence?: "limited" | "moderate" | "strong";
 };
 export type Insight = {
   accountId?: string;
@@ -59,6 +62,8 @@ export type Insight = {
   confidence: "limited" | "moderate" | "strong";
   createdAt: string;
 };
+/** A message the campaign will say, the proof behind it, and the reviewed sources that support that proof. */
+export type KeyMessage = { message: string; proof: string; sourceIds: string[] };
 export type Strategy = {
   accountId?: string;
   projectId?: string;
@@ -77,6 +82,12 @@ export type Strategy = {
   insightIds: string[];
   hypothesis: string;
   uncertainties: string;
+  /** Richer strategy fields. Optional so earlier directions stay valid and keep their fingerprints. */
+  positioning?: string;
+  audienceSegments?: string;
+  keyMessages?: KeyMessage[];
+  tone?: string;
+  doNotClaim?: string;
   createdAt: string;
   hash: string;
   feedback?: string;
@@ -115,6 +126,18 @@ export type Asset = {
   approvedBy?: string;
   approvedAt?: string;
 };
+/** A rendered MP4 of an approved motion storyboard. The file is stored outside the workspace document. */
+export type Video = {
+  id: string;
+  assetId: string;
+  assetHash: string;
+  strategyHash: string;
+  key: string;
+  bytes: number;
+  seconds: number;
+  createdAt: string;
+  createdBy: string;
+};
 export type Capability = {
   accountId?: string;
   projectId?: string;
@@ -140,7 +163,7 @@ export type ResearchRun = {
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "research" | "insights" | "strategy";
+  stage?: "research" | "insights" | "strategy" | "content";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -155,6 +178,8 @@ export type ResearchRun = {
   provider: string;
   model: string;
   usage?: Record<string, number>;
+  /** What the researcher looked for and could not find or confirm. */
+  gaps?: string[];
   error?: string;
 };
 export type Project = {
@@ -179,6 +204,7 @@ export type Project = {
   strategies: Strategy[];
   tasks: ProductionTask[];
   assets: Asset[];
+  videos?: Video[];
   capabilities: Capability[];
   audit: Audit[];
   runs: ResearchRun[];

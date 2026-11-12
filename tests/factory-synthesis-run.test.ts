@@ -95,10 +95,17 @@ async function main() {
         cta: "Learn more",
         hypothesis: "Clearer communication may improve understanding",
         uncertainties: "Limited evidence; no performance proof",
+        positioning: "For buyers, a clear introduction",
+        audienceSegments: "New buyers",
+        keyMessages: [{ message: "Explain clearly", proof: "Source describes the product", sourceIds: [p.sources[0].id] }],
+        tone: "Plain",
+        doNotClaim: "No guarantees",
         evidenceIds: [p.sources[0].id],
         insightIds: [accepted.id],
       });
     const strategy = await runSynthesis(repo, op, p.id, "strategy");
+    assert.equal(strategy.strategies.at(-1)?.positioning, "For buyers, a clear introduction");
+    assert.equal(strategy.strategies.at(-1)?.keyMessages?.[0].sourceIds[0], p.sources[0].id);
     assert.equal(
       strategy.strategies.at(-1)?.status,
       "draft",
@@ -124,6 +131,11 @@ async function main() {
         cta: "Learn more",
         hypothesis: "A hypothesis",
         uncertainties: "Limited evidence",
+        positioning: "Positioning",
+        audienceSegments: "Segments",
+        keyMessages: [{ message: "M", proof: "P", sourceIds: [p.sources[0].id] }],
+        tone: "Tone",
+        doNotClaim: "None",
         evidenceIds: [p.sources[0].id],
         insightIds: [accepted.id],
       });
