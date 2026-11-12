@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.2.0  
+**Version:** 1.3.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1361,9 +1361,17 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | FAC-MKT-015 | Provide a producer-only setup/readiness view with variable names and safe status, never secret values. Production live access requires canonical HTTPS origin, durable-storage confirmation, strong session credentials and an explicit launch switch. Render remains the selected host. Configuration presence is not connection verification. |
 | FAC-DEV-008 | Gate CI on dependency audits with no high or critical findings. Document remaining findings and compatibility constraints; do not force unreviewed major migrations. |
 
+## 25.2 Account-owned production and private costs — owner-requested extension
+
+| ID | Requirement |
+|---|---|
+| FAC-TEN-008 | Verified individual sign-up/sign-in maps to a server-derived account ID used consistently across briefs, research, insights, builds, tasks, assets and exports. Customers cannot change ownership or access other accounts; agency producers use server-authorised account selection. One account per user initially; team membership is extensible scope, not implemented parity. |
+| FAC-CST-009 | Every managed model/tool API dispatch records a durable private admin ledger event before invocation, with provider/model/account/project/run linkage, usage, versioned prices and failures. Owner-only reports distinguish estimated, unknown and reconciled actual costs; customers/producers cannot read costs. Archive without losing history. Infrastructure invoices remain separately reconciled; no absent usage/rate is treated as free. |
+| FAC-HAR-004 | Explicit stage routing supports OpenAI, Anthropic Claude, DeepSeek and Gemini for reviewed-context drafting. Research uses only implemented grounded adapters (OpenAI/Gemini initially). Unsupported model/task combinations fail visibly. All adapters obey shared authorisation, metering, evidence validation and human approval gates; no hidden paid retries/fallbacks. |
+
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, and CHG-0008 for 1.2.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, and CHG-0009 for 1.3.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

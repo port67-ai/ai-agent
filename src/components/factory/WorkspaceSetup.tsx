@@ -154,8 +154,8 @@ export default function WorkspaceSetup() {
             <li>
               <strong>Configure research and drafting.</strong>
               <p>
-                Add your approved OpenAI key and model names to Render
-                Environment. Enable research and synthesis separately; paid
+                Add your approved provider keys, stage provider choices and model names to Render
+                Environment. OpenAI and Gemini support grounded research; all four providers support reviewed-context drafting. Enable research and synthesis separately; paid
                 tasks also require authorisation of the exact project context.
               </p>
             </li>

@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {serializeAccount,hydrateAccount} from '../src/lib/factory/storage-schema';
+import {createProject} from '../src/lib/factory/engine';
+const a={subject:'a',role:'operator' as const,workspaceId:'acct_a',accountId:'acct_a'};
+const p=createProject({business:'test',objective:'test',contact:'x@y.test'},a);
+const stored=serializeAccount('acct_a',{schemaVersion:1,projects:[p],invitations:[]});
+assert.equal(stored.metadata.accountId,'acct_a');assert.equal(stored.metadata.projectIds[0],p.id);assert.equal('brief' in stored.metadata,false);
+assert.equal(hydrateAccount('acct_a',stored.metadata,stored.projects).projects[0].accountId,'acct_a');
+assert.throws(()=>serializeAccount('acct_other',{schemaVersion:1,projects:[p],invitations:[]}),/scope/);
+assert.throws(()=>hydrateAccount('acct_other',stored.metadata,stored.projects),/scope/);
+assert.throws(()=>hydrateAccount('acct_a',stored.metadata,[]),/Missing/);
+assert.throws(()=>serializeAccount('acct_a',{schemaVersion:1,projects:[p,p],invitations:[]}),/Duplicate/);
+console.log('Account storage document contracts passed');

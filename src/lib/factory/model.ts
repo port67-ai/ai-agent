@@ -1,3 +1,4 @@
+import type { ApiCall } from "./costs";
 export const segments = [
   "brand",
   "customer",
@@ -6,6 +7,10 @@ export const segments = [
 ] as const;
 export type Segment = (typeof segments)[number];
 export type Principal = {
+  accountId?: string;
+  identity?: "firebase";
+  admin?: boolean;
+  issuedAt?: number;
   subject: string;
   workspaceId: string;
   role: "operator" | "customer";
@@ -26,6 +31,8 @@ export type Brief = {
   logoData?: string;
 };
 export type Source = {
+  accountId?: string;
+  projectId?: string;
   researchRunId?: string;
   contextHash?: string;
   id: string;
@@ -39,6 +46,8 @@ export type Source = {
   method: string;
 };
 export type Insight = {
+  accountId?: string;
+  projectId?: string;
   status?: "draft" | "reviewed" | "rejected";
   generatedByRunId?: string;
   id: string;
@@ -49,6 +58,8 @@ export type Insight = {
   createdAt: string;
 };
 export type Strategy = {
+  accountId?: string;
+  projectId?: string;
   generatedByRunId?: string;
   id: string;
   version: number;
@@ -71,6 +82,8 @@ export type Strategy = {
   approvedAt?: string;
 };
 export type ProductionTask = {
+  accountId?: string;
+  projectId?: string;
   id: string;
   role: string;
   strategyId: string;
@@ -82,6 +95,8 @@ export type ProductionTask = {
   agentVersion: string;
 };
 export type Asset = {
+  accountId?: string;
+  projectId?: string;
   id: string;
   version: number;
   kind: "svg" | "motion" | "copy";
@@ -99,6 +114,8 @@ export type Asset = {
   approvedAt?: string;
 };
 export type Capability = {
+  accountId?: string;
+  projectId?: string;
   id: string;
   name: string;
   reason: string;
@@ -107,6 +124,8 @@ export type Capability = {
   createdAt: string;
 };
 export type Audit = {
+  accountId?: string;
+  projectId?: string;
   id: string;
   at: string;
   actor: string;
@@ -115,6 +134,8 @@ export type Audit = {
   detail: string;
 };
 export type ResearchRun = {
+  accountId?: string;
+  projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
   stage?: "research" | "insights" | "strategy";
@@ -135,6 +156,8 @@ export type ResearchRun = {
   error?: string;
 };
 export type Project = {
+  accountId?: string;
+  createdBy?: string;
   aiConsent?: {
     briefHash: string;
     dataClass: "PUBLIC";
@@ -166,7 +189,13 @@ export type Invitation = {
   expires: number;
   revoked: boolean;
 };
+export type Account = {
+  id: string; ownerUid: string; email?: string; createdAt: string;
+};
 export type Database = {
+  accounts?: Account[];
+  apiCalls?: ApiCall[];
+  ledgerArchives?: string[];
   schemaVersion: 1;
   projects: Project[];
   invitations: Invitation[];

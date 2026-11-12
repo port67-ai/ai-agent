@@ -1,0 +1,48 @@
+# Accounts, provider routing and owner costs
+
+CHG-0009; PRD 1.3.0. Render remains the host. Dedicated Firebase project confirmed by owner screenshot: **ai-agency-3671b**. This release prepares the integration; no authenticated cloud access or Render secrets were available in the coding workspace.
+
+## Activate the dedicated project
+
+1. In Firebase → Build → Firestore Database, check whether `(default)` exists. Keep an existing location. For a new database choose production mode and a region suitable for client residency/latency; London `europe-west2` is the implementation recommendation for this UK business, not a provisioned fact. Do not recreate an existing database or use the legacy booking project.
+2. Use `config/firebase-factory/firebase.json`, never the root Firebase config. It contains dedicated server-only prototype rules and project field-index exclusions. Authenticated Firebase CLI inspection: `npx -y firebase-tools@latest firestore:databases:list --project ai-agency-3671b`. After reviewing the target, deploy only the dedicated Firestore rules/indexes: `npx -y firebase-tools@latest deploy --only firestore --project ai-agency-3671b --config config/firebase-factory/firebase.json`. This does not create a missing database or enable Auth automatically. No deployment occurred in this session.
+3. Enable Firebase Authentication → Email/Password and add `ai-agent-7k04.onrender.com` to authorised domains. Register a Firebase Web app to obtain public web configuration for the **new individual sign-in feature** (the server storage adapter alone did not need a Web app). Set Render `PORT67_FIREBASE_WEB_API_KEY` and `PORT67_FIREBASE_AUTH_DOMAIN=ai-agency-3671b.firebaseapp.com`.
+4. Configure server credentials privately in Render: `PORT67_FIREBASE_SERVICE_ACCOUNT` is the service-account JSON for this dedicated project. Use least-privilege Firestore data access plus required Firebase Auth user lookup/verification permissions; do not grant generic Owner. Do not send the JSON or private keys through chat/GitHub. ADC mode is explicit and requires an actual runtime identity; Render does not supply one by default. Select `PORT67_STORAGE=firebase`, `PORT67_FIREBASE_PROJECT_ID=ai-agency-3671b` and database `(default)`. Set server-only confirmation only after reviewing actual IAM/rules. Apply the origin/session/launch settings in RENDER_ACTIVATION.md.
+5. Create your own account through the portal and verify the email. Copy **your Firebase Authentication UID** from the console to protected Render `PORT67_ADMIN_UIDS`. Only this server allowlist grants the private cost area. Optional `PORT67_OPERATOR_UIDS` grants producers access to account selection/managed production, without costs. Existing shared password access is legacy producer-only and never grants admin. Role removal, disabled accounts and revoked sessions are rechecked server-side. Customer signup cannot set roles/account ownership.
+6. Restart/redeploy and verify project persistence, two-account isolation, invitation revocation and owner-only cost access before real customer use. Account signup may work before backend activation, but server session exchange remains launch-gated. Firebase client rules deny direct Firestore access, even for signed-in users; the app uses its server API.
+
+I've set up prototype Security Rules to keep the data in Firestore safe. They are designed to be secure for a server-only data path by denying all browser reads and writes. However, you should review and verify them before broadly sharing your app. If you'd like, I can help you harden these rules. The rules file is prepared in the repository, not deployed; Admin SDK security depends on IAM and server checks.
+
+## Data ownership and storage
+
+Firebase UID maps deterministically to `acct_` plus a SHA-256-derived 32-character ID. One initial account per verified user; team membership/organisation merging is future work. The server derives `accountId`, `createdBy` and workspace scope; posted ownership fields are ignored. A customer can create briefs and approve/revise their own work, but cannot run paid production agents. Allowlisted agency producers select existing accounts from the private server-maintained directory.
+
+New Firestore layout:
+
+- `factory_accounts_v2/{accountId}`: schema version, accountId, project ID index and scoped invitations.
+- `factory_accounts_v2/{accountId}/projects/{projectId}`: brief plus sources, insights, direction versions, production tasks, assets, runs and audit arrays. Each component carries accountId/projectId. Cross-project evidence/asset references are validated by the engine. Large binary uploads are not introduced here.
+- `factory_system_v1/factory-account-directory`: account IDs, owner UIDs and private contact emails, producer access only through server API.
+- `factory_system_v1/factory-admin-ledger`: active cost rows and archive index; `factory-cost-archive-*` documents retain historical batches, owner access only.
+- Existing legacy workspace snapshots remain in `factory_workspaces_v1`, without automatic transfer. Local storage remains an atomic single-process equivalent. Demo remains disposable and separate.
+
+Account mutations read metadata/project documents and commit within one Firestore transaction. Project count (20), aggregate snapshot bound (700KB less active-run reservations), source/asset limits and single-account ownership remain explicit MVP bounds. Document-per-component expansion, team membership and larger external media storage are future migrations. Server-only access avoids exposing private costs or internal drafts in customer-readable documents.
+
+## Providers and costs
+
+All four keys use the exact `PORT67_*_API_KEY` names in config/factory.env.example. `PORT67_RESEARCH_PROVIDER=openai|gemini`; `PORT67_SYNTHESIS_PROVIDER=openai|anthropic|deepseek|gemini`. Set each stage's exact model ID from the provider account. No automatic model fallback or retry. OpenAI Responses/web-search/json-schema, Anthropic output_config JSON schema, DeepSeek JSON-object and Gemini responseJsonSchema/google_search require compatible selected models. Unsupported combinations fail rather than simulate research. Grounded URLs remain unreviewed until a producer reviews their substance; citations alone are not proof.
+
+Every managed AI invocation reserves a private ledger row before the network request; unavailable ledger storage prevents dispatch. Both research and insight/direction drafting record account/project/run, actor, provider/model, request ID, usage, dated prices and failures. Cached reads and cache creation are separated; Gemini reasoning tokens are included. Missing tokens, search counts, cache rates or model rates result in **unknown cost**, never zero. A provider transport success can still yield rejected project output; the charge remains tracked. There are no paid production-model calls yet: current SVG/HTML/copy production is template-based. Any future paid collector/render/model must use the same metering gateway.
+
+Prices are **USD per million tokens**, plus USD per tool call, configured through `PORT67_MODEL_PRICING_JSON`. Format example with deliberately fictitious values/model names (not vendor rates):
+
+```json
+{"openai:YOUR_MODEL_ID":{"updatedAt":"2026-11-12","inputPerMillion":1,"outputPerMillion":2,"cachedInputPerMillion":0.5,"toolPerCall":0.01},"anthropic:YOUR_MODEL_ID":{"updatedAt":"2026-11-12","inputPerMillion":1,"outputPerMillion":2,"cachedInputPerMillion":0.1,"cacheCreationPerMillion":1.25}}
+```
+
+Enter verified current contract rates, including cache tiers and tool pricing. Price snapshots attach at reservation and do not silently rewrite history. Absent prices still permit tracked calls, with unknown spend. Private API costs shows account/project/provider/model breakdown, raw ledger, export and explicit actual-invoice reconciliation in integer microUSD (1 USD = 1,000,000 microUSD). Estimates exclude taxes, provider credits/discounts and unsupported billing dimensions; reconcile actual charges. This is managed model API cost tracking, not an automatic Firebase/Render/Stripe invoice integration or a full company P&L. Invocation limits are not monetary budget enforcement.
+
+The active ledger stops at 150 records rather than losing metering. Owner can **Archive completed ledger batch**: durable copies are written before the active index changes; existing history remains included in reports and reconciliation. Calls still in flight cannot be archived; interrupted reservations older than two minutes become unknown in archives. Maximum 100 retained batches, then an explicit ledger migration is required. Export does not delete data. A failed index step leaves originals intact and may leave an unindexed duplicate copy for operator investigation; reporting uses indexed copies only.
+
+## First real campaign acceptance
+
+Configure credentials/models/rates, then use a public-data test business. Customer signs up/verifies email and submits a brief. Producer selects the account, confirms PUBLIC context, researches four segments, reviews URLs/claims, drafts/accepts insights, drafts/reviews/shares direction. Customer approves that version. Producer generates/reviews/shares assets; customer approves and downloads them. Owner checks every invocation/unknown in Private API costs, reconciles one test invoice item, restarts the service and checks persistence. Repeat a second account and guessed-project-ID test. Record dated model/database/Render evidence before claiming live acceptance. Tests in this branch use explicit transport/identity fixtures; no actual paid campaign was run here.

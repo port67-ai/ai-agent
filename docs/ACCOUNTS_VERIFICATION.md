@@ -1,0 +1,17 @@
+# Accounts/providers/costs verification — 2026-11-12
+
+Branch feat/accounts-provider-costs; base f251cad; exact source/merge references in Git. CHG-0009; FAC-TEN-008/FAC-CST-009/FAC-HAR-004. This document records bounded evidence, not live production certification.
+
+Local passing checks: npm test (existing suite plus provider, identity, account scope/API, storage schema, metering, four-provider campaign and archive tests); npm run check:factory; npx tsc --noEmit; npm run build. Fresh production-browser run: PORT67_TEST_ORIGIN=http://localhost:3013 npm run test:browser. Final result must be checked in GitHub CI; screenshots are CI artifacts. Native npm audit --audit-level=high reports no high/critical; 15 moderate findings remain as in FOUNDATION_VERIFICATION.md.
+
+Identity/API tests use injected verified-token/user lookups, never a bypass in HTTP input. They exercise sign-up identity mapping, forged role/ownership rejection, two accounts/guessed IDs, producer account selection, owner-only costs/export, role removal, disabled sessions, scoped invitation sign-in/revocation. Browser has the real synthetic producer/customer journey plus explicitly mocked account/admin UI rendering. It does not claim real Firebase email delivery/sign-in.
+
+Full campaign integration exercises customer brief -> producer account selection -> PUBLIC authorisation -> four research segments (OpenAI/Gemini) -> source review -> Claude insights -> human acceptance -> DeepSeek direction -> sharing/customer approval -> three assets -> sharing/approval/download. Six mocked provider dispatches equal six private cost records, with correct account/project/model linkage. Test fixture research is explicitly synthetic; it is not external evidence or a paid campaign.
+
+Independent read-only review found account invitation namespace lookup, missing research-tool costs and Claude creation-only cache accounting. Tests reproduced each failure before fixes. Active-ledger capacity concern fixed with durable archival: test fills150 rows, sees dispatch denied, archives, retains totals/reconciliation and resumes at151. Failed copy/index mutations preserve originals; no deletion is implicit.
+
+Firestore emulator test exercises actual Admin SDK transactions/reload, separated account documents, concurrent mutations, foreign-scope rejection and anonymous/authenticated client-deny rules. Local launch failed because storage.googleapis.com emulator download was denied403 by managed network, after fixing writable cache/port. The test is included in CI with Java21 and a demo-only project; no live project is involved. Remote CI outcome is authoritative and must be observed before claiming it passed.
+
+Actual cloud/provider verification remains blocked: no Firebase login, service-account binding or outbound identity in this coding environment; Render secrets entered by owner are not available here. No real database creation, cloud rules deployment, paid API invocation or provider invoice reconciliation occurred. Dedicated deployment/run steps: ACCOUNTS_PROVIDERS_COSTS.md. Deny-all browser rules still require IAM/server review before broad launch.
+
+Remote CI at commit120c947, run43209732747/job131153966558: Firestore emulator persistence/transactions and anonymous/authenticated client-deny tests passed. Remaining build/browser steps are recorded separately by GitHub. Follow-up preserves original Firebase auth_time for revocation checks instead of cookie exchange time; regression reproduced RED→GREEN.

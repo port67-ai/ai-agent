@@ -32,3 +32,5 @@ Open `/portal` to explore **Research-led marketing content and creative producti
 Run `npm test`, `npm run check:factory`, `npx tsc --noEmit` and `npm run build`. For browser acceptance, start the app, install Chromium with `npx playwright install chromium` if needed, then run `npm run test:browser`. A GitHub workflow runs these checks automatically. Test screenshots remain under ignored `work/screenshots` or GitHub Actions artifacts.
 
 Live-foundation setup for the existing Render service: [Render activation](docs/RENDER_ACTIVATION.md). Producer Workspace setup shows safe readiness checks; optional AI drafts require reviewed evidence and explicit public-data authorisation. [Verification and remaining limits](docs/FOUNDATION_VERIFICATION.md).
+
+Individual accounts, four-provider routing and owner-only API costs: [setup and boundaries](docs/ACCOUNTS_PROVIDERS_COSTS.md), [verification](docs/ACCOUNTS_VERIFICATION.md). Firebase project ai-agency-3671b; hosting remains Render.

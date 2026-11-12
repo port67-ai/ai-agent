@@ -139,3 +139,15 @@ CHG-0006: first remote application run passed npm ci, tests, lint, types and bui
 | FAC-DEV-008 | Authorised next-stage scope | IN_PROGRESS | Local audit 0 high/critical, CI gate added; remote result in GitHub; 15 moderate findings tracked |
 
 FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION is not implied: see FOUNDATION_VERIFICATION.md for exact local evidence and RENDER_ACTIVATION.md for outstanding infrastructure tests. Earlier “acceptance pending” entries describe full requirements, not absence of bounded local tests.
+
+## CHG-0009 — account-owned production and owner costs
+
+| Requirement | Intent | Delivery | Evidence / remaining verification |
+|---|---|---|---|
+| FAC-TEN-008 | Owner-requested 2026-11-12 | IN_PROGRESS | Verified-identity contracts, two-account isolation, producer selection, invitations and ownership tested with fixtures; real Firebase Auth/provider login pending |
+| FAC-CST-009 | Owner-requested 2026-11-12 | IN_PROGRESS | Pre-dispatch metering, usage/pricing/unknowns, admin-only API, cache/tool accounting, export/archive and reconciliation tested; actual provider invoice comparison pending |
+| FAC-HAR-004 | Owner-requested 2026-11-12 | IN_PROGRESS | All four drafting adapters and grounded OpenAI/Gemini adapters tested with explicit transport fixtures; selected live models unverified |
+
+Supporting FAC-TEN-001/002/003/006, FAC-CST-001/002/004/008 and FAC-HAR-001/002 have additional working subsets. No full requirement is promoted to VERIFIED: no authenticated cloud provisioning or paid campaign occurred. See ACCOUNTS_VERIFICATION.md and ACCOUNTS_PROVIDERS_COSTS.md. One initial account per user; enterprise assignments/team RBAC and large media/cost infrastructure remain gaps.
+
+CHG-0009 remote evidence: Firestore emulator transaction/reload/client-deny suite passed at120c947, run43209732747. This verifies the adapter against an emulator, not provisioning or operation of ai-agency-3671b. Sign-in-time revocation regression added in follow-up.

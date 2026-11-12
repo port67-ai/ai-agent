@@ -1,3 +1,5 @@
+import { meteredModelCall } from "./metering";
+import { providerSelection } from "./providers";
 import { capabilityRegistry } from "./registry";
 import {
   access,
@@ -59,10 +61,8 @@ export async function runSynthesis(
       stage,
       at: new Date().toISOString(),
       status: "running",
-      provider: "OpenAI",
-      model:
-        process.env.PORT67_SYNTHESIS_MODEL ||
-        process.env.PORT67_RESEARCH_MODEL!,
+      provider: providerSelection("synthesis").provider,
+      model: providerSelection("synthesis").model,
       leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
       contextHash: digest(JSON.stringify(current.brief)),
       contextSnapshot: structuredClone(current.brief),
@@ -76,7 +76,7 @@ export async function runSynthesis(
   });
   let error = "";
   try {
-    const result = await generateSynthesis(reservation.project, stage);
+    const result = await meteredModelCall(repo,a,reservation.project,reservation.run,()=>generateSynthesis(reservation.project, stage));
     error = await repo.mutate(a.workspaceId, (state) => {
       const index = state.projects.findIndex((p) => p.id === projectId);
       const current = state.projects[index];

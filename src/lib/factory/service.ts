@@ -1,3 +1,8 @@
+import { meteredModelCall } from "./metering";
+import { registerAccount, listAccounts, canCreateProject } from "./accounts";
+import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVerifier, type FactoryUserLookup } from "./identity";
+import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
+import { providerSelection, safeProviderConfiguration } from "./providers";
 import { runSynthesis } from "./synthesis-run";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
@@ -72,11 +77,22 @@ function login(request: Request, principal: Principal) {
 function repo(a: Principal): Repository {
   return a.demo ? demoRepository : repository;
 }
-async function principal(request: Request): Promise<Principal | null> {
+async function principal(request: Request, lookup?: FactoryUserLookup): Promise<Principal | null> {
   const p = readSession(cookie(request), sessionKey());
   if (!p) return null;
   if (p.demo) return demoEnabled() ? p : null;
   if (!liveReady()) return null;
+  if (p.identity === "firebase") {
+    try {
+      const identity = await revalidateIdentitySession(p.subject, p.issuedAt || 0, lookup);
+      if (identity.role === "customer" && p.workspaceId !== identity.accountId) return null;
+      if (identity.role === "operator" && p.workspaceId !== identity.accountId) {
+        const accounts=await listAccounts(repository, {...p, role:"operator"});
+        if (!accounts.some(x=>x.id===p.workspaceId)) return null;
+      }
+      return {...p, role:identity.role, admin:identity.admin, accountId:p.workspaceId};
+    } catch { return null; }
+  }
   if (p.role === "customer") {
     const db = await repository.read(p.workspaceId);
     const tokenHash = p.subject;
@@ -192,6 +208,8 @@ async function seed(a: Principal) {
 export async function handleFactory(
   request: Request,
   path: string[],
+  identityVerifier?: FactoryTokenVerifier,
+  identityLookup?: FactoryUserLookup,
 ): Promise<Response> {
   try {
     if (!["GET", "POST"].includes(request.method))
@@ -208,13 +226,13 @@ export async function handleFactory(
       )
     )
       return json({ error: "Cross-origin request rejected" }, 403);
-    const a = await principal(request);
+    const a = await principal(request, identityLookup);
     const data = request.method === "POST" ? await body(request) : {};
     const visitorName = "port67_factory_visitor";
     const visitor = readSession(cookie(request, visitorName), sessionKey());
     if (request.method === "POST" && route !== "logout") {
       if (a) rate(a.subject, 100);
-      else if (["login", "client-login", "demo"].includes(route)) {
+      else if (["login", "client-login", "demo", "identity-login"].includes(route)) {
         if (!visitor || visitor.workspaceId !== "visitor")
           return json({ error: "Open the portal before signing in" }, 401);
         rate("visitor:" + visitor.subject, 30);
@@ -230,6 +248,20 @@ export async function handleFactory(
           );
       }
     }
+    if (route === "auth-config" && request.method === "GET") {
+      const projectId=process.env.PORT67_FIREBASE_PROJECT_ID;
+      const apiKey=process.env.PORT67_FIREBASE_WEB_API_KEY;
+      const authDomain=process.env.PORT67_FIREBASE_AUTH_DOMAIN;
+      if(projectId!=="ai-agency-3671b" || !apiKey || authDomain!==`${projectId}.firebaseapp.com`)
+        return json({error:"Account sign-in is not configured"},503);
+      return json({apiKey,authDomain,projectId});
+    }
+    if (route === "identity-login" && request.method === "POST") {
+      if(!liveReady()) return json({error:"Live workspace is not configured"},503);
+      const identity=await verifyFactoryIdentity(text(data.idToken,"identity token",16384,true),identityVerifier);
+      await registerAccount(repository,{id:identity.accountId,ownerUid:identity.uid,...(identity.email?{email:identity.email}:{}),createdAt:new Date().toISOString()});
+      return login(request,{subject:identity.uid,identity:"firebase",role:identity.role,admin:identity.admin,accountId:identity.accountId,workspaceId:identity.accountId,issuedAt:identity.authenticatedAt!,expires:Date.now()+8*3600000});
+    }
     if (route === "session" && request.method === "GET") {
       const response = json({
         principal: a,
@@ -238,6 +270,7 @@ export async function handleFactory(
           liveReady: liveReady(),
           researchReady: researchReady(),
           synthesisReady: synthesisReady(),
+          providers: safeProviderConfiguration(),
           storage:
             process.env.PORT67_STORAGE === "firebase"
               ? "Firebase"
@@ -307,8 +340,12 @@ export async function handleFactory(
     if (route === "client-login" && request.method === "POST") {
       if (!liveReady())
         return json({ error: "Live workspace is not configured" }, 503);
-      const hash = digest(text(data.token, "invitation", 200, true));
-      const db = await repository.read("port67");
+      const invitationToken=text(data.token,"invitation",200,true);
+      const parts=invitationToken.split(".");
+      if(parts.length>2 || (parts.length===2 && !/^acct_[a-f0-9]{32}$/.test(parts[0]))) return json({error:"Invitation is invalid, expired or revoked"},401);
+      const workspace=parts.length===2?parts[0]:"port67";
+      const hash = digest(invitationToken);
+      const db = await repository.read(workspace);
       const invite = db.invitations.find(
         (i) => i.hash === hash && !i.revoked && i.expires > Date.now(),
       );
@@ -326,6 +363,23 @@ export async function handleFactory(
       });
     }
     if (!a) return json({ error: "Sign in to continue" }, 401);
+    if (route === "admin/costs" || route === "admin/costs/export") {
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      if(route === "admin/costs/export" && request.method==="GET") return new Response(JSON.stringify({exportedAt:new Date().toISOString(),calls:await exportApiCalls(repository)}),{headers:{"content-type":"application/json","content-disposition":"attachment; filename=port67-api-costs.json","cache-control":"no-store","x-content-type-options":"nosniff"}});
+      if(request.method==="POST" && data.action==="archive") await archiveApiCalls(repository,a.subject);
+      else if(request.method==="POST") {
+        await reconcileApiCall(repository,text(data.id,"call",100,true),{actualMicroUsd:Number(data.actualMicroUsd),reference:text(data.reference,"reference",100,true),actor:a.subject});
+      }
+      const q=new URL(request.url).searchParams;
+      return json(await adminCostReport(repository,{accountId:q.get("accountId")||undefined,projectId:q.get("projectId")||undefined,provider:q.get("provider")||undefined,model:q.get("model")||undefined,offset:q.has("offset")?Number(q.get("offset")):undefined,limit:q.has("limit")?Number(q.get("limit")):undefined}));
+    }
+    if(route === "accounts") {
+      const accounts=await listAccounts(repository,a);
+      if(request.method==="GET") return json({accounts});
+      const target=text(data.accountId,"account ID",100,true);
+      if(!accounts.some(x=>x.id===target)) return json({error:"Forbidden: account selection"},403);
+      return login(request,{...a,accountId:target,workspaceId:target});
+    }
     if (route === "readiness" && request.method === "GET") {
       operator(a);
       return json(configurationStatus());
@@ -349,19 +403,19 @@ export async function handleFactory(
       const db = await repo(a).read(a.workspaceId);
       return json({
         projects: db.projects
-          .filter((p) => a.role === "operator" || p.id === a.projectId)
+          .filter((p) => a.role === "operator" || a.identity === "firebase" || p.id === a.projectId)
           .map((p) => projectView(p, a)),
       });
     }
     if (route === "projects" && request.method === "POST") {
-      operator(a);
+      if(!canCreateProject(a)) operator(a);
       const p = createProject(data, a);
       await repo(a).mutate(a.workspaceId, (db) => {
         if (db.projects.length >= 20)
           throw new Error("Workspace project limit reached");
         db.projects.push(p);
       });
-      return json({ project: p }, 201);
+      return json({ project: projectView(p,a) }, 201);
     }
     if (path[0] === "projects" && path[1]) {
       const projectId = path[1];
@@ -375,7 +429,7 @@ export async function handleFactory(
           throw new Error(
             "Use demo role switching; real invitations are disabled in demo",
           );
-        const token = randomBytes(32).toString("base64url");
+        const token = (a.workspaceId.startsWith("acct_") ? a.workspaceId+"." : "") + randomBytes(32).toString("base64url");
         await repository.mutate(a.workspaceId, (state) => {
           for (const i of state.invitations)
             if (i.projectId === p.id) i.revoked = true;
@@ -413,7 +467,7 @@ export async function handleFactory(
             x.strategyHash === direction.hash,
         );
         return json({
-          project: { id: p.id, business: p.brief.business },
+          project: { id: p.id, accountId: p.accountId || p.workspaceId, business: p.brief.business },
           exportedAt: new Date().toISOString(),
           strategy:
             direction && direction.status === "approved" ? direction : null,
@@ -537,8 +591,8 @@ export async function handleFactory(
           at: new Date().toISOString(),
           status: "running",
           segment,
-          provider: "OpenAI",
-          model: process.env.PORT67_RESEARCH_MODEL!,
+          provider: providerSelection("research").provider,
+          model: providerSelection("research").model,
           leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
           contextHash: digest(JSON.stringify(p.brief)),
           contextSnapshot: structuredClone(p.brief),
@@ -573,7 +627,7 @@ export async function handleFactory(
         });
         let acceptedError = "";
         try {
-          const result = await researchSegment(p, segment);
+          const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment));
           acceptedError = await repo(a).mutate(a.workspaceId, (state) => {
             const current = find(state.projects, projectId, a);
             const record = current.runs.find((r) => r.id === run.id)!;
