@@ -22,8 +22,9 @@ import {
   RefreshCw,
   Users,
   Cpu,
+  Bot,
 } from "lucide-react";
-import { segments, type Account, type Principal, type Project } from "@/lib/factory/model";
+import { segments, type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
 import Link from "next/link";
 import { PortalWelcome } from "./Welcome";
@@ -33,6 +34,7 @@ import WorkspaceSetup from "./WorkspaceSetup";
 import AdminCosts from "./AdminCosts";
 import Team from "./Team";
 import AiModels from "./AiModels";
+import AiAgents from "./AiAgents";
 import Direction from "./Direction";
 import Assets from "./Assets";
 import Capabilities from "./Capabilities";
@@ -59,6 +61,7 @@ type Tab =
   | "setup"
   | "team"
   | "ai"
+  | "agents"
   | "admin";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
@@ -71,12 +74,14 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "capabilities", label: "Capabilities", icon: Settings2 },
   { id: "setup", label: "Workspace setup", icon: Settings2 },
   { id: "team", label: "Team access", icon: Users },
+  { id: "agents", label: "AI agents", icon: Bot },
   { id: "ai", label: "AI models", icon: Cpu },
   { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
 /** Owner and setup pages are not about one project, so they get their own subtitle and no account or project pickers. */
 const adminSubtitles: Partial<Record<Tab, string>> = {
   team: "Decide who can work as a producer.",
+  agents: "Every agent: what it does, which model runs it, and what it has done.",
   ai: "Choose which model runs each job, and what it costs.",
   admin: "Private API spend against your monthly cap.",
   setup: "Check the live workspace is ready.",
@@ -100,6 +105,7 @@ export default function Portal() {
   const [selected, setSelected] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
   const [busy, setBusy] = useState(false);
+  const [runningSegment, setRunningSegment] = useState<Segment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -254,7 +260,7 @@ export default function Portal() {
           {nav
             .filter(
               (n) =>
-                n.id === "admin" || n.id === "team" || n.id === "ai" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
+                n.id === "admin" || n.id === "team" || n.id === "ai" || n.id === "agents" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
                 !["production", "capabilities", "setup"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
@@ -449,6 +455,8 @@ export default function Portal() {
           )}
           {tab === "admin" && principal.admin ? (
             <AdminCosts />
+          ) : tab === "agents" && principal.admin ? (
+            <AiAgents />
           ) : tab === "ai" && principal.admin ? (
             <AiModels />
           ) : tab === "team" && principal.admin ? (
@@ -787,11 +795,18 @@ export default function Portal() {
                       "AI insight drafts created. Review their evidence before accepting them.",
                     )
                   }
+                  runningSegment={runningSegment}
+                  onRefresh={() => void refresh()}
                   onRunAll={() =>
                     void run(async () => {
                       try {
-                        for (const seg of segments) await api("projects/" + p.id + "/research", { segment: seg });
+                        for (const seg of segments) {
+                          setRunningSegment(seg);
+                          await api("projects/" + p.id + "/research", { segment: seg });
+                          await refresh();
+                        }
                       } finally {
+                        setRunningSegment(null);
                         await refresh();
                       }
                     }, "Research finished for all four areas. Review the sources and gaps before drafting insights.")

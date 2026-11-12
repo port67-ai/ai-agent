@@ -180,6 +180,7 @@ export type ResearchRun = {
   provider: string;
   model: string;
   usage?: Record<string, number>;
+  finishedAt?: string;
   /** What the researcher looked for and could not find or confirm. */
   gaps?: string[];
   error?: string;
@@ -209,6 +210,8 @@ export type Project = {
   videos?: Video[];
   /** Launch channels (IDs from channels.ts) chosen for this campaign; they steer research, direction and copy. */
   channels?: string[];
+  /** Per research agent status, computed for the response only (never stored) so customers can follow progress without seeing run internals. */
+  researchProgress?: { segment: Segment; status: "idle" | "running" | "completed" | "failed"; sources: number; at?: string }[];
   /** A customer's request for the producer to start research on the chosen channels. */
   researchRequest?: { at: string; by: string; channels: string[] };
   capabilities: Capability[];

@@ -596,9 +596,21 @@ export function transition(
   });
   return p;
 }
+export function researchProgress(p: Project): NonNullable<Project["researchProgress"]> {
+  return segments.map((segment) => {
+    const last = p.runs.filter((r) => r.stage === "research" && r.segment === segment).at(-1);
+    return {
+      segment,
+      status: last ? last.status : ("idle" as const),
+      sources: p.sources.filter((s) => s.segment === segment && s.kind === "public_source").length,
+      ...(last ? { at: last.at } : {}),
+    };
+  });
+}
 export function projectView(input: Project, a: Principal): Project {
   access(input, a);
   const p = linkProjectOwnership(input);
+  p.researchProgress = researchProgress(p);
   if (a.role === "operator") {
     p.aiAuthorised = hasProviderConsent(p);
     return p;
