@@ -147,6 +147,7 @@ FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION i
 | FAC-TEN-008 | Owner-requested 2026-11-12 | IN_PROGRESS | Verified-identity contracts, two-account isolation, producer selection, invitations and ownership tested with fixtures; real Firebase Auth/provider login pending |
 | FAC-CST-009 | Owner-requested 2026-11-12 | IN_PROGRESS | Pre-dispatch metering, usage/pricing/unknowns, admin-only API, cache/tool accounting, export/archive and reconciliation tested; actual provider invoice comparison pending |
 | FAC-HAR-004 | Owner-requested 2026-11-12 | IN_PROGRESS | All four drafting adapters and grounded OpenAI/Gemini adapters tested with explicit transport fixtures; selected live models unverified |
+| FAC-TEN-009 | Owner-requested 2026-11-12 (CHG-0014) | IN_PROGRESS | Admin-managed producer registry by verified email, immediate revocation, no admin escalation, fail-closed registry and audit trail tested with fixtures; live Firebase/Firestore behaviour, staff MFA and client sign-up approval not yet verified |
 
 Supporting FAC-TEN-001/002/003/006, FAC-CST-001/002/004/008 and FAC-HAR-001/002 have additional working subsets. No full requirement is promoted to VERIFIED: no authenticated cloud provisioning or paid campaign occurred. See ACCOUNTS_VERIFICATION.md and ACCOUNTS_PROVIDERS_COSTS.md. One initial account per user; enterprise assignments/team RBAC and large media/cost infrastructure remain gaps.
 

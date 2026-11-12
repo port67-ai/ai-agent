@@ -1,5 +1,6 @@
 import { meteredModelCall } from "./metering";
 import { registerAccount, listAccounts, canCreateProject } from "./accounts";
+import { addTeamMember, listTeam, removeTeamMember, withTeamRole } from "./team";
 import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVerifier, type FactoryUserLookup } from "./identity";
 import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
 import { providerSelection, safeProviderConfiguration } from "./providers";
@@ -84,7 +85,7 @@ async function principal(request: Request, lookup?: FactoryUserLookup): Promise<
   if (!liveReady()) return null;
   if (p.identity === "firebase") {
     try {
-      const identity = await revalidateIdentitySession(p.subject, p.issuedAt || 0, lookup);
+      const identity = await withTeamRole(repository, await revalidateIdentitySession(p.subject, p.issuedAt || 0, lookup));
       if (identity.role === "customer" && p.workspaceId !== identity.accountId) return null;
       if (identity.role === "operator" && p.workspaceId !== identity.accountId) {
         const accounts=await listAccounts(repository, {...p, role:"operator"});
@@ -258,7 +259,7 @@ export async function handleFactory(
     }
     if (route === "identity-login" && request.method === "POST") {
       if(!liveReady()) return json({error:"Live workspace is not configured"},503);
-      const identity=await verifyFactoryIdentity(text(data.idToken,"identity token",16384,true),identityVerifier);
+      const identity=await withTeamRole(repository,await verifyFactoryIdentity(text(data.idToken,"identity token",16384,true),identityVerifier));
       await registerAccount(repository,{id:identity.accountId,ownerUid:identity.uid,...(identity.email?{email:identity.email}:{}),createdAt:new Date().toISOString()});
       return login(request,{subject:identity.uid,identity:"firebase",...(identity.email?{email:identity.email}:{}),role:identity.role,admin:identity.admin,accountId:identity.accountId,workspaceId:identity.accountId,issuedAt:identity.authenticatedAt!,expires:Date.now()+8*3600000});
     }
@@ -372,6 +373,14 @@ export async function handleFactory(
       }
       const q=new URL(request.url).searchParams;
       return json(await adminCostReport(repository,{accountId:q.get("accountId")||undefined,projectId:q.get("projectId")||undefined,provider:q.get("provider")||undefined,model:q.get("model")||undefined,offset:q.has("offset")?Number(q.get("offset")):undefined,limit:q.has("limit")?Number(q.get("limit")):undefined}));
+    }
+    if (route === "admin/team") {
+      // Owner only. Producers are added here by verified email; admins come only from PORT67_ADMIN_UIDS.
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      if(request.method==="GET") return json({team:await listTeam(repository)});
+      if(data.action==="add") return json({team:await addTeamMember(repository,data.email,a.subject)});
+      if(data.action==="remove") return json({team:await removeTeamMember(repository,data.email,a.subject)});
+      return json({error:"Unknown team action"},400);
     }
     if(route === "accounts") {
       const accounts=await listAccounts(repository,a);

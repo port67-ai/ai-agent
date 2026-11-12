@@ -194,8 +194,13 @@ export type Invitation = {
 export type Account = {
   id: string; ownerUid: string; email?: string; createdAt: string;
 };
+/** Port67 staff granted the producer role by the owner. Matched by the verified Firebase email. */
+export type TeamMember = { email: string; addedBy: string; addedAt: string };
+export type TeamAuditEntry = { at: string; actor: string; action: "add" | "remove"; email: string };
 export type Database = {
   accounts?: Account[];
+  team?: TeamMember[];
+  teamAudit?: TeamAuditEntry[];
   apiCalls?: ApiCall[];
   ledgerArchives?: string[];
   schemaVersion: 1;

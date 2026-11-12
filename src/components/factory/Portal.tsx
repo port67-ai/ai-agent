@@ -20,6 +20,7 @@ import {
   FileText,
   Menu,
   RefreshCw,
+  Users,
 } from "lucide-react";
 import type { Account, Principal, Project } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
@@ -29,6 +30,7 @@ export { PortalWelcome } from "./Welcome";
 import Research from "./Research";
 import WorkspaceSetup from "./WorkspaceSetup";
 import AdminCosts from "./AdminCosts";
+import Team from "./Team";
 import Direction from "./Direction";
 import Assets from "./Assets";
 import Capabilities from "./Capabilities";
@@ -53,6 +55,7 @@ type Tab =
   | "learning"
   | "capabilities"
   | "setup"
+  | "team"
   | "admin";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
@@ -64,6 +67,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "learning", label: "Performance learning", icon: ChartNoAxesCombined },
   { id: "capabilities", label: "Capabilities", icon: Settings2 },
   { id: "setup", label: "Workspace setup", icon: Settings2 },
+  { id: "team", label: "Team access", icon: Users },
   { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
 async function api(path: string, data?: unknown) {
@@ -239,7 +243,7 @@ export default function Portal() {
           {nav
             .filter(
               (n) =>
-                n.id === "admin" ? !!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
+                n.id === "admin" || n.id === "team" ? !!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
                 !["production", "capabilities", "setup"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
@@ -432,6 +436,8 @@ export default function Portal() {
           )}
           {tab === "admin" && principal.admin ? (
             <AdminCosts />
+          ) : tab === "team" && principal.admin ? (
+            <Team />
           ) : tab === "setup" && operator ? (
             <WorkspaceSetup />
           ) : !p ? (
