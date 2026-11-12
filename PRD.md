@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.3.0  
+**Version:** 1.4.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1369,9 +1369,15 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | FAC-CST-009 | Every managed model/tool API dispatch records a durable private admin ledger event before invocation, with provider/model/account/project/run linkage, usage, versioned prices and failures. Owner-only reports distinguish estimated, unknown and reconciled actual costs; customers/producers cannot read costs. Archive without losing history. Infrastructure invoices remain separately reconciled; no absent usage/rate is treated as free. |
 | FAC-HAR-004 | Explicit stage routing supports OpenAI, Anthropic Claude, DeepSeek and Gemini for reviewed-context drafting. Research uses only implemented grounded adapters (OpenAI/Gemini initially). Unsupported model/task combinations fail visibly. All adapters obey shared authorisation, metering, evidence validation and human approval gates; no hidden paid retries/fallbacks. |
 
+## 25.3 Owner-managed staff access — owner-requested extension
+
+| ID | Requirement |
+|---|---|
+| FAC-TEN-009 | Three server-enforced access tiers, each requiring a verified individual sign-in: admin (the owner), producer (Port67 staff) and client (any verified sign-up, limited to their own account). Admins are set only through deployment configuration and can never be granted by the application. The admin adds and removes producers inside the app by verified email, with no redeploy. The role is re-evaluated on every request, so removing a producer, disabling a user or losing email verification takes effect immediately, and an unreadable staff registry never promotes anyone. Producers cannot read costs or manage the team. Team changes are recorded in an audit trail. Staff multi-factor authentication and approval of client sign-ups are future scope, not implemented. |
+
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, and CHG-0009 for 1.3.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, and CHG-0014 for 1.4.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

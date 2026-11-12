@@ -1466,7 +1466,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.f-user-who span { display: block; font-size: 11px; color: var(--f-muted); }
+.f-user-who div span { display: block; font-size: 11px; color: var(--f-muted); }
 .f-user-item {
   width: 100%;
   display: flex;
@@ -1503,3 +1503,21 @@
   .f-arrival { flex-wrap: wrap; padding: 14px 18px; gap: 10px; }
   .f-user-panel { position: fixed; right: 12px; top: 70px; width: min(272px, calc(100vw - 24px)); }
 }
+
+/* Team access page */
+.f-roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 6px; }
+.f-role { border: 1px solid var(--f-line); border-radius: 8px; padding: 16px; background: #fff; }
+.f-role strong { display: block; font-size: 14px; }
+.f-role span { display: block; font-size: 11px; color: var(--f-muted); margin-bottom: 8px; }
+.f-role p { margin: 0; font-size: 12px; }
+.f-team { margin-top: 24px; }
+.f-team-form { display: flex; gap: 12px; align-items: flex-end; margin: 16px 0; flex-wrap: wrap; }
+.f-team-form label { display: grid; gap: 6px; font-size: 12px; flex: 1 1 280px; }
+.f-team-form input { padding: 11px 12px; border: 1px solid #d7ddd9; border-radius: 7px; background: #fff; color: #23313a; }
+.f-team-error { color: #9b5c3f; font-size: 12px; }
+.f-team-ok { color: #5b7951; font-size: 12px; }
+.f-team-list { list-style: none; padding: 0; margin: 12px 0 0; }
+.f-team-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--f-line); }
+.f-team-list strong { display: block; font-size: 13px; }
+.f-team-list span { font-size: 11px; color: var(--f-muted); }
+@media (max-width: 800px) { .f-roles { grid-template-columns: 1fr; } }
