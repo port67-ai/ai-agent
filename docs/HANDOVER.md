@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-12; Claude; CHG-0028; PRD 1.13.0 (FAC-HAR-007). The AI models tab is gone: models are chosen on the AI agents tab (per-agent Change model, Apply suggested setup, Advanced section for defaults and prices) and a data-flow diagram shows how agents hand off via Firestore and approvals. Research room shows Research requested and Port67 starts; nothing runs until a producer authorises public data and clicks Start research. Not verified in a live browser. Open: Factory MVP CI red, live smoke test, Firebase Storage.
+
 2026-11-12; Claude. MP4 render now needs an approved storyboard and an approved copy set, defaults to 480p, and offers HD 1080p on request. Video is optional; content without video needs nothing. Note the video test file had been missing from the repo copy until this change; confirm tests/factory-video.test.ts is in the commit (package.json test:factory runs it). Template renders never use AI tokens, so the saving is encode time, memory and storage; an AI video model would be a separate future slot. Unverified live: Firebase Storage upload and memory on the production instance.
 
 ---

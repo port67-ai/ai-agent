@@ -210,3 +210,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-006 and FAC-MKT-021 (new), FAC-MKT-020, FAC-HAR-005. PRD 1.12.0.
 - Evidence: tests and static renders at desktop and phone widths. Per-agent history before this change is not attributable. Both pages poll (8 and 10 seconds); the animation itself was not seen live.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0028 - 2026-11-12 - AI models merged into AI agents, agent data-flow diagram
+- Author/harness: Claude (Cowork); owner asked to combine AI models into the AI agents page, list each agent's model, edit the provider and model by clicking an agent, and show graphically how agents interact and where data is stored or passed on.
+- What/why: The separate AI models tab is removed. Each AI agent card shows its provider and model (or a clear "No model chosen yet" prompt) and has Change model, with provider, model ID, prices, Fetch public price and Save; Apply suggested setup saves suggested defaults with public prices; stage defaults, all jobs and prices remain under an Advanced section (AiModels). A new SVG diagram (AgentDataFlow) shows providers, agents with their models, human approval gates, Firestore and Firebase Storage, and states that prompts and raw model responses are not stored; running agents animate. The Research room flow gained Research requested and Port67 starts steps so a queued request visibly waits for a producer. Files: AiAgents.tsx, AgentDataFlow.tsx, Portal.tsx, ResearchProgress.tsx, portal.css, tests/factory-ai-agents-ui.test.tsx, tests/factory-research-progress.test.tsx, package.json.
+- Requirements: FAC-HAR-007 (new), FAC-HAR-005, FAC-HAR-006, FAC-MKT-021. PRD 1.13.0.
+- Evidence: tsc, factory lint, full npm test and next build in a sandbox copy. Not seen in a live browser.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
