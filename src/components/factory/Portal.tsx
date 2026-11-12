@@ -23,7 +23,7 @@ import {
   Users,
   Cpu,
 } from "lucide-react";
-import type { Account, Principal, Project } from "@/lib/factory/model";
+import { segments, type Account, type Principal, type Project } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
 import Link from "next/link";
 import { PortalWelcome } from "./Welcome";
@@ -786,6 +786,15 @@ export default function Portal() {
                         }),
                       "AI insight drafts created. Review their evidence before accepting them.",
                     )
+                  }
+                  onRunAll={() =>
+                    void run(async () => {
+                      try {
+                        for (const seg of segments) await api("projects/" + p.id + "/research", { segment: seg });
+                      } finally {
+                        await refresh();
+                      }
+                    }, "Research finished for all four areas. Review the sources and gaps before drafting insights.")
                   }
                   onRecover={(id) =>
                     void run(

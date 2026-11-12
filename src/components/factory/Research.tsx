@@ -12,6 +12,7 @@ import {
   Actions,
 } from "./shared";
 import InsightEditor from "./InsightEditor";
+import ChannelPicker from "./ChannelPicker";
 const gapsFor = (p: { runs: { segment?: string; status: string; gaps?: string[] }[] }, segment: string) =>
   [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
 export default function Research({
@@ -21,6 +22,7 @@ export default function Research({
   command,
   live,
   onRun,
+  onRunAll,
   onRecover,
   aiReady,
   onGenerate,
@@ -29,11 +31,13 @@ export default function Research({
   aiReady: boolean;
   onGenerate: () => void;
   onRun: (segment: Segment) => void;
+  onRunAll: () => void;
   onRecover: (id: string) => void;
 }) {
   const [segment, setSegment] = useState<Segment>("brand");
   return (
     <>
+      <ChannelPicker p={p} operator={operator} busy={busy} live={live} command={command} onRunAll={onRunAll} />
       {operator && (
         <section className="f-panel f-ai-consent">
           <div>
