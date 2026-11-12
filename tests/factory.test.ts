@@ -301,6 +301,21 @@ assert.throws(
   /reviewed.*insight/,
   "shared recommendations need real research lineage",
 );
-const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jV1cAAAAASUVORK5CYII=';
-const withLogo=createProject({business:'Logo consent',objective:'Launch',contact:'a@example.com',logoData:png,logoPermission:'confirmed'},op,'logo-project');
-assert.throws(()=>transition(withLogo,{type:'updateBrief',logoData:png+'='},op),/permission/,'replacement logo must not inherit consent for a different upload');
+const png =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jV1cAAAAASUVORK5CYII=";
+const withLogo = createProject(
+  {
+    business: "Logo consent",
+    objective: "Launch",
+    contact: "a@example.com",
+    logoData: png,
+    logoPermission: "confirmed",
+  },
+  op,
+  "logo-project",
+);
+assert.throws(
+  () => transition(withLogo, { type: "updateBrief", logoData: png + "=" }, op),
+  /permission/,
+  "replacement logo must not inherit consent for a different upload",
+);

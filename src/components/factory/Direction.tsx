@@ -3,7 +3,14 @@ import { useState } from "react";
 import { ArrowUpRight, ArrowRight, Check, Link2 } from "lucide-react";
 
 import { Tag, Empty, Field, fields, researchLabels, Actions } from "./shared";
-export default function Direction({ p, operator, busy, command }: Actions) {
+export default function Direction({
+  p,
+  operator,
+  busy,
+  command,
+  aiReady,
+  onGenerate,
+}: Actions & { aiReady: boolean; onGenerate: () => Promise<boolean> }) {
   const s = p.strategies.at(-1);
   const [editing, setEditing] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -18,6 +25,30 @@ export default function Direction({ p, operator, busy, command }: Actions) {
           Shape the message and design recommendation. Creating a proposal does
           not run an AI model. Add detailed reasoning and flag uncertainty
           before sharing.
+        </p>
+        <button
+          className="f-button secondary"
+          disabled={
+            busy ||
+            !aiReady ||
+            !p.aiAuthorised ||
+            !p.insights.some(
+              (insight) =>
+                insight.status !== "draft" && insight.status !== "rejected",
+            )
+          }
+          onClick={() =>
+            void onGenerate().then((ok) => {
+              if (ok) setEditing(false);
+            })
+          }
+        >
+          Draft direction with AI <ArrowUpRight size={15} />
+        </button>
+        <p className="f-small">
+          AI drafting uses only reviewed public evidence and accepted insights;
+          outputs stay unshared until Port67 reviews them. Manual editing
+          remains available.
         </p>
         <form
           onSubmit={(e) => {
@@ -138,7 +169,10 @@ export default function Direction({ p, operator, busy, command }: Actions) {
           <Tag tone={s.status === "approved" ? "green" : "orange"}>
             {s.status.replaceAll("_", " ")}
           </Tag>
-          <span className="f-small">DIRECTION V{s.version}</span>
+          <span className="f-small">
+            DIRECTION V{s.version}
+            {s.generatedByRunId ? " · AI-assisted draft" : ""}
+          </span>
         </div>
         <h2 className="f-direction-message">{s.message}</h2>
         <div className="f-detail">

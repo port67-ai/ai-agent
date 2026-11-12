@@ -61,6 +61,9 @@ async function main() {
   assert.equal(response.status, 200);
   const me = await (await request("session")).json();
   assert.equal(me.principal.demo, true);
+  const setup = await request("readiness");
+  assert.equal(setup.status, 200);
+  assert.ok(Array.isArray((await setup.json()).checks));
   const list = await (await request("projects")).json();
   const project = list.projects[0];
   assert.ok(project.id);
@@ -77,6 +80,11 @@ async function main() {
   assert.equal(
     (await request("projects/" + project.id, { type: "addSource" })).status,
     403,
+  );
+  assert.equal(
+    (await request("readiness")).status,
+    403,
+    "customers cannot access operator configuration diagnostics",
   );
   const view = await (await request("projects/" + project.id)).json();
   assert.equal(view.project.audit.length, 0);

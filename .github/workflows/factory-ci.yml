@@ -16,6 +16,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run audit:security
       - run: npm test
       - run: npm run check:factory
       - run: npx tsc --noEmit

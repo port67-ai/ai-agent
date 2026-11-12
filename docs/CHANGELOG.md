@@ -55,3 +55,17 @@ Single ongoing ledger. Historical imported PRD section 26 is a baseline record o
 - PRD impact: none; fix the CI platform compatibility, preserve application behaviour.
 - Evidence: GitHub run 43131195215 / job 130895468357 error identifies unsupported OS; new run must confirm browser acceptance on the supported pinned runner. Local production/development browser tests passed.
 - Status: follow-up on PR #4; no claim that the failed first remote browser run passed.
+
+## CHG-0007 — 2026-11-12 — Dependency security baseline
+- Author/harness: Codex. What/why: compatible dependency upgrades, explicit grpc override, preserve Stripe API by pinning its SDK; add high/critical audit CI gate.
+- Requirements: FAC-DEV-008. PRD impact: new explicit security gate within the owner-authorised next stage, documented in 1.2.0 with CHG-0008.
+- Evidence: FOUNDATION_VERIFICATION.md; native audit 0 critical/high, 15 moderate remaining. No actual cloud compatibility claim.
+- Status: prepared on feat/live-research-foundation; consult GitHub for merge/CI/deployment status.
+
+## CHG-0008 — 2026-11-12 — Render readiness and reviewed AI drafting
+- Author/harness: Codex; owner requested next sections after the synthetic MVP, with prior autonomous implementation authorisation.
+- What/why: producer setup/readiness, explicit production/durable-storage gates, exact-brief PUBLIC authorisation/revocation, bounded source-grounded insight/direction synthesis, validated lineage, human acceptance and concurrency protection. Retain failed/rejected usage and reserve storage headroom for paid completions.
+- Requirements: FAC-MKT-002–006, FAC-MKT-013–015, FAC-DEV-008. PRD impact: 1.1.1 → 1.2.0; add explicit live-foundation requirements. Optional fields preserve existing snapshots; no destructive migration.
+- Evidence: FOUNDATION_VERIFICATION.md; full tests, lint, types, build and production browser passed; independent review findings fixed with regression tests. No paid provider call.
+- Deployment: Render remains the host. No secrets, disk, cloud database, legacy rules or paid resources changed. Activation requires existing service configuration and persistence/provider smoke tests; RENDER_ACTIVATION.md.
+- Status: prepared on feat/live-research-foundation; resolve exact commit/PR/merge from GitHub. Full video, individual auth, monetary ledger and phase-two measurement/publishing remain outside this change.

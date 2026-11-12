@@ -28,6 +28,7 @@ import Link from "next/link";
 import { PortalWelcome } from "./Welcome";
 export { PortalWelcome } from "./Welcome";
 import Research from "./Research";
+import WorkspaceSetup from "./WorkspaceSetup";
 import Direction from "./Direction";
 import Assets from "./Assets";
 import Capabilities from "./Capabilities";
@@ -37,6 +38,7 @@ type Config = {
   demoEnabled: boolean;
   liveReady: boolean;
   researchReady: boolean;
+  synthesisReady: boolean;
   storage: string;
 };
 type Tab =
@@ -47,7 +49,8 @@ type Tab =
   | "production"
   | "assets"
   | "learning"
-  | "capabilities";
+  | "capabilities"
+  | "setup";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
   { id: "brief", label: "Business brief", icon: FileText },
@@ -57,6 +60,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "assets", label: "Asset library", icon: FolderOpen },
   { id: "learning", label: "Performance learning", icon: ChartNoAxesCombined },
   { id: "capabilities", label: "Capabilities", icon: Settings2 },
+  { id: "setup", label: "Workspace setup", icon: Settings2 },
 ];
 async function api(path: string, data?: unknown) {
   const response = await fetch("/api/factory/" + path, {
@@ -198,7 +202,9 @@ export default function Portal() {
         <nav aria-label="Workspace navigation">
           {nav
             .filter(
-              (n) => operator || !["production", "capabilities"].includes(n.id),
+              (n) =>
+                operator ||
+                !["production", "capabilities", "setup"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
               <button
@@ -343,7 +349,9 @@ export default function Portal() {
               {notice}
             </div>
           )}
-          {!p ? (
+          {tab === "setup" ? (
+            <WorkspaceSetup />
+          ) : !p ? (
             <Empty title="Your next project starts here">
               Create a brief, invite your customer and build the evidence behind
               the campaign.
@@ -654,6 +662,16 @@ export default function Portal() {
                   busy={busy}
                   live={!!config?.researchReady && !principal.demo}
                   command={command}
+                  aiReady={!!config?.synthesisReady && !principal.demo}
+                  onGenerate={() =>
+                    void run(
+                      () =>
+                        api("projects/" + p.id + "/synthesis", {
+                          stage: "insights",
+                        }),
+                      "AI insight drafts created. Review their evidence before accepting them.",
+                    )
+                  }
                   onRecover={(id) =>
                     void run(
                       () =>
@@ -675,6 +693,16 @@ export default function Portal() {
                   operator={operator}
                   busy={busy}
                   command={command}
+                  aiReady={!!config?.synthesisReady && !principal.demo}
+                  onGenerate={() =>
+                    run(
+                      () =>
+                        api("projects/" + p.id + "/synthesis", {
+                          stage: "strategy",
+                        }),
+                      "AI campaign direction saved as an unshared draft. Review before sharing.",
+                    )
+                  }
                 />
               )}
               {tab === "production" && (

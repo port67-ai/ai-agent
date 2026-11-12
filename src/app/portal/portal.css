@@ -1404,3 +1404,5 @@
 .f-hero-panel h2 {
   color: #fff;
 }
+.f-setup-check{padding:20px 0;border-bottom:1px solid #e9eee5}.f-setup-check .f-section-heading{margin-bottom:5px}.f-setup-check h3{font-size:14px}.f-setup-check p,.f-setup-steps p{font-size:11px;line-height:1.8}.f-env-names{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.f-env-names code{font-size:9px;background:#f1f4ed;border-radius:4px;padding:4px 7px;color:#6c7b65;overflow-wrap:anywhere}.f-setup-check small{font-size:9px;color:#8b9688}.f-setup-steps{padding-left:20px}.f-setup-steps li{padding:10px 0;font-size:12px}.f-setup-steps strong{font-weight:600}.f-setup-steps p{margin:8px 0 10px}.f-sidebar nav{gap:4px}.f-sidebar nav button{padding-top:10px;padding-bottom:10px}
+.f-ai-consent{display:flex;gap:25px;align-items:center;justify-content:space-between;margin-bottom:24px}.f-ai-consent h2{font-size:18px;margin-top:10px}.f-ai-consent p{font-size:11px;margin-bottom:0;max-width:720px}.f-ai-consent button{flex-shrink:0}@media(max-width:800px){.f-ai-consent{flex-direction:column;align-items:flex-start}}

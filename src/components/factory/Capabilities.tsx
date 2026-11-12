@@ -34,9 +34,11 @@ export default function Capabilities({
                 <small>
                   {c.kind === "research"
                     ? "Manual / configured public web search"
-                    : c.kind === "human"
-                      ? "Human-managed strategy"
-                      : "Original template draft"}{" "}
+                    : c.kind === "synthesis"
+                      ? "Configured AI drafts — producer review"
+                      : c.kind === "human"
+                        ? "Human-managed strategy"
+                        : "Original template draft"}{" "}
                   · approval required
                 </small>
               </div>

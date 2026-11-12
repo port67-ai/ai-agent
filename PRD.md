@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.1.1  
+**Version:** 1.2.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1350,9 +1350,20 @@ These URLs are technical references, not acceptance-test evidence. Recheck at im
 
 ---
 
+## 25.1 Live-foundation requirements — owner-requested next stage
+
+These requirements extend the authorised managed-service MVP; they do not approve the unresolved baseline architecture.
+
+| ID | Requirement |
+|---|---|
+| FAC-MKT-013 | Before a paid provider invocation, a producer explicitly authorises the exact current brief as PUBLIC. Brief changes revoke that authorisation; revocation or changed context prevents accepting late results. Structured contact/logo fields are excluded from synthesis. Free-text data must be reviewed by the producer. |
+| FAC-MKT-014 | Optional bounded AI insight and direction drafting uses reviewed public sources and accepted insights with validated reference IDs. Generated insights require producer acceptance; generated direction remains unshared until producer review, then customer approval. Record model/capability versions, input lineage, usage and failures. Preserve concurrent human edits. |
+| FAC-MKT-015 | Provide a producer-only setup/readiness view with variable names and safe status, never secret values. Production live access requires canonical HTTPS origin, durable-storage confirmation, strong session credentials and an explicit launch switch. Render remains the selected host. Configuration presence is not connection verification. |
+| FAC-DEV-008 | Gate CI on dependency audits with no high or critical findings. Document remaining findings and compatibility constraints; do not force unreviewed major migrations. |
+
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, and CHG-0008 for 1.2.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

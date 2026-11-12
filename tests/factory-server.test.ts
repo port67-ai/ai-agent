@@ -84,3 +84,45 @@ async function demoDirectoryCheck() {
     );
 }
 void demoDirectoryCheck();
+async function providerHeadroom() {
+  const directory = await mkdtemp(join(tmpdir(), "port67-headroom-"));
+  try {
+    const repo = new LocalRepository(directory);
+    const op = {
+      role: "operator" as const,
+      workspaceId: "capacity",
+      subject: "producer",
+    };
+    await repo.mutate("capacity", (db) => {
+      const p = createProject(
+        {
+          business: "Storage reserve",
+          objective: "Test",
+          contact: "a@example.com",
+        },
+        op,
+      );
+      p.brief.description = "x".repeat(630000);
+      db.projects.push(p);
+    });
+    await assert.rejects(
+      () =>
+        repo.mutate("capacity", (db) => {
+          db.projects[0].runs.push({
+            id: "run",
+            at: new Date().toISOString(),
+            status: "running",
+            segment: "brand",
+            provider: "test",
+            model: "test",
+          });
+        }),
+      /storage/i,
+      "paid tasks must reserve result/usage headroom before invocation",
+    );
+    assert.equal((await repo.read("capacity")).projects[0].runs.length, 0);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+void providerHeadroom();

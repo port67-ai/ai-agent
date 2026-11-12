@@ -20,14 +20,56 @@ export default function Research({
   live,
   onRun,
   onRecover,
+  aiReady,
+  onGenerate,
 }: Actions & {
   live: boolean;
+  aiReady: boolean;
+  onGenerate: () => void;
   onRun: (segment: Segment) => void;
   onRecover: (id: string) => void;
 }) {
   const [segment, setSegment] = useState<Segment>("brand");
   return (
     <>
+      {operator && (
+        <section className="f-panel f-ai-consent">
+          <div>
+            <Tag tone={p.aiAuthorised ? "green" : "orange"}>
+              {p.aiAuthorised
+                ? "Project data authorised"
+                : "AI data authorisation required"}
+            </Tag>
+            <h2>Control what leaves the workspace.</h2>
+            <p>
+              Paid research/drafting uses the exact authorised brief and
+              reviewed public-source material. Confirm only if this is
+              authorised PUBLIC information; customer assertions, contact email
+              and logo files are excluded from synthesis. A brief change revokes
+              this authorisation. The synthetic demo never makes paid calls.
+            </p>
+          </div>
+          <button
+            className="f-button secondary small"
+            disabled={busy}
+            onClick={() =>
+              void command(
+                {
+                  type: p.aiAuthorised ? "revokeAI" : "authoriseAI",
+                  confirm: true,
+                },
+                p.aiAuthorised
+                  ? "AI authorisation revoked"
+                  : "Project brief authorised as PUBLIC data for the configured provider",
+              )
+            }
+          >
+            {p.aiAuthorised
+              ? "Revoke AI access"
+              : "Authorise public project data"}
+          </button>
+        </section>
+      )}
       <div className="f-research-tabs">
         {Object.entries(researchLabels).map(([id, label]) => (
           <button
@@ -50,7 +92,7 @@ export default function Research({
             {operator && (
               <button
                 className="f-button secondary small"
-                disabled={busy || !live}
+                disabled={busy || !live || !p.aiAuthorised}
                 title={
                   live
                     ? "Runs one bounded paid research call"
@@ -210,16 +252,74 @@ export default function Research({
       </div>
       {operator && <InsightEditor p={p} busy={busy} command={command} />}
       <section className="f-panel f-insights">
-        <h2>Research → insight</h2>
+        <div className="f-section-heading">
+          <h2>Research → insight</h2>
+          {operator && (
+            <button
+              className="f-button secondary small"
+              disabled={
+                busy ||
+                !aiReady ||
+                !p.aiAuthorised ||
+                !p.sources.some(
+                  (source) =>
+                    source.kind === "public_source" &&
+                    source.status === "supported",
+                )
+              }
+              onClick={onGenerate}
+            >
+              <Sparkles size={14} />
+              Draft insights with AI
+            </button>
+          )}
+        </div>
         {p.insights.length ? (
           p.insights.map((i) => (
             <div className="f-evidence-link" key={i.id}>
-              <Tag>{i.confidence} confidence</Tag>
+              <Tag tone={i.status === "draft" ? "orange" : "neutral"}>
+                {i.status === "draft"
+                  ? "AI draft — review required"
+                  : i.status === "rejected"
+                    ? "Rejected"
+                    : i.confidence + " confidence"}
+              </Tag>
               <h3>{i.title}</h3>
               <p>{i.interpretation}</p>
               <small>
                 {i.sourceIds.length} reviewed source links · {i.id.slice(0, 8)}
+                {i.generatedByRunId &&
+                  " · AI run " + i.generatedByRunId.slice(0, 8)}
               </small>
+              {operator && i.status === "draft" && (
+                <div className="f-actions">
+                  <button
+                    className="f-button secondary small"
+                    disabled={busy}
+                    onClick={() =>
+                      void command(
+                        { type: "reviewInsight", id: i.id, status: "reviewed" },
+                        "Insight reviewed and available to campaign strategy",
+                      )
+                    }
+                  >
+                    Accept insight
+                  </button>
+                  <button
+                    className="f-text-button"
+                    disabled={busy}
+                    onClick={() =>
+                      void command({
+                        type: "reviewInsight",
+                        id: i.id,
+                        status: "rejected",
+                      })
+                    }
+                  >
+                    Reject insight
+                  </button>
+                </div>
+              )}
             </div>
           ))
         ) : (
@@ -231,11 +331,11 @@ export default function Research({
       </section>
       {operator && p.runs.length > 0 && (
         <section className="f-panel">
-          <h2>Research activity</h2>
+          <h2>Research & drafting activity</h2>
           {p.runs.map((r) => (
             <div className="f-detail" key={r.id}>
               <span>
-                {r.segment} · {r.status}
+                {r.segment || r.stage} · {r.status}
               </span>
               <p>
                 {r.provider} / {r.model} ·{" "}

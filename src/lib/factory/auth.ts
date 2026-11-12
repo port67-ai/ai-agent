@@ -1,13 +1,10 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { liveConfigurationReady } from "./config";
 import type { Principal } from "./model";
 const ephemeralKey = randomBytes(48).toString("hex");
 export const sessionKey = () =>
   process.env.PORT67_SESSION_SECRET || ephemeralKey;
-export const liveReady = () =>
-  !!process.env.PORT67_OPERATOR_PASSWORD &&
-  process.env.PORT67_OPERATOR_PASSWORD.length >= 16 &&
-  !!process.env.PORT67_SESSION_SECRET &&
-  process.env.PORT67_SESSION_SECRET.length >= 32;
+export const liveReady = () => liveConfigurationReady();
 export const demoEnabled = () => process.env.PORT67_DEMO_ENABLED !== "false";
 export const secureEqual = (a: string, b: string) =>
   Buffer.byteLength(a) === Buffer.byteLength(b) &&
