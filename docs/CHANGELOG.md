@@ -120,3 +120,16 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Limits: one registry read per non-producer request; staff multi-factor authentication, per-client assignment of producers, and approval of open client self-sign-up are not implemented. Email matching relies on Firebase verifying the mailbox.
 - Status: prepared in the working tree; consult Git/GitHub for branch, commit and merge status. Not deployed.
 
+## CHG-0015 — 2026-11-12 — Live research smoke test plan
+- Author/harness: Claude (Cowork); owner queued the live research test after spend caps and team access.
+- What/why: documentation only. docs/LIVE_SMOKE_TEST.md fixes one low-cost configuration (Gemini for research and drafting), a dated price line for PORT67_MODEL_PRICING_JSON, the billing prerequisite for grounded search, step-by-step acceptance and negative checks under the $25 cap, and an evidence template. No code, data or setting changed.
+- Requirements: FAC-MKT-003/004/013/014, FAC-CST-001/003/009 (supporting). PRD impact: none; test procedure for existing requirements, no requirement promoted.
+- Evidence: prices read from the fetched ai.google.dev pricing page on 2026-11-12 (page stamped last updated 2026-06-02; the owner must confirm in AI Studio). OpenAI page values were not used. No provider call was made.
+- Status: prepared in the working tree; consult Git/GitHub for branch, commit and merge status. The test itself has NOT been run.
+
+## CHG-0016 — 2026-11-12 — Admin AI model routing and prices
+- Author/harness: Claude (Cowork); owner asked to control which model each job uses without hardcoding providers in Render, and to pull prices from a public source first with editing in the admin page.
+- What/why: new admin-only AI models page and route admin/ai-routing. Per-job routes (research brand, customer, competitor, creative; drafting insights, direction) with stage defaults; precedence job, stage default, then the existing PORT67_*_PROVIDER/MODEL variables. API keys stay in Render. Prices: a Fetch public prices action reads a fixed public catalogue (BerriAI/litellm model_prices_and_context_window.json) and fills suggestions the owner can edit and save; owner prices override PORT67_MODEL_PRICING_JSON in the cost ledger. Search tool fees are not in the public catalogue and are entered by hand. Changes are audited (last 100). Files: ai-routing.ts, AiModels.tsx, research.ts, synthesis.ts, synthesis-run.ts, service.ts, costs.ts, providers.ts, model.ts, Portal.tsx, portal.css, tests/factory-ai-routing.test.ts.
+- Requirements: FAC-HAR-005 (new), FAC-HAR-004, FAC-CST-001. PRD 1.5.0.
+- Evidence: tsc, eslint on changed files, npm test and next build pass in a sandbox copy; public fetch and providers use stubbed transport. The live fetch from Render and live calls are unverified.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status. Image and video routing not implemented.

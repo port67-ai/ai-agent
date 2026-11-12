@@ -2,7 +2,7 @@ export type Provider = 'openai' | 'anthropic' | 'deepseek' | 'gemini';
 export type ProviderStage = 'research' | 'synthesis';
 type Env = Record<string,string|undefined>;
 export type ProviderSelection = {provider:Provider;model:string;key:string};
-const keyNames = {openai:'PORT67_OPENAI_API_KEY',anthropic:'PORT67_ANTHROPIC_API_KEY',deepseek:'PORT67_DEEPSEEK_API_KEY',gemini:'PORT67_GEMINI_API_KEY'};
+export const keyNames = {openai:'PORT67_OPENAI_API_KEY',anthropic:'PORT67_ANTHROPIC_API_KEY',deepseek:'PORT67_DEEPSEEK_API_KEY',gemini:'PORT67_GEMINI_API_KEY'};
 export function providerSelection(stage:ProviderStage,env:Env=process.env):ProviderSelection {
  const provider=env[`PORT67_${stage.toUpperCase()}_PROVIDER`] || 'openai';
  if(!Object.hasOwn(keyNames,provider)) throw new Error('Unsupported AI provider');
