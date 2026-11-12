@@ -978,6 +978,7 @@ export default function Portal() {
                   const result = await api("projects", data);
                   setSelected(result.project.id);
                   setNewProject(false);
+                  setArrival(false);
                   setTab("research");
                 }, "Brief created");
               }}
