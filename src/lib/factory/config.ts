@@ -1,4 +1,5 @@
 import { providerConfigured } from "./providers";
+import { budgetConfig } from "./budget";
 import { isAbsolute, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
 export type Environment = Record<string, string | undefined>;
@@ -177,6 +178,7 @@ export function configurationStatus(e: Environment = process.env) {
     checks: [...checks, research, synthesis,
       check("accounts","Individual Firebase accounts",e.PORT67_FIREBASE_PROJECT_ID === "ai-agency-3671b" && !!e.PORT67_FIREBASE_WEB_API_KEY && e.PORT67_FIREBASE_AUTH_DOMAIN === "ai-agency-3671b.firebaseapp.com",["PORT67_FIREBASE_PROJECT_ID","PORT67_FIREBASE_WEB_API_KEY","PORT67_FIREBASE_AUTH_DOMAIN"],"Enable email/password sign-in and configure the dedicated Firebase public web settings. Add your Render domain to Firebase authorised domains.",false),
       check("admin","Private owner admin",!!e.PORT67_ADMIN_UIDS?.trim(),["PORT67_ADMIN_UIDS"],"Add only the owner's verified Firebase UID to the server-side admin allowlist. Producer access alone does not grant cost visibility.",false),
+      check("budget","AI spend caps",(()=>{try{budgetConfig(e);return true;}catch{return false;}})(),["PORT67_MONTHLY_BUDGET_USD","PORT67_PROJECT_BUDGET_USD","PORT67_CALL_HOLD_USD"],"A spend cap setting is invalid, so paid AI calls are blocked. Use plain USD amounts such as 25 or 12.50; a blank monthly cap defaults to 25.",false),
       check("pricing","Model cost estimates",!!e.PORT67_MODEL_PRICING_JSON,["PORT67_MODEL_PRICING_JSON"],"Configure dated provider:model prices. Calls are tracked without rates, but their cost is shown as unknown until priced or reconciled.",false)
     ],
   };

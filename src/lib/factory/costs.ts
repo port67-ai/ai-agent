@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repository';
+import { assertWithinBudget, budgetConfig, budgetStatus } from './budget';
 export const ADMIN_LEDGER_NAMESPACE = 'factory-admin-ledger';
 export const MAX_LEDGER_CALLS = 150;
 export type ApiUsage = { inputTokens: number; outputTokens: number; cachedInputTokens?: number; cacheCreationInputTokens?: number; toolCalls?: number; toolUsageUnknown?: boolean };
@@ -24,8 +25,16 @@ function pricingFor(provider: string, model: string): Pricing|undefined {
 export async function reserveApiCall(repo: Repository, input: ApiCallInput): Promise<string> {
   const metadata = Object.fromEntries(['accountId','workspaceId','projectId','runId','stage','provider','model','actor'].map(k=>[k,text(input[k as keyof ApiCallInput])])) as ApiCallInput;
   const pricing=pricingFor(metadata.provider,metadata.model);
+  // Invalid cap settings throw here, before any reservation, so a typo blocks paid calls rather than lifting the cap.
+  const budget=budgetConfig();
+  // Archived batches are immutable history. Their ids are re-checked inside the mutation so archiving cannot hide spend.
+  const archiveIds=(await ledgerNamespaces(repo)).slice(1);
+  const archived=(await Promise.all(archiveIds.map(async id=>{const db=await repo.read(id) as Ledger; if(!db.apiCalls) throw Error('Ledger archive is unavailable; spend cannot be checked'); return db.apiCalls;}))).flat();
   const row: ApiCall={...metadata,id:randomUUID(),createdAt:new Date().toISOString(),status:'reserved',...(pricing?{pricing}:{})};
-  return repo.mutate(ADMIN_LEDGER_NAMESPACE,db=>{ const ledger=db as Ledger; const rows=ledger.apiCalls??=[]; if(rows.length>=MAX_LEDGER_CALLS) throw new Error('Admin ledger capacity reached; export and archive ledger before further API calls'); rows.push(row); return row.id; });
+  return repo.mutate(ADMIN_LEDGER_NAMESPACE,db=>{ const ledger=db as Ledger; const rows=ledger.apiCalls??=[]; if(rows.length>=MAX_LEDGER_CALLS) throw new Error('Admin ledger capacity reached; export and archive ledger before further API calls');
+    if(JSON.stringify(ledger.ledgerArchives||[])!==JSON.stringify(archiveIds)) throw new Error('Ledger archive changed during the spend check; retry');
+    assertWithinBudget([...archived,...rows],budget,metadata.projectId);
+    rows.push(row); return row.id; });
 }
 /** Provider adapters must normalize inputTokens to include cached and cache-creation input. */
 export function normalizeApiUsage(raw: Record<string, unknown> | undefined): ApiUsage | undefined {
@@ -85,7 +94,9 @@ export async function adminCostReport(repo: Repository,filters:CostFilters={}) {
   const rows=all.filter(r=>(['accountId','projectId','provider','model'] as const).every(k=>!filters[k]||r[k]===filters[k])).map(r=>r.status==='reserved'?{...r,status:'unknown' as const}:r).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
   const offset=Math.min(integer(filters.offset??0),rows.length);const limit=Math.min(integer(filters.limit??50),100);
   const breakdown=Object.fromEntries((['accountId','projectId','provider','model'] as const).map(key=>[key,[...new Set(rows.map(r=>r[key]))].map(value=>({value,...summarize(rows.filter(r=>r[key]===value))}))])) as Record<'accountId'|'projectId'|'provider'|'model',({value:string}&CostSummary)[]>;
-  return {summary:summarize(rows),breakdown,total:rows.length,offset,limit,rows:rows.slice(offset,offset+limit),capacity:MAX_LEDGER_CALLS,pricingNotice:'Estimates use reservation-time configured pricing. Unknown calls are not zero cost. Reserved calls may still be in flight or interrupted.'};
+  let budget:ReturnType<typeof budgetStatus>|{error:string};
+  try { budget=budgetStatus(all,budgetConfig()); } catch(e) { budget={error:e instanceof Error?e.message:'Invalid budget configuration'}; }
+  return {summary:summarize(rows),budget,breakdown,total:rows.length,offset,limit,rows:rows.slice(offset,offset+limit),capacity:MAX_LEDGER_CALLS,pricingNotice:'Estimates use reservation-time configured pricing. Unknown calls are not zero cost. Reserved calls may still be in flight or interrupted.'};
 }
 export type AdminCostReport=Awaited<ReturnType<typeof adminCostReport>>;
 

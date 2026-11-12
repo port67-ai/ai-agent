@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {LocalRepository} from '../src/lib/factory/repository';
 import {reserveApiCall,finishApiCall,adminCostReport,archiveApiCalls,reconcileApiCall,MAX_LEDGER_CALLS} from '../src/lib/factory/costs';
+// This test fills a whole ledger batch with unpriced calls; raise the spend cap so capacity, not budget, is under test.
+process.env.PORT67_MONTHLY_BUDGET_USD='100000';
 async function main(){const dir=await mkdtemp(join(tmpdir(),'port67-archive-'));const repo=new LocalRepository(dir);const input={accountId:'acct_a',workspaceId:'acct_a',projectId:'p',runId:'run',stage:'research',provider:'test',model:'test',actor:'owner'};
 const first=await reserveApiCall(repo,input);await assert.rejects(()=>archiveApiCalls(repo,'owner'),/in flight/);await finishApiCall(repo,first,{status:'failed'});
 for(let i=1;i<MAX_LEDGER_CALLS;i++){const id=await reserveApiCall(repo,{...input,runId:'run'+i});await finishApiCall(repo,id,{status:'completed',usage:{inputTokens:1,outputTokens:1}});}
