@@ -3,9 +3,11 @@ import { useState } from "react";
 import { ArrowUpRight, Check, Clapperboard, Download } from "lucide-react";
 import type { Asset } from "@/lib/factory/model";
 import { Tag, Empty, Field, Actions } from "./shared";
-export default function Assets({ p, operator, busy, command, renderVideo }: Actions & { renderVideo?: (assetId: string) => void }) {
+import { copySetApproved } from "@/lib/factory/copy-set";
+export default function Assets({ p, operator, busy, command, renderVideo }: Actions & { renderVideo?: (assetId: string, size?: 480 | 1080) => void }) {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const current = p.strategies.at(-1);
+  const copyReady = !!current && copySetApproved(p, current.hash);
   const approved = p.assets.filter(
     (a) =>
       !p.deliveryPaused &&
@@ -126,13 +128,19 @@ export default function Assets({ p, operator, busy, command, renderVideo }: Acti
                   <div className="f-video">
                     {(p.videos || []).filter((v) => v.assetId === a.id).map((v) => (
                       <a key={v.id} className="f-button secondary small" href={"/api/factory/projects/" + p.id + "/video/" + v.id} download>
-                        MP4 {v.seconds}s, {(v.bytes / 1048576).toFixed(1)} MB, {v.createdAt.slice(0, 10)} <Download size={14} />
+                        MP4 {v.size || 1080}p, {v.seconds}s, {(v.bytes / 1048576).toFixed(1)} MB, {v.createdAt.slice(0, 10)} <Download size={14} />
                       </a>
                     ))}
                     {operator && renderVideo && (
-                      <button className="f-button small" disabled={busy} onClick={() => renderVideo(a.id)}>
-                        Render MP4 <Clapperboard size={14} />
-                      </button>
+                      <>
+                        <button className="f-button small" disabled={busy || !copyReady} title={copyReady ? undefined : "Approve the copy set first"} onClick={() => renderVideo(a.id, 480)}>
+                          Render 480p draft <Clapperboard size={14} />
+                        </button>
+                        <button className="f-text-button" disabled={busy || !copyReady} onClick={() => renderVideo(a.id, 1080)}>
+                          Render HD (1080p)
+                        </button>
+                        {!copyReady && <span className="f-small">Video is optional. Approve the copy set first to render it.</span>}
+                      </>
                     )}
                   </div>
                 )}

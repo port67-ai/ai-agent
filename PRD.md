@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.7.0  
+**Version:** 1.8.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1378,11 +1378,11 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | ID | Requirement |
 |---|---|
 | FAC-TEN-009 | Three server-enforced access tiers, each requiring a verified individual sign-in: admin (the owner), producer (Port67 staff) and client (any verified sign-up, limited to their own account). Admins are set only through deployment configuration and can never be granted by the application. The admin adds and removes producers inside the app by verified email, with no redeploy. The role is re-evaluated on every request, so removing a producer, disabling a user or losing email verification takes effect immediately, and an unreadable staff registry never promotes anyone. Producers cannot read costs or manage the team. Team changes are recorded in an audit trail. Staff multi-factor authentication and approval of client sign-ups are future scope, not implemented. |
-| FAC-ART-006 | A producer can render an approved motion storyboard to an MP4 from the current approved direction. The render is a deterministic template render (brand colour, logo, direction text; no AI model and no third-party media) of three scenes totalling 15 seconds, so it has no model cost. Only a storyboard approved against the current approved direction can be rendered; the render is audited, one render runs at a time, and a project holds at most ten videos. The file is stored outside the workspace document (Firebase Storage in production) and is downloadable only through the authorised API: producers always, customers only for approved assets while delivery is not paused. Photographic or AI-generated video, audio and captions are future scope, not implemented. |
+| FAC-ART-006 | A producer can render an approved motion storyboard to an MP4 from the current approved direction. The render is a deterministic template render (brand colour, logo, direction text; no AI model and no third-party media) of three scenes totalling 15 seconds, so it has no model cost. Video is optional: not every campaign needs it. A render requires both an approved storyboard and an approved copy set (the AI copy pack if one exists, otherwise the template copy) for the current approved direction. Renders default to a 480 by 480 draft; a 1080 by 1080 HD render happens only when the producer asks for it. the render is audited, one render runs at a time, and a project holds at most ten videos. The file is stored outside the workspace document (Firebase Storage in production) and is downloadable only through the authorised API: producers always, customers only for approved assets while delivery is not paused. Photographic or AI-generated video, audio and captions are future scope, not implemented. |
 
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, and CHG-0020 to CHG-0022 for 1.7.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, and CHG-0023 for 1.8.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

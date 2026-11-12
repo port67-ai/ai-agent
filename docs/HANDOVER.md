@@ -1,3 +1,10 @@
+# Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
+
+2026-11-12; Claude. MP4 render now needs an approved storyboard and an approved copy set, defaults to 480p, and offers HD 1080p on request. Video is optional; content without video needs nothing. Note the video test file had been missing from the repo copy until this change; confirm tests/factory-video.test.ts is in the commit (package.json test:factory runs it). Template renders never use AI tokens, so the saving is encode time, memory and storage; an AI video model would be a separate future slot. Unverified live: Firebase Storage upload and memory on the production instance.
+
+---
+Earlier handover follows.
+
 # Latest handover: research to strategy to content (CHG-0020 to CHG-0022, PRD 1.7.0)
 
 2026-11-12; Claude. Research now returns claim-level findings, gaps and confidence per source (FINDING/GAP/CONFIDENCE line format parsed in research.ts). The direction gained positioning, audience segments, key messages with proof, tone and claims to avoid; AI drafting must supply them with source-bound proof. A new content stage drafts an AI copy pack from the approved direction (content.ts, content-run.ts), validated against evidence including no invented numbers, saved as a draft Copy asset for normal approval, with its own model slot on the AI models page. Existing directions created before this change have no key messages, so the copy pack button stays disabled until a new direction version is drafted. Not verified live: that the chosen model follows the research line format (if it does not, sources fall back to the old whole-answer excerpt), strategy and copy quality, and the Production button in a browser. Run the live smoke test with the new flow and record results. Open: Factory MVP workflow red on PR 11 and 12 runs, log not yet read.

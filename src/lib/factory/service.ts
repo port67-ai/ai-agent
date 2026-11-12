@@ -5,6 +5,7 @@ import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVeri
 import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
 import { safeProviderConfiguration } from "./providers";
 import { runContent } from "./content-run";
+import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
 import { resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
@@ -545,10 +546,14 @@ export async function handleFactory(
         if (!asset || asset.kind !== "motion") throw new Error("Choose a motion storyboard to render");
         if (asset.status !== "approved" || !strategy || strategy.status !== "approved" || strategy.hash !== asset.strategyHash)
           throw new Error("Only a storyboard approved against the current approved direction can be rendered");
+        if (!copySetApproved(p, asset.strategyHash))
+          throw new Error("Approve the copy set before rendering video; not every campaign needs one");
+        const size = data.size === undefined ? 480 : data.size;
+        if (size !== 480 && size !== 1080) throw new Error("Video size must be 480 or 1080");
         if ((p.videos || []).length >= 10) throw new Error("This project has reached its video limit");
-        const bytes = await renderVideo(p, strategy);
+        const bytes = await renderVideo(p, strategy, undefined, size);
         const videoId = id();
-        const video: Video = { id: videoId, assetId: asset.id, assetHash: asset.hash, strategyHash: asset.strategyHash, key: videoKey(a.workspaceId, p.id, videoId), bytes: bytes.length, seconds: SCENE_SECONDS * 3, createdAt: new Date().toISOString(), createdBy: a.subject };
+        const video: Video = { id: videoId, assetId: asset.id, assetHash: asset.hash, strategyHash: asset.strategyHash, key: videoKey(a.workspaceId, p.id, videoId), bytes: bytes.length, size, seconds: SCENE_SECONDS * 3, createdAt: new Date().toISOString(), createdBy: a.subject };
         await putVideo(video.key, bytes);
         await repo(a).mutate(a.workspaceId, (state) => {
           const current = find(state.projects, projectId, a);

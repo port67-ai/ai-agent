@@ -175,3 +175,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-MKT-018 (new), FAC-HAR-005, FAC-CST-001.
 - Evidence: stubbed-transport tests including rejected output retaining usage. Live copy quality unverified.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0023 — 2026-11-12 — Video gated on approved copy set; 480p drafts
+- Author/harness: Claude (Cowork); owner asked that copy and storyboard are approved before rendering, that drafts render at 480 to save resources, and that video stays optional.
+- What/why: POST projects/{id}/video now also requires an approved copy set for the same direction (copy-set.ts: the AI copy pack if one exists, otherwise template copy), with a clear message when missing. Default render is 480 by 480; size 1080 is accepted only when requested (UI: Render 480p draft and Render HD). Video records store their size. The Asset library explains that video is optional and shows why a render is disabled. copy-set.ts is pure so the browser can share the rule. Files: copy-set.ts, video.ts, service.ts, model.ts, Assets.tsx, Portal.tsx, tests/factory-video.test.ts.
+- Requirements: FAC-ART-006 (amended). PRD 1.8.0.
+- Evidence: tests cover the copy gate, size validation, default 480, HD larger than draft. "Tokens" saved is compute and storage only: template renders never used AI tokens.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

@@ -924,8 +924,8 @@ export default function Portal() {
                   operator={operator}
                   busy={busy}
                   command={command}
-                  renderVideo={(assetId) =>
-                    void run(() => api("projects/" + p.id + "/video", { assetId }), "Video rendered and stored. It can take up to a minute.")
+                  renderVideo={(assetId, size = 480) =>
+                    void run(() => api("projects/" + p.id + "/video", { assetId, size }), size === 480 ? "480p draft video rendered and stored." : "HD video rendered and stored. It can take up to a minute.")
                   }
                 />
               )}

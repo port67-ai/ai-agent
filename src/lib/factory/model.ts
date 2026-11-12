@@ -134,6 +134,8 @@ export type Video = {
   strategyHash: string;
   key: string;
   bytes: number;
+  /** Square edge in pixels; drafts are 480 and HD is rendered on request. */
+  size?: number;
   seconds: number;
   createdAt: string;
   createdBy: string;
