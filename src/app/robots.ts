@@ -6,6 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: [
         "/api/",
+        "/portal",
         "/dashboard/",
         "/checkout/",
         "/admin/",

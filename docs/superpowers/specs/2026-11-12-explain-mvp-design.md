@@ -1,0 +1,15 @@
+# EXPLAIN managed creative MVP
+
+Owner authorisation: build autonomously without additional questions or approval, 2026-11-12. Implements PRD 1.1.0 FAC-MKT-001–011 with phase-two measurement scaffolding, not automated publishing/performance ingestion.
+
+Use the existing Next.js app, with a separate /portal workspace and /api/factory API. Preserve the public website. Research-led marketing content and creative production is the product strapline. A light editorial workspace uses a dark navigation rail, orange highlights and evidence/approval states.
+
+Data: project -> brief -> segmented evidence -> versioned direction -> immutable approval -> role-specific production tasks -> versioned assets -> delivery and measurement hypotheses. Audit every transition. Production requires customer approval of the exact direction hash; changes invalidate approval. Customer views exclude unshared drafts; server roles and project membership decide access. Operators invite clients with expiring, revocable, hashed bearer links; operator login is a server-configured secret. HttpOnly signed sessions, origin checks, bounded requests and rate limits protect mutation endpoints.
+
+Persistence: local atomic JSON store with serialized mutations supports a single Node instance and persistent disk; a named Firebase Admin adapter uses separate dedicated Factory project/database settings when configured. No production Firebase project is assumed from legacy files. Live service fails closed without operator/session configuration. An explicit synthetic demo runs in isolated visitor workspaces and cannot reach real records. Demo role switching is demo-only.
+
+Research: manual source collection/review works immediately. Approved OpenAI research adapter optionally collects independently segmented public research using web search, stores citations/usage and marks results unreviewed. No API key => visible unavailable state, not invented results. Source review distinguishes supported evidence from client assertions. Campaign drafts are conservative, explicitly labelled proposals; human editing and approval are mandatory. Production provides real downloadable branded SVG and HTML motion-storyboard assets plus copy/script and task packages; it does not claim cinematic rendering or autonomous creative quality. Capability-gap proposals remain unpromoted until reviewed/evaluated.
+
+Alternatives: customer self-service generator conflicts with the managed-service brief; a large orchestrator/warehouse adds infrastructure before proving one slice. Chosen: bounded typed domain/API, reviewable records and reusable provider/repository seams. Unavailable cloud credentials are a deployment limitation, not a reason to expose data or fabricate provisioning.
+
+Verification: state-machine/version/isolation/auth/input tests, repository durability/concurrency tests, all existing tests, TypeScript, targeted lint, production build, desktop/mobile browser end-to-end review. No external customer communication, auto-posting or ad spend. Product runtime remains explicit about demo/provider/storage state.

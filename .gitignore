@@ -45,3 +45,9 @@ next-env.d.ts
 
 # Local implementation scratch and package cache
 /work/
+
+# Private Factory runtime records and isolated demos
+.factory-data/
+.factory-demo/
+.factory-media/
+firebase-debug.log

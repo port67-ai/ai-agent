@@ -3,21 +3,6 @@ import { firebaseDb } from '@/lib/services/firebase-db';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-// Initialize Firebase Admin SDK
-if (!getApps().length) {
-    try {
-        initializeApp({
-            credential: cert({
-                projectId: process.env.FIREBASE_PROJECT_ID,
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-            }),
-        });
-    } catch (error) {
-        console.error('Firebase admin initialization error:', error);
-    }
-}
-
 async function verifyAuthToken(request: NextRequest): Promise<string | null> {
     try {
         const authHeader = request.headers.get('authorization');
@@ -25,6 +10,11 @@ async function verifyAuthToken(request: NextRequest): Promise<string | null> {
             return null;
         }
 
+        // Initialisation belongs to authenticated runtime use, not module evaluation/build.
+        if (!getApps().some(app => app.name === '[DEFAULT]')) {
+            if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) return null;
+            initializeApp({credential: cert({projectId: process.env.FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')})});
+        }
         const token = authHeader.substring(7);
         const decodedToken = await getAuth().verifyIdToken(token);
         return decodedToken.uid;
@@ -85,7 +75,7 @@ export async function PUT(request: NextRequest) {
             businessType: businessDetails.businessType || '',
             currentPhoneNumber: businessDetails.phoneNumber || '',
             assistantPhoneNumber: '', // Will be assigned later
-            bookingDays: businessDetails.workingDays?.reduce((acc: any, day: string) => {
+            bookingDays: businessDetails.workingDays?.reduce((acc: Record<string, boolean>, day: string) => {
                 acc[day] = true;
                 return acc;
             }, {

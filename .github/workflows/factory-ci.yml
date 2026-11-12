@@ -1,0 +1,36 @@
+name: Factory MVP
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run check:factory
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Browser acceptance
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/port67-server.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://localhost:3000/api/factory/session > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: factory-browser-screenshots
+          path: work/screenshots

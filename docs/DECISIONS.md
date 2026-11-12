@@ -12,3 +12,6 @@ Material technical decisions use docs/adr/ADR-NNNN-title.md with status, date, c
 
 ## PRODUCT-001 — 2026-11-12 — Owner-confirmed EXPLAIN expansion
 Customer supplies a minimal brief; Port67 manages segmented research, recommends messaging/design with detailed evidence-based reasoning, obtains customer direction approval and manages production/final asset approval. Supports B2B/B2C/mixed audiences. New needs can trigger proposed specialist agents/skills, with reviewed promotion rather than autonomous production permissions. See PRD 1.1.0 section 10.6 and CHG-0003. This decision does not approve the remaining baseline architecture or revise the other commercial guardrails.
+
+## PRODUCT-002 — 2026-11-12 — Autonomous MVP execution
+Owner explicitly requested building now without further questions/approvals, including GitHub/Firebase setup where accessible. Implement a standalone managed-service slice in this repository without Synapse reuse. Agent-selected implementation choices: retain Next.js; isolate /portal; use bounded local persistence until a dedicated cloud account is available; provide explicit demo/manual/provider boundaries; deliver SVG/HTML/copy concepts rather than claim finished rendered video. See adr/ADR-0001-bounded-creative-mvp.md and CHG-0004. These choices do not approve all outstanding platform architecture.

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { getFirestore, collection, getDocs, doc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { app } from '@/lib/services/firebase';
+import { getFirebaseApp } from '@/lib/services/firebase';
 
 export default function DatabaseCleanupPage() {
     const [isDeleting, setIsDeleting] = useState(false);
@@ -50,7 +50,7 @@ export default function DatabaseCleanupPage() {
         setCompleted(false);
 
         try {
-            const db = getFirestore(app);
+            const db = getFirestore(getFirebaseApp());
 
             addStatus('🗑️  Starting database cleanup...');
             addStatus('');
