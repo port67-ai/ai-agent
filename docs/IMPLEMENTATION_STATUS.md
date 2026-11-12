@@ -149,3 +149,5 @@ FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION i
 | FAC-HAR-004 | Owner-requested 2026-11-12 | IN_PROGRESS | All four drafting adapters and grounded OpenAI/Gemini adapters tested with explicit transport fixtures; selected live models unverified |
 
 Supporting FAC-TEN-001/002/003/006, FAC-CST-001/002/004/008 and FAC-HAR-001/002 have additional working subsets. No full requirement is promoted to VERIFIED: no authenticated cloud provisioning or paid campaign occurred. See ACCOUNTS_VERIFICATION.md and ACCOUNTS_PROVIDERS_COSTS.md. One initial account per user; enterprise assignments/team RBAC and large media/cost infrastructure remain gaps.
+
+CHG-0009 remote evidence: Firestore emulator transaction/reload/client-deny suite passed at120c947, run43209732747. This verifies the adapter against an emulator, not provisioning or operation of ai-agency-3671b. Sign-in-time revocation regression added in follow-up.

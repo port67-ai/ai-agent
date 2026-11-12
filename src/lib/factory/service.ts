@@ -260,7 +260,7 @@ export async function handleFactory(
       if(!liveReady()) return json({error:"Live workspace is not configured"},503);
       const identity=await verifyFactoryIdentity(text(data.idToken,"identity token",16384,true),identityVerifier);
       await registerAccount(repository,{id:identity.accountId,ownerUid:identity.uid,...(identity.email?{email:identity.email}:{}),createdAt:new Date().toISOString()});
-      return login(request,{subject:identity.uid,identity:"firebase",role:identity.role,admin:identity.admin,accountId:identity.accountId,workspaceId:identity.accountId,issuedAt:Date.now(),expires:Date.now()+8*3600000});
+      return login(request,{subject:identity.uid,identity:"firebase",role:identity.role,admin:identity.admin,accountId:identity.accountId,workspaceId:identity.accountId,issuedAt:identity.authenticatedAt!,expires:Date.now()+8*3600000});
     }
     if (route === "session" && request.method === "GET") {
       const response = json({

@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { revalidateIdentitySession, verifyFactoryIdentity } from '../src/lib/factory/identity';
 const project = 'ai-agency-3671b';
 process.env.PORT67_FIREBASE_PROJECT_ID = project;
-const claims = { uid: 'customer-123', aud: project, iss: `https://securetoken.google.com/${project}`, email: 'person@example.com', email_verified: true, admin: true, role: 'operator' };
+const claims = { uid: 'customer-123', aud: project, iss: `https://securetoken.google.com/${project}`, email: 'person@example.com', email_verified: true, auth_time:Math.floor(Date.now()/1000)-10, admin: true, role: 'operator' };
 async function main() {
   let checked = false;
   const first = await verifyFactoryIdentity('token', async (_, revoked) => { checked = revoked; return claims; });
   assert.equal(checked, true);
+  assert.equal((first as {authenticatedAt?:number}).authenticatedAt,claims.auth_time*1000,"retain original sign-in time for revocation checks");
   assert.equal(first.role, 'customer');
   assert.equal(first.admin, false);
   assert.match(first.accountId, /^acct_[a-f0-9]{32}$/);

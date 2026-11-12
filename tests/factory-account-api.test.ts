@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promis
 async function main(){
  const dir=await mkdtemp(join(tmpdir(),'port67-account-api-'));process.env.PORT67_DATA_DIR=dir;process.env.PORT67_SESSION_SECRET='s'.repeat(48);process.env.PORT67_OPERATOR_PASSWORD='p'.repeat(24);process.env.PORT67_FIREBASE_PROJECT_ID='ai-agency-3671b';process.env.PORT67_ADMIN_UIDS='owner';process.env.PORT67_OPERATOR_UIDS='producer';
  const {handleFactory}=await import('../src/lib/factory/service');
- const verifier=async(token:string)=>({uid:token,aud:'ai-agency-3671b',iss:'https://securetoken.google.com/ai-agency-3671b',email_verified:true,email:token+'@example.test'});
+ const verifier=async(token:string)=>({uid:token,aud:'ai-agency-3671b',iss:'https://securetoken.google.com/ai-agency-3671b',email_verified:true,auth_time:Math.floor(Date.now()/1000),email:token+'@example.test'});
  let disabled=false;
  const lookup=async(uid:string)=>({uid,emailVerified:true,disabled,tokensValidAfterTime:new Date(0).toISOString()});
  let cookie='';
