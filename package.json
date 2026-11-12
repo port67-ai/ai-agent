@@ -10,22 +10,23 @@
     "clear-users": "tsx scripts/clear-all-users.ts",
     "clear-db": "tsx scripts/clear-database.ts",
     "test": "tsx tests/enquiries.test.ts && tsx tests/enquiry-route.test.ts && tsx tests/studio-render.test.tsx && tsx tests/enquiry-attempt.test.ts && npm run test:factory",
-    "test:factory": "tsx tests/factory.test.ts && tsx tests/factory-server.test.ts && tsx tests/factory-api.test.ts && tsx tests/factory-portal.test.tsx && tsx tests/legacy-firebase.test.ts && tsx tests/factory-research.test.ts && tsx tests/factory-rate.test.ts",
+    "test:factory": "tsx tests/factory.test.ts && tsx tests/factory-server.test.ts && tsx tests/factory-api.test.ts && tsx tests/factory-portal.test.tsx && tsx tests/legacy-firebase.test.ts && tsx tests/factory-research.test.ts && tsx tests/factory-rate.test.ts && tsx tests/factory-config.test.ts && tsx tests/factory-synthesis.test.ts && tsx tests/factory-synthesis-run.test.ts",
     "check:factory": "eslint src/lib/factory src/components/factory src/app/portal src/app/api/factory tests/factory*.ts*",
-    "test:browser": "node tests/factory-browser.cjs"
+    "test:browser": "node tests/factory-browser.cjs",
+    "audit:security": "npm audit --audit-level=high"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.37.3",
+    "@clerk/nextjs": "^6.39.9",
     "airtable": "^0.12.2",
     "clsx": "^2.1.1",
-    "firebase": "^12.9.0",
-    "firebase-admin": "^13.6.1",
+    "firebase": "^12.19.0",
+    "firebase-admin": "^13.10.0",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.563.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "stripe": "^20.3.1",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "stripe": "20.3.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
@@ -35,10 +36,13 @@
     "@types/react-dom": "^19",
     "dotenv": "^17.3.1",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.4.6",
     "playwright": "^1.58.2",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7"
   }
 }

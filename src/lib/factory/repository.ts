@@ -1,3 +1,4 @@
+import { firebaseCredentialMode } from "./config";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -6,6 +7,17 @@ import type { Database } from "./model";
 export interface Repository {
   read(workspace: string): Promise<Database>;
   mutate<T>(workspace: string, fn: (db: Database) => T): Promise<T>;
+}
+// Reserve 80KB per active paid task so validation failures/completions can still persist usage.
+function snapshotLimit(db: Database) {
+  return (
+    700_000 -
+    db.projects.reduce(
+      (n, p) => n + p.runs.filter((r) => r.status === "running").length,
+      0,
+    ) *
+      80_000
+  );
 }
 const empty = (): Database => ({
   schemaVersion: 1,
@@ -43,7 +55,7 @@ export class LocalRepository implements Repository {
         const db = await this.read(workspace);
         const result = fn(db);
         const serialized = JSON.stringify(db);
-        if (Buffer.byteLength(serialized) > 700_000)
+        if (Buffer.byteLength(serialized) > snapshotLimit(db))
           throw new Error(
             "Workspace storage limit reached; export and archive completed projects",
           );
@@ -74,7 +86,12 @@ export class FirebaseRepository implements Repository {
     if (!projectId)
       throw new Error("Dedicated Factory Firebase project is not configured");
     const name = "port67-factory";
-    const credentials = process.env.PORT67_FIREBASE_SERVICE_ACCOUNT;
+    const credentials =
+      firebaseCredentialMode() === "adc"
+        ? undefined
+        : process.env.PORT67_FIREBASE_SERVICE_ACCOUNT;
+    if (firebaseCredentialMode() === "service-account" && !credentials)
+      throw new Error("Dedicated Factory service account is not configured");
     const app =
       getApps().find((a) => a.name === name) ||
       initializeApp(
@@ -104,7 +121,7 @@ export class FirebaseRepository implements Repository {
       const db = snapshot.exists ? (snapshot.data() as Database) : empty();
       const result = fn(db);
       const serialized = JSON.stringify(db);
-      if (Buffer.byteLength(serialized) > 700_000)
+      if (Buffer.byteLength(serialized) > snapshotLimit(db))
         throw new Error("Workspace storage limit reached");
       tx.set(ref, JSON.parse(serialized));
       return result;

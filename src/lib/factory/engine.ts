@@ -188,6 +188,44 @@ function motion(p: Project, s: Strategy) {
 export function makeAsset(_p: Project, a: Asset) {
   return a.content;
 }
+export const hasProviderConsent = (p: Project) =>
+  p.aiConsent?.dataClass === "PUBLIC" &&
+  p.aiConsent.briefHash === digest(JSON.stringify(p.brief));
+export function requireProviderConsent(p: Project) {
+  if (!hasProviderConsent(p))
+    throw new Error(
+      "Authorise this exact project brief for the configured AI provider before making paid calls",
+    );
+}
+function invalidateDirection(p: Project) {
+  if (!p.strategies.length) return;
+  const previous = latest(p);
+  const next = {
+    ...previous,
+    id: id(),
+    version: p.strategies.length + 1,
+    status: "draft" as const,
+    createdAt: now(),
+    approvedBy: undefined,
+    approvedAt: undefined,
+    feedback: undefined,
+  };
+  next.evidenceIds = next.evidenceIds.filter((e) =>
+    p.sources.some(
+      (source) => source.id === e && source.status === "supported",
+    ),
+  );
+  next.insightIds = p.insights
+    .filter(
+      (insight) =>
+        insight.status !== "draft" &&
+        insight.status !== "rejected" &&
+        insight.sourceIds.every((e) => next.evidenceIds.includes(e)),
+    )
+    .map((insight) => insight.id);
+  next.hash = strategyHash(next);
+  p.strategies.push(next);
+}
 export function transition(
   input: Project,
   c: Record<string, unknown>,
@@ -207,7 +245,20 @@ export function transition(
   if (customerActions.includes(type) && a.role !== "customer")
     throw new Error("Customer approval identity required");
   if (requestId && p.processed.includes(requestId)) return p;
-  if (type === "updateBrief") {
+  if (type === "authoriseAI") {
+    if (c.confirm !== true)
+      throw new Error(
+        "Confirm that the brief is authorised PUBLIC data before enabling AI",
+      );
+    p.aiConsent = {
+      briefHash: digest(JSON.stringify(p.brief)),
+      dataClass: "PUBLIC",
+      by: a.subject,
+      at: now(),
+    };
+  } else if (type === "revokeAI") {
+    delete p.aiConsent;
+  } else if (type === "updateBrief") {
     if (p.strategies.length)
       throw new Error(
         "Brief is locked after direction work begins; request a scoped change from Port67",
@@ -227,6 +278,7 @@ export function transition(
       p.id,
     );
     p.brief = checked.brief;
+    delete p.aiConsent;
   } else if (type === "addSource") {
     if (!segments.includes(c.segment as Segment))
       throw new Error("Invalid research segment");
@@ -262,28 +314,25 @@ export function transition(
         "A client assertion cannot be marked independently supported",
       );
     source.status = c.status;
-    // Revalidate the current direction after any evidence review; old versions remain history.
-    if (p.strategies.length) {
-      const previous = latest(p);
-      const next = {
-        ...previous,
-        id: id(),
-        version: p.strategies.length + 1,
-        status: "draft" as const,
-        createdAt: now(),
-        approvedBy: undefined,
-        approvedAt: undefined,
-        feedback: undefined,
-      };
-      next.evidenceIds = next.evidenceIds.filter((e) =>
-        p.sources.some((x) => x.id === e && x.status === "supported"),
-      );
-      next.insightIds = p.insights
-        .filter((i) => i.sourceIds.every((e) => next.evidenceIds.includes(e)))
-        .map((i) => i.id);
-      next.hash = strategyHash(next);
-      p.strategies.push(next);
-    }
+    invalidateDirection(p);
+  } else if (type === "reviewInsight") {
+    const insight = p.insights.find((i) => i.id === c.id);
+    if (!insight) throw new Error("Insight not found");
+    if (c.status !== "reviewed" && c.status !== "rejected")
+      throw new Error("Invalid insight review status");
+    if (
+      c.status === "reviewed" &&
+      insight.sourceIds.some(
+        (e) =>
+          !p.sources.some(
+            (source) => source.id === e && source.status === "supported",
+          ),
+      )
+    )
+      throw new Error("Insight needs reviewed supporting evidence");
+    insight.status = c.status;
+    if (p.strategies.at(-1)?.insightIds.includes(insight.id))
+      invalidateDirection(p);
   } else if (type === "addInsight") {
     const sourceIds = Array.isArray(c.sourceIds)
       ? c.sourceIds.filter((x): x is string => typeof x === "string")
@@ -302,6 +351,7 @@ export function transition(
       title: text(c.title, "title", 200, true),
       interpretation: text(c.interpretation, "interpretation", 3000, true),
       sourceIds,
+      status: "reviewed",
       confidence:
         c.confidence === "strong"
           ? "strong"
@@ -344,8 +394,11 @@ export function transition(
       cta: text(c.cta, "cta", 100) || old?.cta || "Discover more",
       evidenceIds: evidence.map((x) => x.id),
       insightIds: p.insights
-        .filter((i) =>
-          i.sourceIds.every((e) => evidence.some((s) => s.id === e)),
+        .filter(
+          (i) =>
+            i.status !== "draft" &&
+            i.status !== "rejected" &&
+            i.sourceIds.every((e) => evidence.some((s) => s.id === e)),
         )
         .map((i) => i.id),
       hypothesis:
@@ -377,6 +430,8 @@ export function transition(
         p.insights.some(
           (insight) =>
             insight.id === e &&
+            insight.status !== "draft" &&
+            insight.status !== "rejected" &&
             insight.sourceIds.every((source) => s.evidenceIds.includes(source)),
         ),
       )
@@ -505,7 +560,12 @@ export function transition(
 export function projectView(input: Project, a: Principal): Project {
   access(input, a);
   const p = structuredClone(input);
-  if (a.role === "operator") return p;
+  if (a.role === "operator") {
+    p.aiAuthorised = hasProviderConsent(p);
+    return p;
+  }
+  delete p.aiConsent;
+  delete p.aiAuthorised;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");
   const visible = new Set(p.strategies.flatMap((s) => s.evidenceIds));

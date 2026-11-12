@@ -108,6 +108,40 @@ require("node:fs").mkdirSync("work/screenshots", { recursive: true });
   await page
     .getByRole("heading", { name: "Learning starts with a clear hypothesis." })
     .waitFor();
+  await page.getByRole("button", { name: "Back to producer" }).click();
+  await page
+    .getByRole("button", { name: "Workspace setup", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Configuration checks" }).waitFor();
+  await page.getByText("PORT67_SESSION_SECRET", { exact: true }).waitFor();
+  await page.screenshot({
+    path: "work/screenshots/workspace-setup.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Research room", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Authorise public project data", exact: true })
+    .click();
+  await page
+    .getByText(
+      "Project brief authorised as PUBLIC data for the configured provider",
+      { exact: true },
+    )
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Draft insights with AI" })
+      .isDisabled(),
+    true,
+    "synthetic demo cannot make paid drafting calls",
+  );
+  await page
+    .getByRole("button", { name: "Revoke AI access", exact: true })
+    .click();
+  await page.getByText("AI authorisation revoked", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "View as customer" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("button", { name: "Overview", exact: true }).click();

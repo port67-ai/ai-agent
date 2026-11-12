@@ -113,14 +113,14 @@ Date: 2026-11-12. Scope is implemented and locally tested on feat/explain-manage
 | Requirement | Working subset | Remaining gap |
 |---|---|---|
 | FAC-MKT-001 / FAC-TEN-006 | Minimal intake, optional brand/PNG logo/context, scoped invitation/customer portal, brief edits before direction | Individual accounts/MFA, broader file storage and launch privacy/retention review |
-| FAC-MKT-002 | B2B/B2C/mixed free-text audience, editable campaign approach, explicit unknowns | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
-| FAC-MKT-003 | Four segments, manual sources, review, assertions, optional cited web-research adapter | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
-| FAC-MKT-004 | Source-linked insights and campaign message/reasoning/design/format/hypothesis; sharing requires evidence/insight | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
-| FAC-MKT-005 | Version/hash-specific customer approval and revision pause before production | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
-| FAC-MKT-006 | Versioned specialist task instructions and evidence/strategy lineage | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
-| FAC-MKT-007 | Original SVG, HTML motion storyboard and copy/script drafts; review, approval, current-version downloads/manifest | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-002 | B2B/B2C/mixed free-text audience, editable campaign approach, explicit unknowns | Live campaign-quality evaluation and provider smoke tests |
+| FAC-MKT-003 | Four segments, manual sources, review, assertions, optional cited web-research adapter | Live source-permission/provider smoke tests and broader collectors |
+| FAC-MKT-004 | Source-linked insights and campaign message/reasoning/design/format/hypothesis; sharing requires evidence/insight | Quality remains human-reviewed; campaign effectiveness unmeasured |
+| FAC-MKT-005 | Version/hash-specific customer approval and revision pause before production | Enterprise reviewer assignment and individual accounts |
+| FAC-MKT-006 | Versioned specialist task instructions and evidence/strategy lineage | Full media contracts, monetary budgets and worker dispatch |
+| FAC-MKT-007 | Original SVG, HTML motion storyboard and copy/script drafts; review, approval, current-version downloads/manifest | Rendered MP4, broader uploads and rights workflow |
 | FAC-MKT-008–010 | Source-controlled reviewed registry, portable request/result interfaces, recorded capability gaps | Agents drafting/evaluating/promoting new specialist code; unsupported promotion stays blocked |
-| FAC-MKT-011 | Source -> insight -> strategy -> task -> asset -> approval hashes and hypothesis view | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-011 | Source -> insight -> strategy -> task -> asset -> approval hashes and hypothesis view | Publication/account/measurement mappings |
 | FAC-MKT-012 | Phase-two placeholder and honest disconnected state | All live analytics/publishing integrations remain PLANNED |
 
 Supporting subsets: FAC-DEV tests/CI/docs; FAC-HAR contracts only; FAC-CST raw usage/invocation limits only; FAC-WFL approval/idempotency/research recovery only; FAC-ART immutable template content; FAC-TEN server workspace/project isolation. Firebase integration, full security rule tests, full cost accounting and multi-provider parity remain NOT_VERIFIED.
@@ -128,3 +128,14 @@ Supporting subsets: FAC-DEV tests/CI/docs; FAC-HAR contracts only; FAC-CST raw u
 CHG-0005: synthetic demo default storage moved to a writable OS-temporary namespace; default-path regression added. This does not promote cloud persistence or serverless session durability to VERIFIED.
 
 CHG-0006: first remote application run passed npm ci, tests, lint, types and build but browser install rejected Ubuntu 26. Runner pinned to supported Ubuntu 24.04; subsequent run is authoritative.
+
+## CHG-0007/0008 — live foundation
+
+| Requirement | Intent | Delivery | Evidence / gap |
+|---|---|---|---|
+| FAC-MKT-013 | Authorised next-stage scope | IN_PROGRESS | Exact-brief consent/revocation implemented and regression-tested; live provider unverified |
+| FAC-MKT-014 | Authorised next-stage scope | IN_PROGRESS | Reviewed source-grounded AI insight/direction drafting with human gates; model transport stubbed |
+| FAC-MKT-015 | Authorised next-stage scope | IN_PROGRESS | Producer setup and production configuration gates tested; actual Render storage/cloud activation pending |
+| FAC-DEV-008 | Authorised next-stage scope | IN_PROGRESS | Local audit 0 high/critical, CI gate added; remote result in GitHub; 15 moderate findings tracked |
+
+FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION is not implied: see FOUNDATION_VERIFICATION.md for exact local evidence and RENDER_ACTIVATION.md for outstanding infrastructure tests. Earlier “acceptance pending” entries describe full requirements, not absence of bounded local tests.

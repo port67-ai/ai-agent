@@ -1,0 +1,11 @@
+# Live-foundation verification — 2026-11-12
+
+Branch feat/live-research-foundation; base ee6523a. Exact committed reference is resolved through Git history. CHG-0007/0008; FAC-MKT-013–015, FAC-DEV-008.
+
+Passed locally: npm test; npm run check:factory; npx tsc --noEmit; npm run build; PORT67_TEST_ORIGIN=http://localhost:3010 npm run test:browser against a fresh production server. Browser covered setup, public-data consent/revocation and the existing producer/customer approval/download desktop/mobile journey. API tests cover operator-only readiness. Provider responses were stubbed; no paid request or cloud verification occurred.
+
+Regression checks cover invalid/unknown source IDs, unreviewed AI insights, unshared generated strategy, concurrent human direction edits, revoked/changed context, research reservation races, late recovered responses, usage retained on rejected outputs, storage headroom, explicit ADC selection and temporary-directory rejection. RED→GREEN checks reproduced the review findings before fixes. Independent read-only review identified consent races plus ADC precedence, temporary root and direction concurrency issues; all addressed with tests. No full PRD VERIFIED promotion follows from local checks.
+
+Dependency audit: the original clean-install report contained 40 findings (5 critical,20 high,12 moderate,3 low). After compatible upgrades, bounded native npm audit --json --audit-level=high returned **0 critical,0 high,15 moderate,0 low**. CI now runs npm run audit:security. Next 16.4.6, React 19.3.1, Clerk 6.39.9, Firebase 12.19.0 and Admin 13.10.0 were installed. Same-major @grpc/grpc-js override ^1.14.7 removes the vulnerable pinned client transitive version; cloud compatibility still requires a smoke test. Stripe remains pinned 20.3.1 to preserve the existing API-version contract.
+
+Remaining moderate/meta findings stem from minimatch (GHSA-g3hv-75wg-m249) and uuid (GHSA-w5hq-g745-h8pq). Track upstream fixes; do not claim a clean all-severity audit or force the suggested Firebase Admin major migration without compatibility work. Primary patched advisory reference: https://github.com/advisories/GHSA-2464-fhr4-w9xw. Full local logs are ignored work artifacts; GitHub CI is the durable remote evidence.

@@ -1,3 +1,6 @@
+import { runSynthesis } from "./synthesis-run";
+import { synthesisReady } from "./synthesis";
+import { configurationStatus } from "./config";
 import { randomBytes } from "node:crypto";
 import {
   cookieName,
@@ -18,6 +21,8 @@ import {
   projectView,
   text,
   transition,
+  requireProviderConsent,
+  hasProviderConsent,
 } from "./engine";
 import { demoRepository, repository, type Repository } from "./repository";
 import { researchReady, researchSegment } from "./research";
@@ -232,6 +237,7 @@ export async function handleFactory(
           demoEnabled: demoEnabled(),
           liveReady: liveReady(),
           researchReady: researchReady(),
+          synthesisReady: synthesisReady(),
           storage:
             process.env.PORT67_STORAGE === "firebase"
               ? "Firebase"
@@ -320,6 +326,10 @@ export async function handleFactory(
       });
     }
     if (!a) return json({ error: "Sign in to continue" }, 401);
+    if (route === "readiness" && request.method === "GET") {
+      operator(a);
+      return json(configurationStatus());
+    }
     if (route === "demo-role" && request.method === "POST") {
       if (!a.demo) return json({ error: "Role switching is demo-only" }, 403);
       if (data.role !== "operator" && data.role !== "customer")
@@ -450,6 +460,27 @@ export async function handleFactory(
           },
         });
       }
+      if (path[2] === "synthesis" && request.method === "POST") {
+        operator(a);
+        if (a.demo)
+          throw new Error("Paid AI drafting is disabled in synthetic demo");
+        if (!synthesisReady())
+          return json(
+            {
+              error:
+                "AI drafting is not configured. Manual paths remain available.",
+            },
+            503,
+          );
+        if (data.stage !== "insights" && data.stage !== "strategy")
+          throw new Error("Unknown AI drafting stage");
+        return json({
+          project: projectView(
+            await runSynthesis(repo(a), a, projectId, data.stage),
+            a,
+          ),
+        });
+      }
       if (path[2] === "recover-research" && request.method === "POST") {
         operator(a);
         await repo(a).mutate(a.workspaceId, (state) => {
@@ -498,9 +529,11 @@ export async function handleFactory(
           );
         if (!segments.includes(data.segment as Segment))
           throw new Error("Invalid research segment");
+        requireProviderConsent(p);
         const segment = data.segment as Segment;
         const run: ResearchRun = {
           id: id(),
+          stage: "research",
           at: new Date().toISOString(),
           status: "running",
           segment,
@@ -513,6 +546,11 @@ export async function handleFactory(
         };
         await repo(a).mutate(a.workspaceId, (state) => {
           const current = find(state.projects, projectId, a);
+          requireProviderConsent(current);
+          if (digest(JSON.stringify(current.brief)) !== run.contextHash)
+            throw new Error(
+              "Brief changed before research reservation; refresh and authorise the current context",
+            );
           if (
             current.runs.length >=
             Math.max(
@@ -545,7 +583,15 @@ export async function handleFactory(
               ? "recorded"
               : "unknown";
             record.providerRequestId = result.providerRequestId;
+            const contextError =
+              record.status !== "running"
+                ? "Research task was recovered or cancelled; no late findings accepted"
+                : !hasProviderConsent(current) ||
+                    record.contextHash !== digest(JSON.stringify(current.brief))
+                  ? "Research context or authorisation changed; no stale findings accepted"
+                  : "";
             const error =
+              contextError ||
               result.error ||
               (current.sources.length + result.sources.length > 150
                 ? "Source limit reached; findings rejected but provider usage retained"

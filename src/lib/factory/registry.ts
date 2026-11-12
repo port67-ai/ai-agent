@@ -3,7 +3,7 @@ export interface CapabilityDefinition {
   id: string;
   version: string;
   name: string;
-  kind: "research" | "human" | "template";
+  kind: "research" | "human" | "template" | "synthesis";
   inputContract: string;
   outputContract: string;
   permissions: readonly string[];
@@ -30,6 +30,27 @@ export const capabilityRegistry: readonly CapabilityDefinition[] = [
     inputContract: "Reviewed Source[] + Insight[] + ProjectBrief",
     outputContract: "CampaignStrategy/1.0",
     permissions: [],
+    approvalRequired: true,
+  },
+  {
+    id: "analysis.insights",
+    version: "1.0.0",
+    name: "Insight draft analyst",
+    kind: "synthesis",
+    inputContract: "Authorised PUBLIC brief + reviewed public Source[]",
+    outputContract: "Unreviewed InsightDraft[]/1.0",
+    permissions: ["model-call-public-data"],
+    approvalRequired: true,
+  },
+  {
+    id: "drafting.direction",
+    version: "1.0.0",
+    name: "Campaign direction drafter",
+    kind: "synthesis",
+    inputContract:
+      "Authorised PUBLIC brief + reviewed Source[] + accepted Insight[]",
+    outputContract: "Unshared CampaignStrategy/1.0",
+    permissions: ["model-call-public-data"],
     approvalRequired: true,
   },
   {

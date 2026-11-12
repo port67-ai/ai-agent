@@ -39,6 +39,8 @@ export type Source = {
   method: string;
 };
 export type Insight = {
+  status?: "draft" | "reviewed" | "rejected";
+  generatedByRunId?: string;
   id: string;
   title: string;
   interpretation: string;
@@ -47,6 +49,7 @@ export type Insight = {
   createdAt: string;
 };
 export type Strategy = {
+  generatedByRunId?: string;
   id: string;
   version: number;
   status: "draft" | "shared" | "approved" | "changes_requested";
@@ -112,6 +115,11 @@ export type Audit = {
   detail: string;
 };
 export type ResearchRun = {
+  capabilityId?: string;
+  capabilityVersion?: string;
+  stage?: "research" | "insights" | "strategy";
+  inputHash?: string;
+  sourceIds?: string[];
   leaseExpiresAt?: string;
   contextHash?: string;
   contextSnapshot?: Brief;
@@ -120,13 +128,20 @@ export type ResearchRun = {
   id: string;
   at: string;
   status: "running" | "completed" | "failed";
-  segment: Segment;
+  segment?: Segment;
   provider: string;
   model: string;
   usage?: Record<string, number>;
   error?: string;
 };
 export type Project = {
+  aiConsent?: {
+    briefHash: string;
+    dataClass: "PUBLIC";
+    by: string;
+    at: string;
+  };
+  aiAuthorised?: boolean;
   id: string;
   workspaceId: string;
   createdAt: string;
