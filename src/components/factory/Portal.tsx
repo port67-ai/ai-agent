@@ -21,7 +21,6 @@ import {
   Menu,
   RefreshCw,
   Users,
-  Cpu,
   Bot,
 } from "lucide-react";
 import { segments, type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
@@ -33,7 +32,6 @@ import Research from "./Research";
 import WorkspaceSetup from "./WorkspaceSetup";
 import AdminCosts from "./AdminCosts";
 import Team from "./Team";
-import AiModels from "./AiModels";
 import AiAgents from "./AiAgents";
 import Direction from "./Direction";
 import Assets from "./Assets";
@@ -60,7 +58,6 @@ type Tab =
   | "capabilities"
   | "setup"
   | "team"
-  | "ai"
   | "agents"
   | "admin";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
@@ -75,14 +72,12 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "setup", label: "Workspace setup", icon: Settings2 },
   { id: "team", label: "Team access", icon: Users },
   { id: "agents", label: "AI agents", icon: Bot },
-  { id: "ai", label: "AI models", icon: Cpu },
   { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
 /** Owner and setup pages are not about one project, so they get their own subtitle and no account or project pickers. */
 const adminSubtitles: Partial<Record<Tab, string>> = {
   team: "Decide who can work as a producer.",
-  agents: "Every agent: what it does, which model runs it, and what it has done.",
-  ai: "Choose which model runs each job, and what it costs.",
+  agents: "Every agent, the model that runs it, how they pass data, and what each has done.",
   admin: "Private API spend against your monthly cap.",
   setup: "Check the live workspace is ready.",
 };
@@ -260,7 +255,7 @@ export default function Portal() {
           {nav
             .filter(
               (n) =>
-                n.id === "admin" || n.id === "team" || n.id === "ai" || n.id === "agents" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
+                n.id === "admin" || n.id === "team" || n.id === "agents" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
                 !["production", "capabilities", "setup"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
@@ -457,8 +452,6 @@ export default function Portal() {
             <AdminCosts />
           ) : tab === "agents" && principal.admin ? (
             <AiAgents />
-          ) : tab === "ai" && principal.admin ? (
-            <AiModels />
           ) : tab === "team" && principal.admin ? (
             <Team />
           ) : tab === "setup" && operator ? (

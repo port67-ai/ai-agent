@@ -46,6 +46,9 @@ const live = renderToStaticMarkup(<ResearchProgress p={{ ...fresh, researchReque
 assert.ok(live.includes('Researching now') && live.includes('Queued'));
 const waiting = renderToStaticMarkup(<ResearchProgress p={{ ...fresh, researchRequest: { at, by: 'c', channels: ['youtube'] } }} operator={false} {...base} />);
 assert.ok(waiting.includes('Waiting for Port67 to start'));
+assert.ok(waiting.includes('Research requested') && waiting.includes('Waiting for a producer'), 'the wait is a visible step, not an empty page');
+const producerWaiting = renderToStaticMarkup(<ResearchProgress p={{ ...fresh, researchRequest: { at, by: 'c', channels: ['youtube'] } }} operator={true} {...base} />);
+assert.ok(producerWaiting.includes('Click Start research above'));
 const none = renderToStaticMarkup(<ResearchProgress p={fresh} operator={false} {...base} />);
 assert.ok(none.includes('Not started') && none.includes('Choose your launch channels'));
 const done = renderToStaticMarkup(<ResearchProgress p={{ ...fresh, researchProgress: researchProgress(fresh).map(r => ({ ...r, status: 'completed' as const, sources: 2 })) }} operator={false} {...base} />);

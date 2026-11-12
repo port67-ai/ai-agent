@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { AlertTriangle, Building2, CheckCircle2, Clock, FileSearch, Lightbulb, Loader2, Palette, RefreshCw, Target, Users, Megaphone } from "lucide-react";
+import { AlertTriangle, Building2, CheckCircle2, Clock, FileSearch, Lightbulb, Loader2, Palette, RefreshCw, Target, Users, Megaphone, Send } from "lucide-react";
 import type { Project, Segment } from "@/lib/factory/model";
 import { segments } from "@/lib/factory/model";
 import { channelNames } from "@/lib/factory/channels";
@@ -107,6 +107,10 @@ export default function ResearchProgress({
       </p>
       <div className="f-flow" role="group" aria-label="Research progress flow">
         <FlowNode mode={channels.length ? "done" : "active"} icon={Megaphone} title="Brief and channels" sub={channels.length ? channels.join(", ") : "Choose channels"} />
+        <FlowLink mode={requested ? "done" : "idle"} />
+        <FlowNode mode={requested ? "done" : "idle"} icon={Send} title="Research requested" sub={requested ? new Date(p.researchRequest!.at).toLocaleDateString("en-GB") : "Not yet requested"} />
+        <FlowLink mode={anyStarted ? "done" : requested ? "flow" : "idle"} />
+        <FlowNode mode={anyStarted ? "done" : requested ? "active" : "idle"} icon={Clock} title="Port67 starts" sub={anyStarted ? "Under way" : requested ? (operator ? "Click Start research above" : "Waiting for a producer") : "After the request"} />
         <FlowLink mode={anyRunning ? "flow" : anyStarted ? "done" : "idle"} />
         <div className="f-flow-agents">
           {segments.map((segment) => {

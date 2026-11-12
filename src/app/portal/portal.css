@@ -1612,3 +1612,32 @@
 @media (max-width:760px){.f-flow{flex-direction:column;align-items:stretch;overflow:visible}.f-flow-node,.f-flow-node.small{max-width:none;min-width:0}.f-flow-agents{align-self:stretch}.f-flow-link{flex:0 0 22px;width:3px;height:22px;align-self:center;background:repeating-linear-gradient(180deg,#cbd5e1 0 6px,transparent 6px 10px)}.f-flow-link.done{background:#7cc79b}.f-flow-link.flow{background:repeating-linear-gradient(180deg,#1072ba 0 6px,transparent 6px 10px);background-size:3px 20px;animation:f-dash-v .6s linear infinite}.f-flow-link.flow::after{display:none}.f-activity li{grid-template-columns:1fr}}
 @keyframes f-dash-v{to{background-position:0 20px}}
 @media (prefers-reduced-motion:reduce){.f-flow-link.flow,.f-flow-link.flow::after,.f-flow-node.active{animation:none}}
+
+/* Agent model editor and advanced settings */
+.f-agent.editing{grid-column:1/-1}
+.f-agent-editor{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px dashed #cbd5e1;border-radius:12px;background:#f8fafc}
+.f-agent-editor label{display:flex;flex-direction:column;gap:4px;font-size:.82rem}
+.f-agent-editor select,.f-agent-editor input{padding:8px;border:1px solid #cfd6df;border-radius:8px;font:inherit;min-width:0}
+.f-advanced>summary{cursor:pointer;font-weight:600;display:flex;align-items:center;gap:8px}
+.f-advanced[open]>summary{margin-bottom:12px}
+
+/* Agent data flow diagram */
+.f-flow-scroll{overflow-x:auto}
+.f-dataflow{width:100%;min-width:760px;height:auto;font-family:inherit}
+.df-band{font-size:12px;fill:#475569;font-weight:600}
+.df-label{font-size:13px;font-weight:600;fill:#0f2a47}
+.df-model{font-size:11px;fill:#475569}
+.df-note{font-size:11px;fill:#475569}
+.df-provider{fill:#e8f1fb;stroke:#1072ba}
+.df-agent{fill:#fff;stroke:#94a3b8;stroke-width:1.5}
+.df-agent.running{stroke:#1072ba;stroke-width:2.5;fill:#e8f1fb}
+.df-agent.unset{stroke:#d97706;stroke-dasharray:4 3}
+.df-store-box{fill:#f1f5f9;stroke:#64748b}
+.df-gate{fill:#fff;stroke:#17477e;stroke-width:2}
+.df-link{fill:none;stroke:#94a3b8;stroke-width:1.5}
+.df-ai{stroke:#1072ba}
+.df-hand{stroke:#64748b;stroke-width:2}
+.df-link.flow{stroke-dasharray:6 5;animation:df-dash 1s linear infinite}
+@keyframes df-dash{to{stroke-dashoffset:-22}}
+@media (prefers-reduced-motion:reduce){.df-link.flow{animation:none}}
+.f-legend{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:8px 0 0}

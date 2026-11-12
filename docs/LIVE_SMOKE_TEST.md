@@ -8,7 +8,7 @@ One provider for both stages keeps setup and pricing to a single model. Models a
 
 In Render, set only: PORT67_GEMINI_API_KEY (already exists), PORT67_RESEARCH_ENABLED=true and PORT67_SYNTHESIS_ENABLED=true. The older PORT67_*_PROVIDER, PORT67_*_MODEL and PORT67_MODEL_PRICING_JSON variables are optional fallbacks and can stay unset.
 
-In the app, as admin, open AI models:
+In the app, as admin, open the AI agents tab (models are chosen there; stage defaults and prices are under Advanced):
 
 1. Under Stage defaults choose Google Gemini and model gemini-3.5-flash for both Research and Drafting.
 2. In Prices, click Fetch public prices, then check the values. Enter Search per call as 0.014 (search is $14 per 1,000 queries after 5,000 free per month; 0.014 deliberately overstates cost inside the free allowance, the safe direction for caps).
@@ -20,7 +20,7 @@ OpenAI was considered and not chosen for the first test: web search is $10 per 1
 
 ## Cost expectation
 
-A research call is roughly a few thousand input tokens and one to two thousand output tokens plus a handful of search queries: on the order of a few cents. Four research segments, insight drafting and direction drafting should total well under $1 of real cost. With prices saved on the AI models page, estimated spend counts instead of the $1 hold per call. Without them, each call holds $1, so a failed or unpriced test can spend 10 to 20 dollars of the $25 cap in holds. Save prices first. A call that fails before returning usage stays held at $1 until you reconcile it in Private API costs.
+A research call is roughly a few thousand input tokens and one to two thousand output tokens plus a handful of search queries: on the order of a few cents. Four research segments, insight drafting and direction drafting should total well under $1 of real cost. With prices saved on the AI agents page, estimated spend counts instead of the $1 hold per call. Without them, each call holds $1, so a failed or unpriced test can spend 10 to 20 dollars of the $25 cap in holds. Save prices first. A call that fails before returning usage stays held at $1 until you reconcile it in Private API costs.
 
 ## Steps (public data only)
 
@@ -28,7 +28,7 @@ Roles: client jpell@me.com, producer producer@port67.ai, admin jed@port67.ai. Us
 
 **A. Set up (admin)**
 
-1. Render: set the variables above, save, deploy, wait for Live. Complete the AI models steps above. Workspace setup should show the research and synthesis checks ready (presence of configuration is not proof of connection).
+1. Render: set the variables above, save, deploy, wait for Live. Complete the AI agents model steps above. Workspace setup should show the research and synthesis checks ready (presence of configuration is not proof of connection).
 2. Optional, for video: enable Firebase Storage for ai-agency-3671b and set PORT67_FIREBASE_STORAGE_BUCKET if the bucket is not the default.
 
 **B. Brief and channels (client)**
