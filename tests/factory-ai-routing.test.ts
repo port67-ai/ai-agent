@@ -69,6 +69,19 @@ async function main() {
   assert.equal(found.prices[2].found, false);
   await assert.rejects(() => R.suggestPublicPrices([{ provider: 'openai', model: 'm' }], (async () => { throw new Error('net'); }) as unknown as typeof fetch), /public price list/);
 
+  // Suggested setup: only provider-listed IDs, newest mid-tier model, Gemini preferred for research.
+  const listing = (async (url: string) => new Response(JSON.stringify(
+    url.includes('generativelanguage') ? { models: [{ name: 'models/gemini-3.5-pro', supportedGenerationMethods: ['generateContent'] }, { name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['generateContent'] }, { name: 'models/gemini-3.5-flash-lite', supportedGenerationMethods: ['generateContent'] }, { name: 'models/gemini-3.0-flash', supportedGenerationMethods: ['generateContent'] }, { name: 'models/gemini-3.5-flash-image', supportedGenerationMethods: ['generateContent'] }, { name: 'models/text-embedding', supportedGenerationMethods: ['embedContent'] }] }
+      : { data: [{ id: 'gpt-5.4-mini' }, { id: 'gpt-5.4' }, { id: 'gpt-image-1' }] }))) as unknown as typeof fetch;
+  const sug = await R.suggestSetup(env, listing);
+  assert.deepEqual(sug.suggested.research, { provider: 'gemini', model: 'gemini-3.5-flash' });
+  assert.deepEqual(sug.suggested.synthesis, { provider: 'gemini', model: 'gemini-3.5-flash' });
+  assert.ok(!sug.models.gemini.includes('gemini-3.5-flash-image') && !sug.models.gemini.includes('text-embedding'));
+  const noKeys = await R.suggestSetup({}, listing);
+  assert.equal(noKeys.suggested.research, null);
+  const oai = await R.suggestSetup({ PORT67_OPENAI_API_KEY: 'k1' }, listing);
+  assert.deepEqual(oai.suggested.research, { provider: 'openai', model: 'gpt-5.4-mini' });
+
   // Route is admin only.
   const verifier = async (t: string) => ({ uid: t, aud: 'ai-agency-3671b', iss: 'https://securetoken.google.com/ai-agency-3671b', email_verified: true, auth_time: Math.floor(Date.now() / 1000), email: t + '@example.test' });
   const lookup = async (uid: string) => ({ uid, email: uid + '@example.test', emailVerified: true, disabled: false, tokensValidAfterTime: new Date(0).toISOString() });

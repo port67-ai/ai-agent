@@ -133,3 +133,45 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-005 (new), FAC-HAR-004, FAC-CST-001. PRD 1.5.0.
 - Evidence: tsc, eslint on changed files, npm test and next build pass in a sandbox copy; public fetch and providers use stubbed transport. The live fetch from Render and live calls are unverified.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status. Image and video routing not implemented.
+
+## CHG-0017 — 2026-11-12 — Suggested AI setup from provider model lists
+- Author/harness: Claude (Cowork); owner asked that the AI models page suggest the right defaults with the best model per job, based on research, instead of opening blank.
+- What/why: admin/ai-routing action suggest lists the models each keyed provider reports (OpenAI, Gemini, Anthropic, DeepSeek model-list endpoints; no invented IDs), picks the newest fast mid-tier model, prefers Gemini for research (search billed per query with a free monthly allowance) and the same provider for drafting, and returns notes. The page runs it on first open when nothing is saved, fills defaults and public prices unsaved for review, offers a Suggest best setup button, offers model IDs as a type-ahead list, fills the model when a provider is picked, and treats a provider with no model as unset instead of an error. Env-fallback jobs with no model now read No model chosen yet. Files: ai-routing.ts, service.ts, AiModels.tsx, tests/factory-ai-routing.test.ts.
+- Requirements: FAC-HAR-005. PRD impact: none beyond 1.5.0.
+- Evidence: tests with stubbed provider lists. Web research on 2026-11-12 found third-party price pages that conflict on current model names and prices and no reliable independent quality benchmark, so the suggestion is a cost-sensible starting point, not a quality ranking. Live model-list calls unverified.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0018 — 2026-11-12 — Owner page header polish
+- Author/harness: Claude (Cowork); queued polish item.
+- What/why: Team access, AI models, Private API costs and Workspace setup no longer show the account and project pickers or the New brief button, and each has its own subtitle instead of "Create a project to begin." UI only in Portal.tsx; no data, access or API change.
+- Requirements: FAC-TEN-009 (supporting). PRD impact: none.
+- Evidence: tsc, eslint and unit tests pass in a sandbox copy. Existing browser fixtures leave Workspace setup before using project controls, but browser tests were not run here; read GitHub CI.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0019 — 2026-11-12 — Rendered MP4 from approved storyboard
+- Author/harness: Claude (Cowork); owner chose a built-in template render with storage in Firebase Storage.
+- What/why: producers get a Render MP4 button on an approved motion storyboard. video.ts draws three brand-coloured scenes from the approved direction (SVG rasterised by @resvg/resvg-js with a bundled DejaVu font), then encodes 15 seconds of H.264 with fades using the ffmpeg binary from @ffmpeg-installer/ffmpeg (override with PORT67_FFMPEG_PATH). One render at a time. video-store.ts stores the file in Firebase Storage (PORT67_FIREBASE_STORAGE_BUCKET, default ai-agency-3671b.firebasestorage.app) or a local folder. Routes projects/{id}/video (POST, producer) and projects/{id}/video/{videoId} (GET, same access rules as approved assets). Project gets a videos list, filtered for customers. Cost: no AI call, so nothing enters the spend ledger. Files: video.ts, video-store.ts, service.ts, engine.ts, model.ts, Assets.tsx, Portal.tsx, portal.css, next.config.ts, package.json and lockfile, tests/factory-video.test.ts.
+- Requirements: FAC-ART-006 (new), FAC-ART-005 (supporting). PRD 1.6.0.
+- Evidence: tests include a real encode (about 4 seconds, 15.0 second, 130 KB file in the sandbox) and a viewed frame. Not verified: upload to Firebase Storage, behaviour on the 512 MB production instance, and the buttons in a browser. Firebase Storage may need the project on a billing plan and a default bucket created; if it is unavailable the render fails with a clear message and nothing is saved.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0020 — 2026-11-12 — Claim-level research findings, gaps and confidence
+- Author/harness: Claude (Cowork); owner asked to focus on research quality.
+- What/why: each research source previously carried the whole segment answer, so reviewers could not tell which claim came from which link. Research now asks for FINDING / GAP / CONFIDENCE lines, parses them, and gives each cited source only its own claims and quotes (original text kept as fallback when a cited page has no finding). Segment prompts are specific (customer reality, competitor positioning and gaps, category conventions; business website first). Gaps are stored on the run and shown to producers; confidence shown on each source. Files: research.ts, model.ts, service.ts, Research.tsx, tests/factory-research-findings.test.ts.
+- Requirements: FAC-MKT-016 (new), FAC-MKT-003/013. PRD 1.7.0.
+- Evidence: stubbed-transport tests; live models following the line format is unverified and is checked in the live smoke test.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0021 — 2026-11-12 — Richer structured campaign direction
+- Author/harness: Claude (Cowork).
+- What/why: Strategy gains positioning, audience segments, key messages (message, proof, source IDs), tone and claims to avoid, as optional fields so existing directions and hashes are unchanged. AI drafting requires them and rejects key messages citing sources outside the direction's evidence; manual editing supports the text fields and carries key messages forward. Files: model.ts, engine.ts, synthesis.ts, Direction.tsx, three existing synthesis and campaign tests updated for the larger contract.
+- Requirements: FAC-MKT-017 (new), FAC-MKT-014.
+- Evidence: tests updated and passing; manual editing of key messages in the UI is not offered yet.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0022 — 2026-11-12 — AI copy pack from the approved direction
+- Author/harness: Claude (Cowork).
+- What/why: new content stage. content.ts prepares input only from the approved direction and its reviewed sources, validates output (key message from the direction, sources only from that message, no number absent from the material, three to twelve items), content-run.ts reserves and meters the call, and the result is a draft Copy asset titled AI copy pack that follows the normal approval flow. Registry capability drafting.content; AI models page gains a Drafting: copy pack job; service synthesis route accepts stage content; Production tab gets a Draft copy pack with AI button. Files: content.ts, content-run.ts, registry.ts, ai-routing.ts, service.ts, model.ts, Portal.tsx, tests/factory-content.test.ts.
+- Requirements: FAC-MKT-018 (new), FAC-HAR-005, FAC-CST-001.
+- Evidence: stubbed-transport tests including rejected output retaining usage. Live copy quality unverified.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

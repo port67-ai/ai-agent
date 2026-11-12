@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { ArrowUpRight, Check, Download } from "lucide-react";
+import { ArrowUpRight, Check, Clapperboard, Download } from "lucide-react";
 import type { Asset } from "@/lib/factory/model";
 import { Tag, Empty, Field, Actions } from "./shared";
-export default function Assets({ p, operator, busy, command }: Actions) {
+export default function Assets({ p, operator, busy, command, renderVideo }: Actions & { renderVideo?: (assetId: string) => void }) {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const current = p.strategies.at(-1);
   const approved = p.assets.filter(
@@ -122,6 +122,20 @@ export default function Assets({ p, operator, busy, command }: Actions) {
                     </a>
                   )}
                 </div>
+                {a.kind === "motion" && a.status === "approved" && !p.deliveryPaused && (
+                  <div className="f-video">
+                    {(p.videos || []).filter((v) => v.assetId === a.id).map((v) => (
+                      <a key={v.id} className="f-button secondary small" href={"/api/factory/projects/" + p.id + "/video/" + v.id} download>
+                        MP4 {v.seconds}s, {(v.bytes / 1048576).toFixed(1)} MB, {v.createdAt.slice(0, 10)} <Download size={14} />
+                      </a>
+                    ))}
+                    {operator && renderVideo && (
+                      <button className="f-button small" disabled={busy} onClick={() => renderVideo(a.id)}>
+                        Render MP4 <Clapperboard size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
                 {!operator && !p.deliveryPaused && a.status === "shared" && (
                   <div className="f-review">
                     <Field label="Feedback">

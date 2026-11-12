@@ -1,6 +1,20 @@
+# Latest handover: research to strategy to content (CHG-0020 to CHG-0022, PRD 1.7.0)
+
+2026-11-12; Claude. Research now returns claim-level findings, gaps and confidence per source (FINDING/GAP/CONFIDENCE line format parsed in research.ts). The direction gained positioning, audience segments, key messages with proof, tone and claims to avoid; AI drafting must supply them with source-bound proof. A new content stage drafts an AI copy pack from the approved direction (content.ts, content-run.ts), validated against evidence including no invented numbers, saved as a draft Copy asset for normal approval, with its own model slot on the AI models page. Existing directions created before this change have no key messages, so the copy pack button stays disabled until a new direction version is drafted. Not verified live: that the chosen model follows the research line format (if it does not, sources fall back to the old whole-answer excerpt), strategy and copy quality, and the Production button in a browser. Run the live smoke test with the new flow and record results. Open: Factory MVP workflow red on PR 11 and 12 runs, log not yet read.
+
+---
+Earlier handover follows.
+
+# Latest handover: rendered MP4 (CHG-0019, PRD 1.6.0)
+
+2026-11-12; Claude. Producers can Render MP4 on an approved motion storyboard: three template scenes, 15 s, no AI cost, stored in Firebase Storage and downloadable via the authorised API. New dependencies: @resvg/resvg-js, @ffmpeg-installer/ffmpeg, dejavu-fonts-ttf (package-lock regenerated; next.config serverExternalPackages). Owner must enable Firebase Storage for ai-agency-3671b (may need a billing plan) and optionally set PORT67_FIREBASE_STORAGE_BUCKET. Unverified live: Storage upload and memory on the 512 MB instance; if the render is killed for memory, lower VIDEO_SIZE in video.ts or upgrade the instance. Open items: Factory MVP workflow red on PR 11 and 12 runs (log not yet read); owner runs the live smoke test.
+
+---
+Earlier handover follows.
+
 # Latest handover: admin AI model routing
 
-2026-11-12; Claude; CHG-0016; PRD 1.5.0 (FAC-HAR-005). Owner admins now pick provider and model per job on the AI models page, with prices suggested from a public list (litellm catalogue) then editable. Precedence: job route, stage default, env PORT67_*_PROVIDER/MODEL. Keys stay in Render; the page only enables providers whose key is set. Owner prices override PORT67_MODEL_PRICING_JSON. Search per-call fees must be entered by hand. Verified in a sandbox copy with stubbed transport only; the live public fetch, the page in a browser and live calls are unverified. Image and video routing is not built. Next: update docs/LIVE_SMOKE_TEST.md to configure via this page (only keys, enable switches and cap remain in Render), producer and admin polish, MP4. Do not run git write commands from the Claude sandbox against the repo.
+2026-11-12; Claude; CHG-0016; PRD 1.5.0 (FAC-HAR-005). Owner admins now pick provider and model per job on the AI models page, with prices suggested from a public list (litellm catalogue) then editable. Precedence: job route, stage default, env PORT67_*_PROVIDER/MODEL. Keys stay in Render; the page only enables providers whose key is set. Owner prices override PORT67_MODEL_PRICING_JSON. Search per-call fees must be entered by hand. Verified in a sandbox copy with stubbed transport only; the live public fetch, the page in a browser and live calls are unverified. Image and video routing is not built. CHG-0017 adds suggested defaults from provider model lists; CHG-0018 removes account and project pickers from owner pages. docs/LIVE_SMOKE_TEST.md now configures models on the AI models page. Known open item: the GitHub Factory MVP workflow was red on the runs for PRs 11 and 12; the failing step has not been read yet. Next: MP4 rendering from an approved storyboard; owner runs the live smoke test. Do not run git write commands from the Claude sandbox against the repo.
 
 ---
 Earlier handover (team access, CHG-0014) follows.

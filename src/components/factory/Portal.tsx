@@ -74,6 +74,13 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "ai", label: "AI models", icon: Cpu },
   { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
+/** Owner and setup pages are not about one project, so they get their own subtitle and no account or project pickers. */
+const adminSubtitles: Partial<Record<Tab, string>> = {
+  team: "Decide who can work as a producer.",
+  ai: "Choose which model runs each job, and what it costs.",
+  admin: "Private API spend against your monthly cap.",
+  setup: "Check the live workspace is ready.",
+};
 async function api(path: string, data?: unknown) {
   const response = await fetch("/api/factory/" + path, {
     method: data === undefined ? "GET" : "POST",
@@ -390,12 +397,14 @@ export default function Portal() {
               <p>
                 {tab === "overview"
                   ? "Research-led marketing content and creative production."
-                  : p
-                    ? "Every decision connected. Every version accounted for."
-                    : "Create a project to begin."}
+                  : tab in adminSubtitles
+                    ? adminSubtitles[tab]
+                    : p
+                      ? "Every decision connected. Every version accounted for."
+                      : "Create a project to begin."}
               </p>
             </div>
-            <div className="f-project-tools">
+            {!(tab in adminSubtitles) && <div className="f-project-tools">
               {operator && principal.identity === "firebase" && <select aria-label="Select customer account" value={principal.workspaceId} onChange={e=>void run(async()=>{await api("accounts",{accountId:e.target.value});setSelected("");setInvite("");},"Account selected")}>
                 {accounts.map(account=><option key={account.id} value={account.id}>{account.email || account.id}</option>)}
               </select>}
@@ -422,7 +431,7 @@ export default function Portal() {
                   <Plus size={16} /> New brief
                 </button>
               )}
-            </div>
+            </div>}
           </div>
           {error && (
             <div className="f-alert error" role="alert">
@@ -842,6 +851,32 @@ export default function Portal() {
                     >
                       Create production drafts <Sparkles size={17} />
                     </button>
+                    {operator && (
+                      <button
+                        className="f-button secondary"
+                        disabled={
+                          busy ||
+                          !approved ||
+                          !config?.synthesisReady ||
+                          !!principal.demo ||
+                          !p.tasks.some((t) => t.strategyId === strategy?.id) ||
+                          !strategy?.keyMessages?.length
+                        }
+                        title={
+                          strategy && !strategy.keyMessages?.length
+                            ? "Draft a new direction version with key messages first"
+                            : undefined
+                        }
+                        onClick={() =>
+                          void run(
+                            () => api("projects/" + p.id + "/synthesis", { stage: "content" }),
+                            "AI copy pack saved as a draft in the Asset library. Review before sharing.",
+                          )
+                        }
+                      >
+                        Draft copy pack with AI <Sparkles size={17} />
+                      </button>
+                    )}
                   </div>
                   {!p.tasks.length ? (
                     <Empty title="Production starts with an approved direction">
@@ -889,6 +924,9 @@ export default function Portal() {
                   operator={operator}
                   busy={busy}
                   command={command}
+                  renderVideo={(assetId) =>
+                    void run(() => api("projects/" + p.id + "/video", { assetId }), "Video rendered and stored. It can take up to a minute.")
+                  }
                 />
               )}
               {tab === "learning" && (

@@ -98,9 +98,22 @@ const proposed = {
   cta: "Learn more",
   hypothesis: "Clarity may improve understanding",
   uncertainties: "Limited sample; no performance proof",
+  positioning: "For new customers, a clear starting point",
+  audienceSegments: "First-time buyers who feel lost",
+  keyMessages: [{ message: "Start simply", proof: "Reviewed source reports confusion", sourceIds: [p.sources[0].id] }],
+  tone: "Warm and plain",
+  doNotClaim: "No performance or ranking claims",
   evidenceIds: [p.sources[0].id],
   insightIds: [p.insights[0].id],
 };
+for (const bad of [
+  { ...proposed, keyMessages: [] },
+  { ...proposed, keyMessages: [{ message: "x", proof: "y", sourceIds: ["not-a-source"] }] },
+  { ...proposed, keyMessages: [{ message: "x", proof: "y", sourceIds: [] }] },
+  { ...proposed, keyMessages: [{ message: "x", proof: "y" }] },
+  { ...proposed, tone: undefined },
+])
+  assert.throws(() => validateDirection(bad as never, directionContext), "key messages need cited reviewed proof");
 assert.equal(
   validateDirection(proposed, directionContext).message,
   proposed.message,

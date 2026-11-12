@@ -8,6 +8,7 @@ import {
   type Principal,
   type Project,
   type Segment,
+  type KeyMessage,
   type Strategy,
 } from "./model";
 export const digest = (s: string) =>
@@ -67,6 +68,18 @@ export function access(p: Project, a: Principal) {
 export function operator(a: Principal) {
   if (a.role !== "operator") throw new Error("Requires operator role");
 }
+/** Key messages must each carry proof and cite only reviewed sources; anything else is rejected, not trimmed. */
+export function keyMessagesInput(value: unknown, allowed: string[]): KeyMessage[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length > 6) throw new Error("Key messages must be a list of at most six");
+  return value.map((v) => {
+    const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+    const ids = o.sourceIds;
+    if (!Array.isArray(ids) || !ids.length || ids.some((x) => typeof x !== "string" || !allowed.includes(x)))
+      throw new Error("Each key message needs proof from reviewed sources");
+    return { message: text(o.message, "key message", 300, true), proof: text(o.proof, "key message proof", 600, true), sourceIds: [...new Set(ids as string[])] };
+  });
+}
 export function strategyHash(s: Strategy): string {
   return digest(
     JSON.stringify({
@@ -82,6 +95,11 @@ export function strategyHash(s: Strategy): string {
       insightIds: s.insightIds,
       hypothesis: s.hypothesis,
       uncertainties: s.uncertainties,
+      positioning: s.positioning,
+      audienceSegments: s.audienceSegments,
+      keyMessages: s.keyMessages,
+      tone: s.tone,
+      doNotClaim: s.doNotClaim,
     }),
   );
 }
@@ -417,6 +435,12 @@ export function transition(
       createdAt: now(),
       hash: "",
     };
+    for (const [key, max] of [["positioning", 600], ["audienceSegments", 2500], ["tone", 600], ["doNotClaim", 1500]] as const) {
+      const value = text(c[key], key, max) || old?.[key];
+      if (value) s[key] = value;
+    }
+    const messages = keyMessagesInput(c.keyMessages, evidence.map((x) => x.id)) || old?.keyMessages;
+    if (messages?.length) s.keyMessages = messages;
     s.hash = strategyHash(s);
     p.strategies.push(s);
   } else if (type === "shareStrategy") {
@@ -581,6 +605,8 @@ export function projectView(input: Project, a: Principal): Project {
     (x) =>
       x.status !== "draft" && p.strategies.some((s) => s.id === x.strategyId),
   );
+  const shown = new Set(p.assets.filter((x) => x.status === "approved").map((x) => x.id));
+  p.videos = (p.videos || []).filter((v) => shown.has(v.assetId));
   p.insights = p.insights.filter((i) =>
     p.strategies.some((s) => s.insightIds.includes(i.id)),
   );
