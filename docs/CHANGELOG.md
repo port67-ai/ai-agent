@@ -89,3 +89,11 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: missing/disabled configuration browser regressions, safe error mapping tests, full suite/lint/types/build/browser checks; exact remote results in GitHub. Unit test first failed before implementation.
 - Runtime/configuration: user-confirmed live failure is missing/rejected Render Firebase web-auth settings; changing UI does not provision those settings. Owner must configure dedicated web apiKey/authDomain and enable Email/Password, then redeploy. No credentials or real user records changed; no paid calls.
 - Status: prepared on fix/signup-diagnostics; consult Git/GitHub for exact commit/PR/merge evidence.
+
+## CHG-0011 — 2026-11-12 — Standard account menu and clear post-sign-in landing
+- Author/harness: Claude (Cowork); owner asked for a solid base: clear next page after login and a standard signed-in avatar menu with sign out.
+- What/why: header avatar (initials) opens an account menu showing the signed-in email, role and Sign out; closes on outside click and Escape. Sign out moved from the sidebar footer to this menu and now returns to the welcome page with a confirmation. After sign-in a dismissible banner states who is signed in and the single next step (create first brief, open research, or open direction). Empty workspace now has a primary Create your first brief button. Verified sign-in email is carried in the signed session for display only.
+- Requirements: FAC-TEN-008 (account sign-in experience). PRD impact: none; presentation and navigation only, no change to authentication, authorisation, storage or provider behaviour.
+- Evidence: tests/factory-user-display.test.ts (new, added to test:factory); npm test, tsc --noEmit, eslint on touched files and next build passed in a clean sandbox copy with TMPDIR=/tmp. tests/factory-account-browser.cjs extended for menu open/Escape/sign out but NOT run: no Chromium available in this workspace; run npm run test:browser or read CI.
+- Status: prepared on claude/login-ux-header; not pushed, merged or deployed. This does not fix the live Render sign-up failure, which still requires the Firebase web app and PORT67_FIREBASE_* settings (see CHG-0010).
+

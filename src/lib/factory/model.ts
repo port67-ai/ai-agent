@@ -9,6 +9,8 @@ export type Segment = (typeof segments)[number];
 export type Principal = {
   accountId?: string;
   identity?: "firebase";
+  /** Verified sign-in email, shown only to its owner in the account menu. */
+  email?: string;
   admin?: boolean;
   issuedAt?: number;
   subject: string;

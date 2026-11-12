@@ -8,12 +8,14 @@ export function PortalWelcome({
   onDemo,
   onLogin,
   error,
+  notice,
   onAuthenticated,
 }: {
   busy: boolean;
   onDemo: () => void;
   onLogin: (password: string) => void;
   error: string;
+  notice?: string;
   onAuthenticated?: (idToken:string)=>Promise<void>;
 }) {
   return (
@@ -86,6 +88,11 @@ export function PortalWelcome({
       {error && (
         <div className="f-toast error" role="alert">
           {error}
+        </div>
+      )}
+      {!error && notice && (
+        <div className="f-toast f-toast-ok" role="status">
+          {notice}
         </div>
       )}
       <footer className="f-welcome-footer">

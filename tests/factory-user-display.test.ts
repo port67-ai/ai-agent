@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { roleLabel, userInitials, userLabel } from "../src/lib/factory/user-display";
+
+const account = { email: "jane.doe@example.com", identity: "firebase", role: "customer" } as const;
+assert.equal(userInitials(account), "JD");
+assert.equal(userInitials({ ...account, email: "jed@example.com" }), "JE");
+assert.equal(userInitials({ ...account, email: "a_b-c@example.com" }), "AB");
+assert.equal(userInitials({ role: "operator" }), "P");
+assert.equal(userInitials({ role: "customer" }), "C");
+assert.equal(userInitials({ role: "customer", demo: true }), "D");
+assert.equal(userInitials({ role: "customer", email: "@example.com" }), "C", "empty local part falls back to role");
+assert.equal(userLabel(account), "jane.doe@example.com");
+assert.equal(userLabel({ role: "operator" }), "Port67 producer");
+assert.equal(userLabel({ role: "customer", demo: true }), "Demo visitor");
+assert.equal(userLabel({ role: "customer" }), "Customer reviewer");
+assert.equal(roleLabel(account), "Account owner");
+assert.equal(roleLabel({ ...account, role: "operator" }), "Producer");
+assert.equal(roleLabel({ ...account, role: "operator", admin: true }), "Administrator");
+assert.equal(roleLabel({ role: "customer", demo: true }), "Synthetic demo workspace");
+assert.equal(roleLabel({ role: "customer" }), "Customer review");
+console.log("Account display helpers passed");

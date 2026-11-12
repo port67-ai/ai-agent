@@ -13,7 +13,6 @@ import {
   Settings2,
   Check,
   ChevronRight,
-  LogOut,
   Link2,
   ShieldCheck,
   X,
@@ -35,6 +34,8 @@ import Assets from "./Assets";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
 import { LogoField } from "./BriefEditor";
+import UserMenu from "./UserMenu";
+import { roleLabel, userInitials, userLabel } from "@/lib/factory/user-display";
 type Config = {
   demoEnabled: boolean;
   liveReady: boolean;
@@ -90,6 +91,8 @@ export default function Portal() {
   const [newProject, setNewProject] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [invite, setInvite] = useState("");
+  const [arrival, setArrival] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
   const p = projects.find((x) => x.id === selected) || projects[0];
   const operator = principal?.role === "operator";
   const refresh = useCallback(async () => {
@@ -153,7 +156,20 @@ export default function Portal() {
       success,
     );
   }
+  async function signOut() {
+    if (
+      await run(() => api("logout", {}))
+    ) {
+      setTab("overview");
+      setSelected("");
+      setInvite("");
+      setNewProject(false);
+      setArrival(false);
+      setSignedOut(true);
+    }
+  }
   function go(t: Tab) {
+    setArrival(false);
     setTab(t);
     setMobile(false);
     setError("");
@@ -171,9 +187,22 @@ export default function Portal() {
       <PortalWelcome
         busy={busy}
         error={error}
-        onDemo={() => void run(() => api("demo", {}))}
-        onLogin={(password) => void run(() => api("login", { password }))}
-        onAuthenticated={async(idToken)=>{if(!await run(()=>api("identity-login",{idToken}))) throw Error("Sign in failed");}}
+        notice={signedOut ? "You have been signed out." : ""}
+        onDemo={() => {
+          setSignedOut(false);
+          void run(() => api("demo", {}));
+        }}
+        onLogin={(password) => {
+          setSignedOut(false);
+          void run(() => api("login", { password })).then((ok) => {
+            if (ok) setArrival(true);
+          });
+        }}
+        onAuthenticated={async(idToken)=>{
+          if(!await run(()=>api("identity-login",{idToken}))) throw Error("Sign in failed");
+          setSignedOut(false);
+          setArrival(true);
+        }}
       />
     );
   const strategy = p?.strategies.at(-1);
@@ -228,21 +257,13 @@ export default function Portal() {
             ))}
         </nav>
         <div className="f-sidebar-bottom">
-          <div className="f-producer-icon">P67</div>
-          <div>
-            <strong>{operator ? "Port67 producer" : "Customer review"}</strong>
-            <span>
-              {principal.demo
-                ? "Isolated demo workspace"
-                : "Managed creative services"}
-            </span>
+          <div className="f-producer-icon" aria-hidden="true">
+            {userInitials(principal)}
           </div>
-          <button
-            aria-label="Sign out"
-            onClick={() => void run(() => api("logout", {}))}
-          >
-            <LogOut size={17} />
-          </button>
+          <div>
+            <strong>{userLabel(principal)}</strong>
+            <span>{roleLabel(principal)}</span>
+          </div>
         </div>
       </aside>
       <div className="f-main">
@@ -289,8 +310,57 @@ export default function Portal() {
             >
               <RefreshCw size={16} />
             </button>
+            <UserMenu
+              principal={principal}
+              busy={busy}
+              onSignOut={() => void signOut()}
+            />
           </div>
         </header>
+        {arrival && (
+          <section className="f-arrival" role="status">
+            <div>
+              <strong>
+                {principal.email
+                  ? "You are signed in as " + principal.email + "."
+                  : "You are signed in."}
+              </strong>
+              <p>
+                {projects.length
+                  ? "Next: " +
+                    (strategy
+                      ? "review your campaign direction."
+                      : "explore the research for " +
+                        (p?.brief.business || "your project") +
+                        ".")
+                  : "Next: create your first brief. It takes about a minute and starts your research."}
+              </p>
+            </div>
+            <button
+              className="f-button small"
+              onClick={() => {
+                if (!projects.length) {
+                  setArrival(false);
+                  setNewProject(true);
+                } else go(strategy ? "direction" : "research");
+              }}
+            >
+              {projects.length
+                ? strategy
+                  ? "Open campaign direction"
+                  : "Open research room"
+                : "Create your first brief"}
+              <ArrowRight size={16} />
+            </button>
+            <button
+              className="f-icon-button"
+              aria-label="Dismiss welcome"
+              onClick={() => setArrival(false)}
+            >
+              <X size={16} />
+            </button>
+          </section>
+        )}
         {principal.demo && (
           <div className="f-demo-note">
             Explore the full workflow with a fictional brand. Research is
@@ -365,9 +435,21 @@ export default function Portal() {
           ) : tab === "setup" && operator ? (
             <WorkspaceSetup />
           ) : !p ? (
-            <Empty title="Your next project starts here">
-              Create a brief to start your campaign. Your account keeps its research, production and assets together.
-            </Empty>
+            <>
+              <Empty title="Your next project starts here">
+                Create a brief to start your campaign. Your account keeps its research, production and assets together.
+              </Empty>
+              {(operator || principal.identity === "firebase") && (
+                <div className="f-empty-action">
+                  <button
+                    className="f-button"
+                    onClick={() => setNewProject(true)}
+                  >
+                    Create your first brief <ArrowRight size={17} />
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <>
               {tab === "overview" && (

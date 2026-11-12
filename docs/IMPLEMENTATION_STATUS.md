@@ -153,3 +153,5 @@ Supporting FAC-TEN-001/002/003/006, FAC-CST-001/002/004/008 and FAC-HAR-001/002 
 CHG-0009 remote evidence: Firestore emulator transaction/reload/client-deny suite passed at120c947, run43209732747. This verifies the adapter against an emulator, not provisioning or operation of ai-agency-3671b. Sign-in-time revocation regression added in follow-up.
 
 CHG-0010 / FAC-TEN-008: live owner signup is BLOCKED by confirmed missing/rejected Firebase web-auth config (auth-config503); not a verified password failure. Added allowlisted diagnostic/error-phase handling and browser cases for config503 and Firebase operation-not-allowed. Local unit/full suite/lint/types/build/browser evidence in current branch; exact remote checks in GitHub. Actual Render configuration remains owner-managed and unverified here.
+
+CHG-0011: account menu (avatar, identity, Sign out) and clear post-sign-in landing implemented on claude/login-ux-header as presentation changes to FAC-TEN-008. Unit helper tests, types, lint and build pass; browser test updated but not yet run. No requirement promoted to VERIFIED; live sign-up still depends on Render/Firebase configuration (CHG-0010).
