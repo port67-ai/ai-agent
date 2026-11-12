@@ -3,7 +3,8 @@ import { registerAccount, listAccounts, canCreateProject } from "./accounts";
 import { addTeamMember, listTeam, removeTeamMember, withTeamRole } from "./team";
 import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVerifier, type FactoryUserLookup } from "./identity";
 import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
-import { providerSelection, safeProviderConfiguration } from "./providers";
+import { safeProviderConfiguration } from "./providers";
+import { resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices } from "./ai-routing";
 import { runSynthesis } from "./synthesis-run";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
@@ -269,8 +270,8 @@ export async function handleFactory(
         config: {
           demoEnabled: demoEnabled(),
           liveReady: liveReady(),
-          researchReady: researchReady(),
-          synthesisReady: synthesisReady(),
+          researchReady: researchReady() || (a ? await stageReady(repository, "research").catch(() => false) : false),
+          synthesisReady: synthesisReady() || (a ? await stageReady(repository, "synthesis").catch(() => false) : false),
           providers: safeProviderConfiguration(),
           storage:
             process.env.PORT67_STORAGE === "firebase"
@@ -381,6 +382,14 @@ export async function handleFactory(
       if(data.action==="add") return json({team:await addTeamMember(repository,data.email,a.subject)});
       if(data.action==="remove") return json({team:await removeTeamMember(repository,data.email,a.subject)});
       return json({error:"Unknown team action"},400);
+    }
+    if (route === "admin/ai-routing") {
+      // Owner only. Chooses provider and model per job and holds prices; API keys stay in Render.
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      if(request.method==="GET") return json(await routingOverview(repository));
+      if(data.action==="save") { await saveRouting(repository,data.settings,a.subject); return json(await routingOverview(repository)); }
+      if(data.action==="public-prices") return json(await suggestPublicPrices(Array.isArray(data.models)?data.models:[]));
+      return json({error:"Unknown AI models action"},400);
     }
     if(route === "accounts") {
       const accounts=await listAccounts(repository,a);
@@ -527,7 +536,7 @@ export async function handleFactory(
         operator(a);
         if (a.demo)
           throw new Error("Paid AI drafting is disabled in synthetic demo");
-        if (!synthesisReady())
+        if (!(await stageReady(repo(a), "synthesis")))
           return json(
             {
               error:
@@ -582,7 +591,7 @@ export async function handleFactory(
           throw new Error(
             "Live paid research is disabled in synthetic demo; add a manual source to explore the workflow",
           );
-        if (!researchReady())
+        if (!(await stageReady(repo(a), "research")))
           return json(
             {
               error:
@@ -594,14 +603,15 @@ export async function handleFactory(
           throw new Error("Invalid research segment");
         requireProviderConsent(p);
         const segment = data.segment as Segment;
+        const selection = await resolveSelection(repo(a), researchSlot(segment));
         const run: ResearchRun = {
           id: id(),
           stage: "research",
           at: new Date().toISOString(),
           status: "running",
           segment,
-          provider: providerSelection("research").provider,
-          model: providerSelection("research").model,
+          provider: selection.provider,
+          model: selection.model,
           leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
           contextHash: digest(JSON.stringify(p.brief)),
           contextSnapshot: structuredClone(p.brief),
@@ -636,7 +646,7 @@ export async function handleFactory(
         });
         let acceptedError = "";
         try {
-          const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment));
+          const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection));
           acceptedError = await repo(a).mutate(a.workspaceId, (state) => {
             const current = find(state.projects, projectId, a);
             const record = current.runs.find((r) => r.id === run.id)!;

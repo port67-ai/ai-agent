@@ -1,3 +1,10 @@
+# Latest handover: admin AI model routing
+
+2026-11-12; Claude; CHG-0016; PRD 1.5.0 (FAC-HAR-005). Owner admins now pick provider and model per job on the AI models page, with prices suggested from a public list (litellm catalogue) then editable. Precedence: job route, stage default, env PORT67_*_PROVIDER/MODEL. Keys stay in Render; the page only enables providers whose key is set. Owner prices override PORT67_MODEL_PRICING_JSON. Search per-call fees must be entered by hand. Verified in a sandbox copy with stubbed transport only; the live public fetch, the page in a browser and live calls are unverified. Image and video routing is not built. Next: update docs/LIVE_SMOKE_TEST.md to configure via this page (only keys, enable switches and cap remain in Render), producer and admin polish, MP4. Do not run git write commands from the Claude sandbox against the repo.
+
+---
+Earlier handover (team access, CHG-0014) follows.
+
 # Latest handover — team access (admin, producer, client)
 
 2026-11-12; Claude; branch to be named by owner (suggest claude/team-access); base main after PR10 (spend caps). CHG-0014. PRD 1.4.0 (new FAC-TEN-009).
@@ -10,4 +17,6 @@ Checks: npm test, tsc --noEmit, eslint and next build pass in a sandbox copy wit
 
 Limits and next steps: one registry read per non-producer request; staff MFA, per-client producer assignment and approval of open client sign-up are not implemented. Do not run git write commands from the Claude sandbox against the repo: they leave undeletable lock files. Claude edits files; the owner commits with GitHub Desktop.
 
-Queue agreed with the owner: spend caps (done), team access (this change), then guided live research smoke test with the $25 cap, producer and admin polish, rendered MP4. Remaining earlier: price list PORT67_MODEL_PRICING_JSON, task and workflow level caps, phase-two publishing and measurement.
+Update CHG-0015: the owner confirmed team access works live (admin jed@port67.ai, producer producer@port67.ai, client jpell@me.com). The live research smoke test is prepared in docs/LIVE_SMOKE_TEST.md (Gemini for both stages, one dated price line, billing prerequisite, steps and evidence template) but has NOT been run; prices came from the ai.google.dev page stamped 2026-06-02 and need owner confirmation. Next owner action: set the Render variables listed there, then run the steps and record evidence.
+
+Queue agreed with the owner: spend caps (done), team access (done), live research smoke test (prepared, owner to run), producer and admin polish (next code work: Team page subtitle and header dropdowns), rendered MP4. Remaining earlier: price list PORT67_MODEL_PRICING_JSON, task and workflow level caps, phase-two publishing and measurement.

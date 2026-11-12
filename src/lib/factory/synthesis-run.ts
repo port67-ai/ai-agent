@@ -1,5 +1,5 @@
 import { meteredModelCall } from "./metering";
-import { providerSelection } from "./providers";
+import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
 import { capabilityRegistry } from "./registry";
 import {
   access,
@@ -14,7 +14,6 @@ import type { Repository } from "./repository";
 import {
   generateSynthesis,
   prepareSynthesis,
-  synthesisReady,
   type SynthesisStage,
   type InsightDraft,
   type DirectionDraft,
@@ -27,7 +26,8 @@ export async function runSynthesis(
 ): Promise<Project> {
   operator(a);
   if (a.demo) throw new Error("Paid AI drafting is disabled in synthetic demo");
-  if (!synthesisReady()) throw new Error("AI drafting is not configured");
+  if (!(await stageReady(repo, "synthesis"))) throw new Error("AI drafting is not configured");
+  const selection = await resolveSelection(repo, synthesisSlot(stage));
   const reservation = await repo.mutate(a.workspaceId, (state) => {
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
@@ -61,8 +61,8 @@ export async function runSynthesis(
       stage,
       at: new Date().toISOString(),
       status: "running",
-      provider: providerSelection("synthesis").provider,
-      model: providerSelection("synthesis").model,
+      provider: selection.provider,
+      model: selection.model,
       leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
       contextHash: digest(JSON.stringify(current.brief)),
       contextSnapshot: structuredClone(current.brief),
@@ -76,7 +76,7 @@ export async function runSynthesis(
   });
   let error = "";
   try {
-    const result = await meteredModelCall(repo,a,reservation.project,reservation.run,()=>generateSynthesis(reservation.project, stage));
+    const result = await meteredModelCall(repo,a,reservation.project,reservation.run,()=>generateSynthesis(reservation.project, stage, selection));
     error = await repo.mutate(a.workspaceId, (state) => {
       const index = state.projects.findIndex((p) => p.id === projectId);
       const current = state.projects[index];

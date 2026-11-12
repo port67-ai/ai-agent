@@ -1,4 +1,4 @@
-import type { ApiCall } from "./costs";
+import type { ApiCall, Pricing } from "./costs";
 export const segments = [
   "brand",
   "customer",
@@ -197,8 +197,20 @@ export type Account = {
 /** Port67 staff granted the producer role by the owner. Matched by the verified Firebase email. */
 export type TeamMember = { email: string; addedBy: string; addedAt: string };
 export type TeamAuditEntry = { at: string; actor: string; action: "add" | "remove"; email: string };
+/** Which provider and exact model ID handles one job. API keys stay in deployment settings. */
+export type AiRoute = { provider: "openai" | "anthropic" | "deepseek" | "gemini"; model: string };
+export type AiRoutingConfig = {
+  defaults?: { research?: AiRoute; synthesis?: AiRoute };
+  slots?: Record<string, AiRoute>;
+  /** Owner-entered USD prices keyed "provider:model"; these override PORT67_MODEL_PRICING_JSON. */
+  pricing?: Record<string, Pricing>;
+  updatedAt?: string;
+  updatedBy?: string;
+  history?: { at: string; actor: string; summary: string }[];
+};
 export type Database = {
   accounts?: Account[];
+  aiRouting?: AiRoutingConfig;
   team?: TeamMember[];
   teamAudit?: TeamAuditEntry[];
   apiCalls?: ApiCall[];

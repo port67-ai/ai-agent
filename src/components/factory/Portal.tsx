@@ -21,6 +21,7 @@ import {
   Menu,
   RefreshCw,
   Users,
+  Cpu,
 } from "lucide-react";
 import type { Account, Principal, Project } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
@@ -31,6 +32,7 @@ import Research from "./Research";
 import WorkspaceSetup from "./WorkspaceSetup";
 import AdminCosts from "./AdminCosts";
 import Team from "./Team";
+import AiModels from "./AiModels";
 import Direction from "./Direction";
 import Assets from "./Assets";
 import Capabilities from "./Capabilities";
@@ -56,6 +58,7 @@ type Tab =
   | "capabilities"
   | "setup"
   | "team"
+  | "ai"
   | "admin";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
@@ -68,6 +71,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "capabilities", label: "Capabilities", icon: Settings2 },
   { id: "setup", label: "Workspace setup", icon: Settings2 },
   { id: "team", label: "Team access", icon: Users },
+  { id: "ai", label: "AI models", icon: Cpu },
   { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
 async function api(path: string, data?: unknown) {
@@ -243,7 +247,7 @@ export default function Portal() {
           {nav
             .filter(
               (n) =>
-                n.id === "admin" || n.id === "team" ? !!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
+                n.id === "admin" || n.id === "team" || n.id === "ai" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
                 !["production", "capabilities", "setup"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
@@ -436,6 +440,8 @@ export default function Portal() {
           )}
           {tab === "admin" && principal.admin ? (
             <AdminCosts />
+          ) : tab === "ai" && principal.admin ? (
+            <AiModels />
           ) : tab === "team" && principal.admin ? (
             <Team />
           ) : tab === "setup" && operator ? (

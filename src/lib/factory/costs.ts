@@ -10,11 +10,10 @@ export type ApiCall = ApiCallInput & { id: string; createdAt: string; finishedAt
 type Ledger = { apiCalls?: ApiCall[]; ledgerArchives?: string[] };
 function text(value: string) { if(typeof value !== 'string' || !value.trim() || value.length>200) throw new Error('Invalid ledger metadata'); return value; }
 function integer(n: number) { if(!Number.isSafeInteger(n)||n<0) throw new Error('Expected non-negative integer'); return n; }
-function pricingFor(provider: string, model: string): Pricing|undefined {
-  const config=process.env.PORT67_MODEL_PRICING_JSON;
-  if(!config) return;
-  const p=JSON.parse(config)[`${provider}:${model}`] as Pricing|undefined;
-  if(!p) return;
+export const AI_ROUTING_NAMESPACE = 'factory-ai-routing';
+/** Validate and copy a price entry. Shared by the environment price list and the admin AI models page. */
+export function normalizePricing(p: Pricing): Pricing {
+  if(!p || typeof p!=='object') throw new Error('Invalid pricing');
   if(typeof p.updatedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z)?$/.test(p.updatedAt) || !Number.isFinite(Date.parse(p.updatedAt)) || new Date(p.updatedAt).toISOString().slice(0,10)!==p.updatedAt.slice(0,10)) throw new Error('Pricing needs a version date');
   for(const key of ['inputPerMillion','outputPerMillion','cachedInputPerMillion','cacheCreationPerMillion','toolPerCall'] as const) {
     const n=p[key]; if(n===undefined && (key==='cachedInputPerMillion'||key==='cacheCreationPerMillion'||key==='toolPerCall')) continue;
@@ -22,9 +21,21 @@ function pricingFor(provider: string, model: string): Pricing|undefined {
   }
   return {updatedAt:p.updatedAt,inputPerMillion:p.inputPerMillion,outputPerMillion:p.outputPerMillion,...(p.cachedInputPerMillion===undefined?{}:{cachedInputPerMillion:p.cachedInputPerMillion}),...(p.cacheCreationPerMillion===undefined?{}:{cacheCreationPerMillion:p.cacheCreationPerMillion}),...(p.toolPerCall===undefined?{}:{toolPerCall:p.toolPerCall})};
 }
+/** Admin-entered price first, then the environment price list. Absent means unknown cost, never free. */
+export function pricingFor(provider: string, model: string, admin?: Record<string, Pricing>): Pricing|undefined {
+  const key=`${provider}:${model}`;
+  if(admin && Object.hasOwn(admin,key)) return normalizePricing(admin[key]);
+  const config=process.env.PORT67_MODEL_PRICING_JSON;
+  if(!config) return;
+  const p=JSON.parse(config)[key] as Pricing|undefined;
+  if(!p) return;
+  return normalizePricing(p);
+}
 export async function reserveApiCall(repo: Repository, input: ApiCallInput): Promise<string> {
   const metadata = Object.fromEntries(['accountId','workspaceId','projectId','runId','stage','provider','model','actor'].map(k=>[k,text(input[k as keyof ApiCallInput])])) as ApiCallInput;
-  const pricing=pricingFor(metadata.provider,metadata.model);
+  let adminPricing: Record<string, Pricing>|undefined;
+  try { adminPricing=(await repo.read(AI_ROUTING_NAMESPACE)).aiRouting?.pricing; } catch { /* unreadable prices mean unknown cost, which the cap holds at its call hold */ }
+  const pricing=pricingFor(metadata.provider,metadata.model,adminPricing);
   // Invalid cap settings throw here, before any reservation, so a typo blocks paid calls rather than lifting the cap.
   const budget=budgetConfig();
   // Archived batches are immutable history. Their ids are re-checked inside the mutation so archiving cannot hide spend.
