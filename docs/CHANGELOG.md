@@ -217,3 +217,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-007 (new), FAC-HAR-005, FAC-HAR-006, FAC-MKT-021. PRD 1.13.0.
 - Evidence: tsc, factory lint, full npm test and next build in a sandbox copy. Not seen in a live browser.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0029 - 2026-11-12 - Full journey swimlane on the AI agents page
+- Author/harness: Claude (Cowork); owner asked to adopt the merged user, agent and approval journey and map the agents into the AI agents page.
+- What/why: New JourneyFlow component replaces the simple chain strip. It shows account owner, producer and agent lanes, the four research, three drafting and template production agents, five amber human gates, optional video render, download, and customer-side publishing (the product does not publish). Agent nodes show their model or "No model chosen yet", animate while running and scroll to the agent card when clicked. Files: JourneyFlow.tsx, AiAgents.tsx, portal.css, tests/factory-journey.test.tsx, package.json.
+- Requirements: FAC-HAR-008 (new), FAC-HAR-006, FAC-HAR-007. PRD 1.14.0.
+- Evidence: tsc, factory lint, full npm test and next build in a sandbox copy. Not seen in a live browser. The journey is a fixed description; gates are enforced by the existing engine rules, not by this diagram.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

@@ -6,6 +6,7 @@ import type { AiRoute, AiRoutingConfig } from "@/lib/factory/model";
 import type { Pricing } from "@/lib/factory/costs";
 import AiModels from "./AiModels";
 import AgentDataFlow from "./AgentDataFlow";
+import JourneyFlow from "./JourneyFlow";
 
 type Routing = {
   config: AiRoutingConfig;
@@ -39,14 +40,6 @@ const groups: { id: string; title: string; note: string }[] = [
   { id: "research", title: "Research agents", note: "Search the public web and cite every finding." },
   { id: "drafting", title: "Drafting agents", note: "Write only from reviewed evidence and the approved direction." },
   { id: "production", title: "Production agents", note: "Template builders: no AI model, no AI cost." },
-];
-// The chain every campaign follows, with the agents that power each step.
-const chain: { label: string; agents: string[] }[] = [
-  { label: "Research", agents: ["research:brand", "research:customer", "research:competitor", "research:creative"] },
-  { label: "Insights", agents: ["synthesis:insights"] },
-  { label: "Direction", agents: ["synthesis:strategy"] },
-  { label: "Copy pack", agents: ["synthesis:content"] },
-  { label: "Production", agents: [] },
 ];
 
 export default function AiAgents() {
@@ -148,8 +141,6 @@ export default function AiAgents() {
 
   if (!data) return <section className="f-panel">{error ? <p className="f-team-error" role="alert">{error}</p> : <p className="f-small">Loading AI agents…</p>}</section>;
   const byId = new Map(data.agents.map((a) => [a.id, a]));
-  const flying = (ids: string[]) => ids.some((id) => (byId.get(id)?.stats?.inFlight || 0) > 0);
-  const used = (ids: string[]) => ids.some((id) => (byId.get(id)?.stats?.calls || 0) > 0);
   const unset = data.agents.filter((a) => a.kind === "ai" && !a.model).length;
   return (
     <>
@@ -179,19 +170,8 @@ export default function AiAgents() {
         {error && <p className="f-team-error" role="alert">{error}</p>}
         {notice && <p className="f-team-ok" role="status">{notice}</p>}
         {data.ledgerError && <p className="f-team-error" role="alert">{data.ledgerError}</p>}
-        <div className="f-chain" aria-label="How a campaign moves through the agents">
-          {chain.map((step, i) => (
-            <div className="f-chain-part" key={step.label}>
-              {i > 0 && <span className={"f-chain-link" + (flying(step.agents) ? " flow" : "")} aria-hidden="true" />}
-              <div className={"f-chain-node" + (flying(step.agents) ? " running" : used(step.agents) ? " used" : "")}>
-                {flying(step.agents) ? <Loader2 size={15} className="f-spin" /> : used(step.agents) ? <CheckCircle2 size={15} /> : <Cpu size={15} />}
-                <strong>{step.label}</strong>
-                <small>{step.agents.length ? `${step.agents.length} agent${step.agents.length === 1 ? "" : "s"}` : "templates"}</small>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
+      <JourneyFlow agents={data.agents} />
       <AgentDataFlow agents={data.agents} />
       {groups.map((g) => (
         <section className="f-panel" key={g.id}>
@@ -210,7 +190,7 @@ export default function AiAgents() {
               const options = (routing?.providers || []).filter((p) => a.group !== "research" || p.research);
               const models = suggest?.models[form.provider] || [];
               return (
-                <article key={a.id} className={"f-agent " + (open ? "editing " : "") + (running ? "running" : a.problem || (a.kind === "ai" && !a.model) ? "failed" : "")}>
+                <article id={"agent-" + a.id} key={a.id} className={"f-agent " + (open ? "editing " : "") + (running ? "running" : a.problem || (a.kind === "ai" && !a.model) ? "failed" : "")}>
                   <div className="f-agent-head">
                     <span className="f-agent-icon">
                       <Icon size={18} />
