@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-12; Claude; CHG-0030: set PORT67_AUTO_APPROVE_PRODUCER=true in Render to auto-approve the producer start step (consent plus the four researchers run in the background when a customer requests research); remove it to restore the producer. Gates 1 to 5 after research stay human. Not verified live.
+
 2026-11-12; Claude; CHG-0029: AI agents page now opens with a journey swimlane (owner, producer, agents, five human gates, publishing outside the product). Not verified live.
 
 2026-11-12; Claude; CHG-0028; PRD 1.13.0 (FAC-HAR-007). The AI models tab is gone: models are chosen on the AI agents tab (per-agent Change model, Apply suggested setup, Advanced section for defaults and prices) and a data-flow diagram shows how agents hand off via Firestore and approvals. Research room shows Research requested and Port67 starts; nothing runs until a producer authorises public data and clicks Start research. Not verified in a live browser. Open: Factory MVP CI red, live smoke test, Firebase Storage.

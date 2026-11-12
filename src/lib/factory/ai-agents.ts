@@ -1,3 +1,4 @@
+import { autoApproveProducer } from "./auto-approve";
 import { exportApiCalls, type ApiCall } from "./costs";
 import { capabilityRegistry, productionCapabilities } from "./registry";
 import { SLOTS, routingOverview } from "./ai-routing";
@@ -69,6 +70,6 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
     recent,
     totals: { calls: rows.length, inFlight: ai.reduce((n, a) => n + a.stats.inFlight, 0), estimatedMicroUsd: ai.reduce((n, a) => n + a.stats.estimatedMicroUsd, 0), unattributed: rows.filter((r) => !r.agent).length },
     ledgerError,
-    switches: routing.switches,
+    switches: { ...routing.switches, autoApproveProducer: autoApproveProducer() },
   };
 }
