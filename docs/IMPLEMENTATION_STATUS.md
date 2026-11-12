@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-11-11. Baseline inspected: 26ab3be. Environment: local managed checkout.
+Updated: 2026-11-12. Baseline inspected: 26ab3be. Environment: local managed checkout.
 
 The repository contains an existing appointment-booking Next.js application. Factory implementation and acceptance tests have not been audited. All requirements below are imported intent, not owner approval. Governance files now exist, but remote CI/branch protection and cross-harness compliance are not yet verified. FAC-DEV requirements therefore remain unverified rather than being promoted from document presence alone.
 
@@ -70,7 +70,7 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-TEN-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-TEN-006 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-TEN-006 | Owner-confirmed portal scope, CHG-0003 | PLANNED / NOT_VERIFIED | Customer intake/direction/asset approval; acceptance tests pending |
 | FAC-TEN-007 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TOL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
@@ -86,3 +86,22 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-WFL-011 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 
 CHG-0002: integrated studio website commit a5e8ceb while resolving README conflict. Factory acceptance status unchanged; studio tests do not verify Factory capabilities.
+
+## Owner-confirmed scope — CHG-0003
+
+FAC-TEN-006 is now owner-approved portal intent, not implemented. The register row reflects the updated scope; no acceptance evidence exists.
+
+| Requirement | Intent | Delivery | Evidence / next verification |
+|---|---|---|---|
+| FAC-MKT-001 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-002 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-003 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-004 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-005 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-006 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-007 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-008 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-009 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-010 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-011 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-012 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |

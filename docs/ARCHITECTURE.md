@@ -5,3 +5,5 @@ Observed at 26ab3be: package.json declares Next.js 16, React 19, TypeScript, Fir
 The Factory target architecture is in PRD.md sections 4–16 and remains proposed. Existing appointment-booking flows must not be presented as the multi-tenant Factory control/execution/evidence planes. No full source audit or reuse decision has been completed. Existing guidance is archived in EXISTING_APP_GUIDE.md.
 
 Main advanced to a5e8ceb with a public studio site in src/app/(studio), src/components/studio and enquiry tests. Integrated without application edits during CHG-0002. This public site remains separate from the proposed Factory requirements.
+
+PRD 1.1.0 target extension (not implemented): segmented evidence -> CampaignStrategy/customer approval -> specialist ProductionTaskBrief -> assets/customer approval. A capability-gap proposal path feeds reviewed versioned agent/skill registration; it cannot bypass existing authorisation, evaluation or cost controls. Measurement lineage begins in phase one; channel result integrations and publishing are phase two. Runtime schemas and technical design remain pending.

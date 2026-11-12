@@ -9,3 +9,6 @@
 | OPEN-003 | Pending owner review | Supplied Factory PRD 1.0.0 remains proposed; imported LOCKED labels are source claims, not approval supplied by this commit. |
 
 Material technical decisions use docs/adr/ADR-NNNN-title.md with status, date, context, alternatives, decision, consequences, requirement/change IDs and approval evidence. No architecture ADR is approved by this bootstrap.
+
+## PRODUCT-001 — 2026-11-12 — Owner-confirmed EXPLAIN expansion
+Customer supplies a minimal brief; Port67 manages segmented research, recommends messaging/design with detailed evidence-based reasoning, obtains customer direction approval and manages production/final asset approval. Supports B2B/B2C/mixed audiences. New needs can trigger proposed specialist agents/skills, with reviewed promotion rather than autonomous production permissions. See PRD 1.1.0 section 10.6 and CHG-0003. This decision does not approve the remaining baseline architecture or revise the other commercial guardrails.

@@ -1,9 +1,9 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.0.0  
-**Date:** 11 November 2026  
-**Status:** Proposed baseline — requires owner approval and Synapse architecture audit  
+**Version:** 1.1.0  
+**Date:** 12 November 2026  
+**Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
 **Repository target:** `port67-factory/PRD.md`  
 **Governing commercial reference:** `Port67_ai_Master_Business_Plan_v1_1.pdf` (9 November 2026)  
@@ -93,9 +93,11 @@ Port67.ai is a UK-based, premium, founder-independent public-facing B2B AI agenc
 
 1. **UNDERSTAND — Executive Intelligence Dashboards.** Transform fragmented business data into validated KPIs, executive views and reviewed narrative insight.
 2. **AUTOMATE — AI Process Transformation.** Transform a contained business process using safe integrations, human checkpoints, exception management and measured outcomes.
-3. **EXPLAIN — Technology Explainers & Animation.** Translate complicated technology and software into technically accurate, compelling scripts, storyboards and premium visual deliverables.
+3. **EXPLAIN — Research-led Marketing Content, Advertising & Animation.** Turn business, brand and customer insight into evidence-informed campaign direction and customer-approved advertising, animation, explainers and social content. Port67 manages research and production; customers submit a minimal brief and approve direction and final assets. Supports B2B, B2C and mixed audiences.
 
 The business plan initially targets unrelated UK and English-speaking B2B SaaS/software, AI/cloud/cybersecurity, professional/specialist services, technical firms and white-label creative agency partners, excluding direct telecom conflicts. Founder marketing remains brand-led, with truthful legal/customer disclosures. No fictional staff, fabricated results, unlicensed media, unapproved outbound communication or employer-owned material.
+
+The business plan’s initial B2B sales focus remains historical commercial context, not a platform audience restriction. Owner direction on 12 November 2026 broadens EXPLAIN campaign capability to B2C and mixed audiences (CHG-0003); this does not silently revise other commercial guardrails, price hypotheses or the other two pillars.
 
 ### 1.2 What Port67 Factory is
 
@@ -126,7 +128,7 @@ These are proposed pricing experiments from the master plan, **not market-verifi
 
 **In scope for the long-term product:** tenancy, client/project management, versioned context, shared registries, multi-provider AI, execution orchestration, approvals, evidence and rights, QA, artifact production, analytics, cost/margin reporting, contractor access, integrations, client-safe review/delivery.
 
-**Not in initial MVP:** full animation rendering; a client SaaS portal; elaborate visual workflow designers; unlimited integrations; autonomous sales outreach; unsupervised payments or legally consequential decisions; end-to-end dashboard production; production-grade client process automation; custom vector infrastructure; model training; distributed agent swarms; self-modifying agent policies; complex microservices unless evidenced by workload.
+**Not in initial MVP:** full animation rendering; a general-purpose self-service creation SaaS portal (a restricted managed-service brief/approval portal is in scope); elaborate visual workflow designers; unlimited integrations; autonomous sales outreach; unsupervised payments or legally consequential decisions; end-to-end dashboard production; production-grade client process automation; custom vector infrastructure; model training; distributed agent swarms; self-modifying agent policies; complex microservices unless evidenced by workload.
 
 ---
 
@@ -139,7 +141,7 @@ These are proposed pricing experiments from the master plan, **not market-verifi
 - **Specialist Reviewer:** approved quality checks, claims reviews, content revisions and explicit approvals.
 - **Contractor:** only assigned projects/artifacts/actions; time, deliverables and rights evidence.
 - **Finance Operator:** cost ledger, time, contractor cost, revenue, margin, invoicing status; cannot create payments autonomously.
-- **Future Client Reviewer:** restricted portal to approved versions, comment and accept within assigned projects.
+- **Client Submitter / Reviewer:** restricted managed-service portal for briefs, authorised assets, clarification requests, campaign-direction review and version-specific asset approval within assigned projects; no access to internal agent controls or other clients.
 - **Agent Execution Identity:** service principal bound to an approved task and least-privilege tools.
 - **Coding Assistant (Codex, Claude, Gemini):** development actor reading repository policy and contributing through Git; never a business/client actor by default.
 
@@ -266,7 +268,7 @@ The workflow coordinator—not the LLM—decides task readiness, retries, approv
 | FAC-TEN-003 | P0 | Define server-enforced RBAC for Admin, Producer, Reviewer, Contractor, Finance | Restricted action returns 403 and audit event |
 | FAC-TEN-004 | P0 | Every project has owner, factory, status, budget and approved scope | Cannot launch workflow missing required fields |
 | FAC-TEN-005 | P1 | Restrict within-tenant clients/projects by assignments | Contractor can only access explicitly assigned resources |
-| FAC-TEN-006 | P2 | Future client reviewer role | Client sees only explicitly shared approved artifacts |
+| FAC-TEN-006 | P0 | Client submitter/reviewer for managed creative service | Assigned customer can submit brief/assets and review explicitly shared direction/deliverables; internal drafts and other client data remain inaccessible |
 | FAC-TEN-007 | P0 | Use separate dev/staging/prod Firebase projects | Automated check prevents accidental cross-environment deployment |
 
 ### 5.2 Client context and reusable knowledge
@@ -596,6 +598,8 @@ Firebase Security Rules protect browser/mobile SDK access. **Server/Admin SDKs b
 }
 ```
 
+The example above is a completed synthetic production brief, not the minimum customer intake form. Under FAC-MKT-001–006, audience and deliverable may initially be unknown and are proposed through research; production requires the approved enriched strategy and task brief. Runtime schema evolution is pending implementation design.
+
 ### 8.2 ClientContextSnapshot
 
 ```json
@@ -764,18 +768,22 @@ A Producer/Admin can inspect failure category, task inputs/outputs allowed by cl
 
 ### 10.1 Product offer and boundaries
 
-The initial commercial explainer offer is a **60–90 second premium B2B SaaS/technology explainer** with discovery, up to two script rounds, storyboard/styleframes, animation, commercially licensed narration/music, one master aspect ratio, two consolidated revision rounds and final video delivery. Extra aspect ratios, extensive 3D, languages, live-action, character animation and voice cloning are separately scoped. The platform must enforce scope limits and variation/change control; these are proposals, not guarantees of automated cinematic quality.
+The historical initial commercial explainer package is a **60–90 second premium B2B SaaS/technology explainer** with discovery, up to two script rounds, storyboard/styleframes, animation, commercially licensed narration/music, one master aspect ratio, two consolidated revision rounds and final video delivery. Extra aspect ratios, extensive 3D, languages, live-action, character animation and voice cloning are separately scoped. The platform must enforce scope limits and variation/change control; these are proposals, not guarantees of automated cinematic quality.
+
+The expanded offer supports B2B, B2C and mixed campaigns, including short advertisements, animation, static/social content and technology explainers. Durations such as 5 or 30 seconds and channels such as Instagram, LinkedIn and X are campaign specifications, not fixed templates or promises of universal adapter support. The historical package and pricing remain examples; new packages, production budgets and revision limits require explicit scope agreement.
 
 ### 10.2 Workflow stages
 
 ```text
-Project intake + scope validation
+Minimal customer portal brief + Port67 scope validation
        |
 Versioned approved client context snapshot
        |
        +---------- parallel independent research -----------+
        |                    |                                |
-EXP-001 Technical     EXP-002 Audience                 EXP-003 Market
+Product/brand        Customer/audience               Competitor/market
+       |                    |                                |
+       +---------- additional scoped creative/niche research --+
        |                    |                                |
        +--------------------+--------------------------------+
                              |
@@ -785,9 +793,11 @@ EXP-001 Technical     EXP-002 Audience                 EXP-003 Market
                              |
                        HUMAN GATE 1
                              |
-                    EXP-004 Message Strategy
+                    EXP-004 Campaign strategy + messaging + design rationale
                              |
-                       HUMAN GATE 2
+             PORT67 REVIEW + CUSTOMER DIRECTION APPROVAL
+                             |
+              Versioned specialist production task briefs
                              |
               EXP-005 Script -> EXP-006 Critique/QA
                              |
@@ -803,14 +813,14 @@ EXP-001 Technical     EXP-002 Audience                 EXP-003 Market
                              |
                        HUMAN GATE 5
                              |
-                 Final licensed video/delivery
+                 Customer-approved asset package / delivery
 ```
 
-First production milestone ends at approved **Research Pack**; later stages are designed in the model but not implemented initially.
+The first technical research milestone still ends at an approved **Research Pack**. The first managed-service release must additionally support minimal portal intake, customer direction approval and final asset review/delivery; these product-phase requirements are not claims that all production automation ships in that technical milestone. See section 10.6.
 
 ### 10.3 Key creative data structures
 
-- `MessageStrategy`: audience, desired change in belief, single core promise, substantiating evidence, objections, emotional tone, prohibited claims, CTA and approval.
+- `MessageStrategy` (within versioned `CampaignStrategy`): audience, desired change in belief, single core promise, substantiating evidence, objections, emotional tone, prohibited claims, CTA and approval.
 - `Script`: scene/beat ID, voiceover text, screen text, timing, technical claim references, intended visuals, total estimated duration and revision number.
 - `Storyboard`: ordered scene IDs, duration, visual description, animation intent, reference assets, brand tokens and rights status.
 - `MediaAsset`: type, generation or source, ownership/licence, permitted uses, model/provider metadata, review status, storage object and version.
@@ -830,7 +840,32 @@ Technical, Audience and Market research must be truly independent inputs to the 
 - Render review, rights/asset licence check, technical accuracy and export QC.
 - Final human approval before external release; export manifest/acceptance tracked.
 
-### 10.6 Demo project
+### 10.6 Managed creative service and adaptive capability requirements
+
+Owner-confirmed product direction: 12 November 2026. Implementation design and acceptance tests remain to be built. These requirements supersede narrower EXPLAIN audience/format assumptions and the previous deferral of the restricted customer portal. They do not approve automatic publishing or unreviewed agent deployment.
+
+**Service phases:** Phase one is managed intake, research, strategy, asset creation, revisions, approval and download/delivery. Phase two adds measured performance feedback and optionally authorised publishing. These are service phases, distinct from technical milestones M0–M8. A customer receives Port67-managed work, not responsibility for configuring agents.
+
+| ID | Priority | Requirement | Acceptance criterion |
+|---|---|---|---|
+| FAC-MKT-001 | P0 | Minimal adaptive intake | Customer supplies business identity/website (or alternative description), campaign objective and approval contact; logo/assets, competitors, inspirations and existing research are optional inputs. Missing information is discovered where possible or requested as a targeted clarification; never invented or required as a large upfront questionnaire. |
+| FAC-MKT-002 | P0 | Audience-flexible research and strategy | B2B, B2C, mixed and unknown audience briefs are supported. Research proposes audience, buying context, motivations, objections, channels and formats with evidence and confidence; unknowns are visible and material assumptions require confirmation. No B2B default silently restricts the plan. |
+| FAC-MKT-003 | P0 | Segmented, extensible evidence collection | Separate product/brand, customer voice, competitor/market and creative-reference research outputs carry source/date, collection method, access/use permission, client scope, confidence, gaps and contradictions. Methods include supplied files, authorised first-party exports/interviews/surveys, public web/reviews/discussion and permitted APIs/ad libraries. Inaccessible sources and sampling bias are reported; advertised competitor activity is not treated as proof of performance. |
+| FAC-MKT-004 | P0 | Evidence-backed campaign direction | CampaignStrategy recommends messaging focus, value proposition, supporting claims, audience, creative angles, design direction, channels and asset specifications. Each material recommendation links research findings and reasoning, alternatives, uncertainty and intended outcome. Customer assertions remain distinct from independently supported facts. |
+| FAC-MKT-005 | P0 | Customer approval before asset production | Port67 reviews strategy; customer approves or requests changes to an exact strategy version before paid asset production/rendering. Strategy previews may illustrate the proposal but do not imply final production approval. Material strategy changes invalidate dependent approvals and trigger impact/reapproval review. |
+| FAC-MKT-006 | P0 | Strategy translated into specialist task contracts | Each production task identifies approved strategy/context versions, evidence/claims, brand constraints, role-specific instructions, inputs, output schema, dependencies, channel/duration/aspect ratio where applicable, rights, budget and acceptance checks. Prevent production from unapproved or superseded dependencies. |
+| FAC-MKT-007 | P0 | Managed multi-format delivery | Port67 coordinates scripts/copy, static design, storyboards, animation/video and channel variants as scoped. Customer can comment, request scoped revisions and approve immutable final versions; only approved licensed assets enter the delivery manifest. No automatic posting in phase one. |
+| FAC-MKT-008 | P0 | Discover and propose new capabilities | Research, strategy or production agents can flag missing niche knowledge, methods, skills, tools or specialist roles and create a CapabilityProposal with evidence of need, expected value, alternatives/reuse, input/output contracts, permissions/data classes, provider needs, cost, risks and evaluation plan. Unsupported requirements pause or route to a qualified human rather than fabricating capability. |
+| FAC-MKT-009 | P0 | Controlled agent/skill expansion | Agents may draft new specialist agent/skill definitions and evaluations in a sandbox. Authorised Port67 review, permission/rights/security checks, budget approval, runtime schema validation and relevant evaluation results are required before registry promotion and production use. No self-granted tools, credentials, policy changes or automatic production deployment. New versions are traceable, disableable and rollbackable. |
+| FAC-MKT-010 | P0 | Preserve reusable core and niche flexibility | New specialist definitions use existing tenancy, evidence, execution, approval, cost and artifact contracts. Workflows support reviewed optional research/production branches and new artifact schemas without duplicating the platform. A synthetic unfamiliar-niche brief must demonstrate capability-gap detection, reviewed specialist addition and safe workflow integration; failed evaluations block promotion. |
+| FAC-MKT-011 | P1 | Prepare measurement lineage in phase one | Persist campaign/asset/version IDs, source-to-insight-to-strategy-to-task lineage, creative hypothesis, intended audience/channel/objective and proposed success measures. Do not report performance without observed results. |
+| FAC-MKT-012 | P2 | Phase-two measurement and optional publishing | With separate customer authorisation, connect channel/analytics results to actual published asset versions, spend, time window and attribution limitations. Use results to propose strategy changes and future variants; distinguish correlation from causal evidence. Publishing requires explicit account scope and approved content/version, timing and destination. |
+
+**Conceptual records:** `ResearchFinding` links evidence to a scoped insight. `CampaignStrategy` contains recommendations, detailed reasoning, design direction, asset plan, hypotheses and approval state. `ProductionTaskBrief` carries the approved role-specific contract. `CapabilityProposal` records a gap, proposed specialist and promotion evidence. Their runtime schemas and migrations require design review; this PRD update does not claim deployed contracts.
+
+**Quality ambition:** improve first-draft relevance, reduce avoidable revisions and learn from results. Research does not guarantee first-time approval, audience response or commercial success. Inspiration is analysed for principles; assets, testimonials, claims and likenesses are not copied without appropriate rights.
+
+### 10.7 Demo project
 
 `FlowPilot` is a **fictional product / concept demonstration**, never presented as a paid client. The demo depicts complex approvals and handoffs becoming a unified workflow with visibility, ultimately aiming for a polished 60-second master, a 15-second cutdown and a documented storyboard/behind-the-scenes process. The first technical demo only needs to produce an approved, evidence-labelled Research Pack from synthetic context; later creative demos must remain labelled fictional.
 
@@ -952,11 +987,14 @@ Track project turnaround, human approval time, rework per artifact, first-pass a
 6. **Evidence Review:** research findings, supported/unsupported/conflicted claims, citations and missing evidence.
 7. **Approval Queue:** approve/reject a specific immutable artifact version with audit reason.
 8. **Factory Operations:** active/blocked workflows, failures, cost and alert summaries.
-9. **Registry Admin (basic):** view approved agent/skill/model policy definitions; enable/disable with permission.
+9. **Customer Portal:** minimal brief/assets, targeted clarifications, research-backed direction review, version-specific feedback/approval and approved downloads.
+10. **Registry Admin (basic):** view approved agent/skill/model policy definitions; enable/disable with permission.
 
 ### 16.2 Primary EXPLAIN user journey
 
 Producer signs in -> creates fictional/demo or real authorised client -> enters discovery brief -> attaches authorised context -> reviews snapshot -> selects workflow version and budget -> starts work -> watches parallel tasks -> receives verified Research Pack -> reviewer inspects provenance and uncertainties -> approves or rejects specific version -> status and cost history persist -> later stage proceeds only after approval.
+
+Customer service journey: minimal brief -> segmented research -> Port67-reviewed strategy with messaging/design rationale -> customer direction approval -> scoped specialist production -> customer revisions/final approval -> delivery. Phase-two reporting/publication remains separately authorised.
 
 ### 16.3 Usability requirements
 
@@ -1000,7 +1038,7 @@ Design for a small internal team: compact information hierarchy, status clarity,
 
 **Implement:** Message Strategy, Scriptwriter, Critic, QA, timed/script schemas, approvals, revision rounds, diff and cost reporting.
 
-**Acceptance:** 60–90s script estimate, approved-message dependency, claim-linked factual lines, approved artifact packaging and review history.
+**Acceptance:** campaign-specific duration/format checks (60–90s remains a demo example), customer-approved strategy dependency, claim-linked factual lines, production task contracts, approved artifact packaging and review history.
 
 ### Milestone 6 — Storyboard, asset rights and media adapters
 
@@ -1016,7 +1054,7 @@ Design for a small internal team: compact information hierarchy, status clarity,
 
 ### Milestone 8 — Client scale and retainers
 
-Contractor assignment, optional client portal, scheduled managed reporting/content production, invoicing integration, measured service SLAs and stronger monitoring. Scope based on paid demand and risk.
+Contractor assignment, expanded client self-service beyond the phase-one brief/approval portal, scheduled managed reporting/content production, invoicing integration, measured service SLAs and stronger monitoring. Scope based on paid demand and risk.
 
 ---
 
@@ -1303,6 +1341,8 @@ These URLs are technical references, not acceptance-test evidence. Recheck at im
 ---
 
 ## 26. PRD change log
+
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|
