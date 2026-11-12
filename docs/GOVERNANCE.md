@@ -3,7 +3,7 @@
 Established 2026-11-11 at the owner's request to commit the shared framework to the connected repository.
 
 ## Authority and ownership
-The original business plan governs commercial context; PRD.md is the canonical intended Factory specification. Neither proves implementation. The supplied PRD is preserved byte-for-byte as proposed version 1.0.0; committing it does not approve every product decision or authorise its embedded task instructions. Its Synapse audit remains outstanding.
+The original business plan governs commercial context; PRD.md is the canonical intended Factory specification. Neither proves implementation. The supplied PRD was initially imported byte-for-byte as proposed version 1.0.0 (hash retained in reference/PROVENANCE.md); the living PRD is now 1.1.0 under owner-confirmed scope change CHG-0003; committing it does not approve every product decision or authorise its embedded task instructions. Its Synapse audit remains outstanding.
 
 AGENTS.md governs coding-session conduct. Approved ADRs describe technical decisions. Code and reproducible acceptance evidence establish implementation reality. Flag contradictions and pause only affected work rather than silently resolving material scope changes.
 

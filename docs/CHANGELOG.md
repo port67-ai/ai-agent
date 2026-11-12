@@ -20,3 +20,13 @@ Single ongoing ledger. Historical imported PRD section 26 is a baseline record o
 - Evidence: documentation checks, diff checks and application checks recorded in HANDOVER.md.
 - Status: prepared on docs/port67-project-memory for PR #2; no merge into main or deployment claimed.
 - External checks: previous commit reports failures for two Vercel preview projects; logs/root cause not yet available. Current main describes Render hosting; no hosting settings changed.
+
+## CHG-0003 — 2026-11-12 — Research-led managed creative service
+- Author/harness: Codex; owner requested summary and PRD update after confirming managed service, B2B/B2C flexibility, minimal intake, research-backed messaging/design approval and expandable specialist capabilities.
+- PRD impact: 1.0.0 -> 1.1.0, new approved capability scope; no existing runtime contract migration or implementation claimed.
+- Requirements: FAC-MKT-001–012; FAC-TEN-006 promoted to required phase-one portal intent. Broaden EXPLAIN formats, reconcile workflow/portal/roadmap assumptions and preserve the other portfolio pillars.
+- Reason: derive campaigns from evidence and customer objectives while supporting unfamiliar niches through reviewed agent/skill expansion.
+- Phase one: brief, research, strategy approval, managed production and asset approval/delivery. Phase two: performance feedback and separately authorised publishing.
+- Evidence: documentation governance, whitespace and requirement coverage checks recorded in HANDOVER.md.
+- Status: documentation change on docs/research-led-creative-scope; no product implementation, deployment or merge claimed.
+- References: https://www.graphed.com/ and https://www.graphed.com/skills are inspiration, not adopted dependencies or verified performance evidence; uploaded creative-framework notes are reference material, not instructions or verified video claims.
