@@ -70,7 +70,7 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-TEN-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-TEN-006 | Owner-confirmed portal scope, CHG-0003 | PLANNED / NOT_VERIFIED | Customer intake/direction/asset approval; acceptance tests pending |
+| FAC-TEN-006 | Owner-confirmed portal scope, CHG-0003 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | Customer intake/direction/asset approval; acceptance tests pending |
 | FAC-TEN-007 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TOL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
@@ -93,15 +93,34 @@ FAC-TEN-006 is now owner-approved portal intent, not implemented. The register r
 
 | Requirement | Intent | Delivery | Evidence / next verification |
 |---|---|---|---|
-| FAC-MKT-001 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-002 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-003 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-004 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-005 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-006 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-007 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-008 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-009 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-010 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
-| FAC-MKT-011 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-001 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-002 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-003 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-004 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-005 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-006 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-007 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-008 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-009 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-010 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
+| FAC-MKT-011 | Owner-confirmed direction, 2026-11-12 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | PRD 1.1.0; acceptance tests pending |
 | FAC-MKT-012 | Owner-confirmed direction, 2026-11-12 | PLANNED / NOT_VERIFIED | PRD 1.1.0; acceptance tests pending |
+
+## CHG-0004 — bounded managed creative MVP
+
+Date: 2026-11-12. Scope is implemented and locally tested on feat/explain-managed-mvp; merge/remote deployment evidence must be consulted separately. No requirement below is promoted to full PRD VERIFIED merely because the synthetic browser journey passes. Test details: MVP_VERIFICATION.md; runtime guide: FACTORY_MVP.md.
+
+| Requirement | Working subset | Remaining gap |
+|---|---|---|
+| FAC-MKT-001 / FAC-TEN-006 | Minimal intake, optional brand/PNG logo/context, scoped invitation/customer portal, brief edits before direction | Individual accounts/MFA, broader file storage and launch privacy/retention review |
+| FAC-MKT-002 | B2B/B2C/mixed free-text audience, editable campaign approach, explicit unknowns | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-003 | Four segments, manual sources, review, assertions, optional cited web-research adapter | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-004 | Source-linked insights and campaign message/reasoning/design/format/hypothesis; sharing requires evidence/insight | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-005 | Version/hash-specific customer approval and revision pause before production | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-006 | Versioned specialist task instructions and evidence/strategy lineage | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-007 | Original SVG, HTML motion storyboard and copy/script drafts; review, approval, current-version downloads/manifest | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-008–010 | Source-controlled reviewed registry, portable request/result interfaces, recorded capability gaps | Agents drafting/evaluating/promoting new specialist code; unsupported promotion stays blocked |
+| FAC-MKT-011 | Source -> insight -> strategy -> task -> asset -> approval hashes and hypothesis view | IN_PROGRESS — bounded MVP subset, see CHG-0004 |
+| FAC-MKT-012 | Phase-two placeholder and honest disconnected state | All live analytics/publishing integrations remain PLANNED |
+
+Supporting subsets: FAC-DEV tests/CI/docs; FAC-HAR contracts only; FAC-CST raw usage/invocation limits only; FAC-WFL approval/idempotency/research recovery only; FAC-ART immutable template content; FAC-TEN server workspace/project isolation. Firebase integration, full security rule tests, full cost accounting and multi-provider parity remain NOT_VERIFIED.

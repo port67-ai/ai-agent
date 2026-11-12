@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.1.0  
+**Version:** 1.1.1  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -129,6 +129,16 @@ These are proposed pricing experiments from the master plan, **not market-verifi
 **In scope for the long-term product:** tenancy, client/project management, versioned context, shared registries, multi-provider AI, execution orchestration, approvals, evidence and rights, QA, artifact production, analytics, cost/margin reporting, contractor access, integrations, client-safe review/delivery.
 
 **Not in initial MVP:** full animation rendering; a general-purpose self-service creation SaaS portal (a restricted managed-service brief/approval portal is in scope); elaborate visual workflow designers; unlimited integrations; autonomous sales outreach; unsupervised payments or legally consequential decisions; end-to-end dashboard production; production-grade client process automation; custom vector infrastructure; model training; distributed agent swarms; self-modifying agent policies; complex microservices unless evidenced by workload.
+
+### 1.6 Bounded first MVP — implementation boundary (CHG-0004)
+
+Owner authorised autonomous MVP construction on 12 November 2026 without further approval pauses. The managed creative workspace is at `/portal`; scope and activation instructions are in `docs/FACTORY_MVP.md`. This patch documents implementation choices rather than approving the remaining proposed architecture or claiming all P0 acceptance gates pass.
+
+The first slice uses typed source/insight/direction/task/asset contracts, deterministic approval/version checks, scoped producer/customer sessions, a persistent single-process local repository, and a separate configurable Firebase Admin adapter. A public synthetic demo is isolated per visitor and never calls paid providers. Live access fails closed without configured operator and session secrets. A dedicated authenticated Firebase project and real research-provider credentials were unavailable in the build environment; no cloud provisioning or live provider compatibility is claimed.
+
+Manual segmented research, interpreted source-linked insights and human-edited strategy work immediately. Sharing direction requires reviewed evidence and an insight; production requires customer approval of the exact strategy. The bounded production studio creates original SVG artwork, HTML motion storyboards and Markdown copy/script concepts with task/evidence/version lineage. It does not claim MP4 rendering, autonomous strategic judgement or the full premium agency deliverable. Customer revision/final approval and approved-version delivery are implemented for these formats. Capability proposals cannot grant tools or activate new code. Performance learning records hypotheses and intended context; measured channel results and publishing remain phase two.
+
+This is an owner-authorised new standalone slice inside the existing repository, with no Synapse code reuse. Synapse audit remains required before any future reuse, not fabricated as completed. The local adapter and shared producer login are bounded MVP choices, not the eventual scale architecture. Cloud rules, full RBAC, provider parity, a complete money ledger, deployment resilience and remaining P0 security tests stay open in implementation status.
 
 ---
 
@@ -1342,7 +1352,7 @@ These URLs are technical references, not acceptance-test evidence. Recheck at im
 
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

@@ -8,3 +8,6 @@ Existing scripts: `npm run lint`, `npm run build`, `npm run dev`. Inspect requir
 
 ## Evidence rule
 Record command, result, date, environment and tested commit/CI run before marking VERIFIED. Structural checks cannot prove truthful narrative, runtime correctness or harness compliance.
+
+## CHG-0004 automated acceptance
+`npm test` now includes all existing suites and Factory domain, persistence/concurrency, API/auth/invitation, portal-rendering, research failure/recovery, isolated login rate-limit and lazy legacy-Firebase import tests. Stubbed provider transport tests verify billing evidence and schema handling without paid calls. `npm run check:factory` is scoped lint; existing unrelated lint debt is not silently declared fixed. `npm run test:browser` exercises a running app on desktop/mobile: synthetic research, direction approval, three production drafts, customer asset approvals, SVG download, learning and overflow/contrast checks. Set PORT67_TEST_ORIGIN/CHROMIUM_PATH if needed. See MVP_VERIFICATION.md for the final execution record.

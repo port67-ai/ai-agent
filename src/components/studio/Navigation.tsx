@@ -53,6 +53,9 @@ export function Navigation() {
               </Link>
             ),
           )}
+          <Link href="/portal" onClick={() => setOpen(false)}>
+            Client workspace
+          </Link>
           <Link
             href="/contact/"
             className="studio-button studio-button-small"

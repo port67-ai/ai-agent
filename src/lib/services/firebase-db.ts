@@ -1,5 +1,4 @@
 import {
-    getFirestore,
     doc,
     setDoc,
     getDoc,
@@ -14,10 +13,9 @@ import {
     Timestamp,
     increment
 } from "firebase/firestore";
-import { app } from "./firebase";
+import { getFirebaseDb } from "./firebase";
 import { AiReviewData } from "@/types/checkout";
 
-const db = getFirestore(app);
 
 export type UserProfile = {
     id: string;
@@ -33,7 +31,7 @@ export type UserProfile = {
 export const firebaseDb = {
     // User Management
     getUser: async (uid: string) => {
-        const docRef = doc(db, "users", uid);
+        const docRef = doc(getFirebaseDb(), "users", uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             return { id: docSnap.id, ...docSnap.data() } as UserProfile;
@@ -49,7 +47,7 @@ export const firebaseDb = {
         package: "Starter" | "Growth" | "Teamer";
     }) => {
         console.log('Firestore: Creating user document for UID:', userData.id);
-        const docRef = doc(db, "users", userData.id);
+        const docRef = doc(getFirebaseDb(), "users", userData.id);
 
         const userDoc = {
             email: userData.email,
@@ -73,12 +71,12 @@ export const firebaseDb = {
     },
 
     updateUser: async (uid: string, data: any) => {
-        const docRef = doc(db, "users", uid);
+        const docRef = doc(getFirebaseDb(), "users", uid);
         await updateDoc(docRef, data);
     },
 
     updateLastSignIn: async (uid: string) => {
-        const docRef = doc(db, "users", uid);
+        const docRef = doc(getFirebaseDb(), "users", uid);
 
         // Use setDoc with merge to handle case where document doesn't exist
         await setDoc(docRef, {
@@ -103,7 +101,7 @@ export const firebaseDb = {
         appointment2Name?: string;
         appointment2Duration?: number;
     }) => {
-        const docRef = doc(db, "users", uid);
+        const docRef = doc(getFirebaseDb(), "users", uid);
         await updateDoc(docRef, {
             businessDetails: details,
             updatedAt: Timestamp.now()
@@ -112,7 +110,7 @@ export const firebaseDb = {
 
     // AI Review Data (enriched data from Make.com webhook)
     updateAiReviewData: async (uid: string, data: AiReviewData) => {
-        const docRef = doc(db, "users", uid);
+        const docRef = doc(getFirebaseDb(), "users", uid);
         await updateDoc(docRef, {
             aiReviewData: data,
             aiReviewCompletedAt: Timestamp.now(),
@@ -121,7 +119,7 @@ export const firebaseDb = {
 
     // Dashboard Metrics
     getMetrics: async (uid: string) => {
-        const docRef = doc(db, "metrics", uid);
+        const docRef = doc(getFirebaseDb(), "metrics", uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) return docSnap.data();
 
@@ -136,7 +134,7 @@ export const firebaseDb = {
     },
 
     incrementMetric: async (uid: string, metric: "numberOfCalls" | "callsCaught" | "meetingsBooked") => {
-        const docRef = doc(db, "metrics", uid);
+        const docRef = doc(getFirebaseDb(), "metrics", uid);
         await updateDoc(docRef, {
             [metric]: increment(1)
         });
@@ -150,20 +148,20 @@ export const firebaseDb = {
         date: string;
         time: string;
     }) => {
-        const callRef = collection(db, "users", uid, "callHistory");
+        const callRef = collection(getFirebaseDb(), "users", uid, "callHistory");
         await addDoc(callRef, {
             ...call,
             timestamp: Timestamp.now()
         });
 
         // Also increment total calls
-        await updateDoc(doc(db, "metrics", uid), {
+        await updateDoc(doc(getFirebaseDb(), "metrics", uid), {
             numberOfCalls: increment(1)
         });
     },
 
     getCallHistory: async (uid: string, limitCount: number = 20) => {
-        const callRef = collection(db, "users", uid, "callHistory");
+        const callRef = collection(getFirebaseDb(), "users", uid, "callHistory");
         const q = query(callRef, orderBy("timestamp", "desc"), limit(limitCount));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({
