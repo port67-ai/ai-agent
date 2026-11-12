@@ -124,3 +124,7 @@ Date: 2026-11-12. Scope is implemented and locally tested on feat/explain-manage
 | FAC-MKT-012 | Phase-two placeholder and honest disconnected state | All live analytics/publishing integrations remain PLANNED |
 
 Supporting subsets: FAC-DEV tests/CI/docs; FAC-HAR contracts only; FAC-CST raw usage/invocation limits only; FAC-WFL approval/idempotency/research recovery only; FAC-ART immutable template content; FAC-TEN server workspace/project isolation. Firebase integration, full security rule tests, full cost accounting and multi-provider parity remain NOT_VERIFIED.
+
+CHG-0005: synthetic demo default storage moved to a writable OS-temporary namespace; default-path regression added. This does not promote cloud persistence or serverless session durability to VERIFIED.
+
+CHG-0006: first remote application run passed npm ci, tests, lint, types and build but browser install rejected Ubuntu 26. Runner pinned to supported Ubuntu 24.04; subsequent run is authoritative.

@@ -11,3 +11,7 @@ Domain/model/auth/repository/service/research/registry: src/lib/factory. UI spli
 Checks: final execution results in MVP_VERIFICATION.md. Independent reviewer identified interrupted-run lock, lost usage on rejected paid output and global unauthenticated throttle; regression tests now cover their fixes. Also corrected context/run lineage, customer revision pause and replacement-logo consent. No full-PRD VERIFIED labels assigned.
 
 Next actions: configure live auth secrets and persistent storage; configure/authenticate a dedicated Factory Firebase project and validate its edition/region/IAM/client-deny rules if selecting cloud mode; choose approved research model/provider budget and run a real cited-source smoke test; build actual media rendering/upload/rights and per-person auth; extend portable harness adapters with shared evaluations. Phase-two ad-account analytics/publication is not active. Do not silently claim Synapse reuse or full provider parity.
+
+CHG-0005 / PR #4 follow-up: demo snapshots default to the OS temporary directory, avoiding read-only application-bundle writes; live records stay separate. Disposable serverless demo state may reset across instances. Default-path regression plus full checks repeated; production new-brief/PNG-consent/manual-source/insight/edit workflow passed.
+
+CHG-0006: pin browser CI to Ubuntu 24.04 after remote Playwright OS-support failure on ubuntu-latest/26. First remote tests/lint/types/build passed; inspect the subsequent run for browser results.

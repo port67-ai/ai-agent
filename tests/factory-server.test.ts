@@ -75,3 +75,12 @@ assert.equal(
   false,
   "Unicode and ASCII byte lengths must not throw",
 );
+async function demoDirectoryCheck() {
+  const { demoDataDirectory } = await import("../src/lib/factory/repository");
+  if (!process.env.PORT67_DEMO_DATA_DIR)
+    assert.ok(
+      demoDataDirectory().startsWith(tmpdir()),
+      "default synthetic demo storage must use a writable temporary directory on read-only deployments",
+    );
+}
+void demoDirectoryCheck();

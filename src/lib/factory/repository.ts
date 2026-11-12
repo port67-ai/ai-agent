@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import type { Database } from "./model";
 export interface Repository {
@@ -115,6 +116,8 @@ export const repository: Repository =
     ? new FirebaseRepository()
     : new LocalRepository();
 // Demo records always use a separate local namespace, never the production Firebase project.
+export const demoDataDirectory = () =>
+  process.env.PORT67_DEMO_DATA_DIR || join(tmpdir(), "port67-factory-demo");
 export const demoRepository: Repository = new LocalRepository(
-  process.env.PORT67_DEMO_DATA_DIR || join(process.cwd(), ".factory-demo"),
+  demoDataDirectory(),
 );

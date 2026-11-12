@@ -41,3 +41,17 @@ Single ongoing ledger. Historical imported PRD section 26 is a baseline record o
 - Deployment/migrations: no cloud database, credentials, legacy rules, ad accounts or production state changed. Existing app Firebase imports are lazy so unconfigured legacy modules do not break Factory builds. /portal is noindexed and linked from site navigation. A merge may trigger the existing hosting pipeline; live auth/provider access remains configuration-gated.
 - Status: prepared on feat/explain-managed-mvp; exact commit/PR/merge status is in Git/GitHub, not inferred from this entry.
 - Limits: dedicated cloud account/model keys unavailable; live adapters unverified; local store requires one process/durable disk; shared producer password, bearer invites and bounded templates are MVP choices, not full production certification. Premium video rendering, full RBAC/cost ledger and measured performance/publishing remain future work.
+
+## CHG-0005 — 2026-11-12 — Writable synthetic demo storage
+- Author/harness: Codex. Requirements: FAC-DEV-005, FAC-TEN-006 demo support.
+- What/why: place disposable synthetic demo snapshots in the OS temporary directory by default, with explicit directory override. Read-only app bundles cannot create a runtime directory beneath their source tree. Live client storage remains separate and unchanged.
+- PRD impact: none; compatibility fix for the existing isolated demo requirement, not a new production storage guarantee. PRD remains 1.1.1.
+- Evidence: default-directory regression test RED -> GREEN; full suite/lint/type/build/browser checks repeated before push. New brief/logo/source/insight production-browser workflow also passed.
+- Status: follow-up on PR #4; serverless cross-instance durability is not claimed. Persistent Node hosting/storage and stable secrets remain required for live use.
+
+## CHG-0006 — 2026-11-12 — Reproducible browser CI runner
+- Author/harness: Codex. Requirements: FAC-DEV-003, FAC-DEV-005, FAC-DEV-006.
+- What/why: pin Factory CI to ubuntu-24.04 with a 15-minute job bound. The first remote run passed clean install/tests/lint/types/build, then Playwright 1.58.2 explicitly rejected the new ubuntu-latest/Ubuntu 26 runner during browser dependency installation.
+- PRD impact: none; fix the CI platform compatibility, preserve application behaviour.
+- Evidence: GitHub run 43131195215 / job 130895468357 error identifies unsupported OS; new run must confirm browser acceptance on the supported pinned runner. Local production/development browser tests passed.
+- Status: follow-up on PR #4; no claim that the failed first remote browser run passed.

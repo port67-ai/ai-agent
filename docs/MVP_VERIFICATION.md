@@ -22,3 +22,7 @@ Independent read-only review found three Important issues. Added regression test
 - Premium rendered MP4/audio/live-action production, real marketing performance, customer email sending or automated posting.
 
 The standalone local/demo MVP works within these boundaries. Consult FACTORY_MVP.md before accepting real customer data or enabling paid providers. GitHub Actions repeats unit/type/lint/build/browser checks on the PR; inspect that run for remote results.
+
+CHG-0005 regression: default synthetic demo directory is writable OS temporary storage, not the application source bundle. A second production-browser journey created a new brief, uploaded a PNG with consent, reviewed a manual source, linked an insight and edited the brief successfully. No serverless cross-instance persistence verification is implied.
+
+Remote first run 43131195215: clean install, all tests, lint, types and production build succeeded. Browser dependency install failed because Playwright 1.58.2 does not support the new Ubuntu 26 runner. CHG-0006 pins ubuntu-24.04; the subsequent run, not this failed run, establishes full remote acceptance.
