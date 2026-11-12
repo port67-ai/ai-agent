@@ -97,3 +97,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: tests/factory-user-display.test.ts (new, added to test:factory); npm test, tsc --noEmit, eslint on touched files and next build passed in a clean sandbox copy with TMPDIR=/tmp. tests/factory-account-browser.cjs extended for menu open/Escape/sign out but NOT run: no Chromium available in this workspace; run npm run test:browser or read CI.
 - Status: prepared on claude/login-ux-header; not pushed, merged or deployed. This does not fix the live Render sign-up failure, which still requires the Firebase web app and PORT67_FIREBASE_* settings (see CHG-0010).
 
+## CHG-0012 — 2026-11-12 — Dismiss sign-in banner after creating a brief
+- Author/harness: Claude (Cowork); found in the owner's live check of CHG-0011.
+- What/why: the post-sign-in banner stayed visible after the first brief was created and then repeated the next step the user had just taken. Creating a brief now dismisses it.
+- Requirements: FAC-TEN-008. PRD impact: none; presentation only.
+- Evidence: one-line change in Portal.tsx; owner confirmed live that sign-in, Firestore persistence and brief creation work on the CHG-0011 build. This change has not been run or deployed; read GitHub CI.
+- Status: prepared in the working tree; consult Git/GitHub for branch, commit and merge status.
+
