@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.13.0  
+**Version:** 1.14.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1378,6 +1378,7 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | FAC-HAR-005 | The owner chooses, on an admin-only page, which provider and exact model handles each job (research per segment, drafting per stage), with stage defaults and a fallback to deployment settings. Research is offered only OpenAI and Gemini; a provider is selectable only when its API key is set in deployment settings, and keys are never stored or shown by the app. Model prices are first suggested from a public price list and may be edited by the owner; owner prices take precedence over the environment price list in spend caps and cost records. A saved route whose key is later removed fails visibly and never silently switches provider. Every change is recorded. Image and video model routing is future scope, not implemented. |
 | FAC-HAR-006 | An administrator-only AI agents page lists every agent (research, drafting and template production), what each does, its capability contract and permissions, which model currently runs it and why, and what it has done: calls, completed, failed or unknown, whether one is running now, tokens, estimated cost and last activity, plus a recent-calls list. Calls are attributed to the agent that made them in the cost ledger; earlier calls recorded before attribution are counted separately. The page never shows API key values. |
 | FAC-HAR-007 | The administrator AI agents page is also where models are chosen: each AI agent card shows the provider and model it uses and where that choice comes from, and the owner can change an agent's provider, model and prices in place, fetch the public price, or apply a suggested low-cost setup in one click; stage defaults, all jobs and prices stay available under an advanced section and there is no separate AI models page. The page shows a diagram of how agents interact: agents do not message each other, they read saved results from Firestore, send a trimmed copy to their AI provider, and save only the parsed result back; people approve between stages; rendered video goes to Firebase Storage; prompts and raw model responses are not stored by Port67. Agents running now are animated. |
+| FAC-HAR-008 | The AI agents page opens with the adopted end-to-end journey as a swimlane (account owner, producer, agents): brief and channels, start research, four research agents, insights, direction and copy pack drafting agents, template production agents, optional video render, download, and publishing by the customer outside the product. Five human gates are marked where the next stage cannot run until a person approves: source review, insight acceptance, direction approval, copy and storyboard review, and copy set approval. Each agent node shows its model or that none is chosen, animates while running, and links to its card. The product does not publish to channels. |
 
 ## 25.3 Owner-managed staff access — owner-requested extension
 
@@ -1403,7 +1404,7 @@ Provenance: the principles come from a summary pasted by the owner, not from a p
 
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, and CHG-0028 for 1.13.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, and CHG-0029 for 1.14.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

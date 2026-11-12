@@ -1641,3 +1641,14 @@
 @keyframes df-dash{to{stroke-dashoffset:-22}}
 @media (prefers-reduced-motion:reduce){.df-link.flow{animation:none}}
 .f-legend{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:8px 0 0}
+
+/* Full journey swimlane */
+.f-journey{width:100%;min-width:640px;height:auto;max-width:760px;display:block;margin:0 auto}
+.jf-box{stroke-width:1.2}
+.jf-box.human{fill:#e1f5ee;stroke:#0f6e56}
+.jf-box.gate{fill:#faeeda;stroke:#854f0b}
+.jf-box.agent{fill:#faece7;stroke:#993c1d}
+.jf-box.agent.running{stroke-width:3;stroke:#1072ba;fill:#e8f1fb}
+.jf-box.agent.unset{stroke-dasharray:4 3}
+.jf-title{font-size:14px;font-weight:600;fill:#1f2937}
+.jf-sub{font-size:12px;fill:#475569}
