@@ -157,6 +157,11 @@ export default function AiAgents() {
         {(!data.switches.research || !data.switches.synthesis) && (
           <p className="f-small">Master switches in Render: research {data.switches.research ? "on" : "off"}, drafting {data.switches.synthesis ? "on" : "off"} (PORT67_RESEARCH_ENABLED, PORT67_SYNTHESIS_ENABLED). Agents cannot run while a switch is off.</p>
         )}
+        {data.switches.autoApproveProducer && (
+          <p className="f-callout" role="status">
+            <strong>Test mode: producer start step is auto-approved.</strong> When a customer requests research, public data is authorised and the four research agents start straight away. Source review, insight acceptance and every later approval stay human. Remove PORT67_AUTO_APPROVE_PRODUCER in Render to put a Port67 person back in the loop.
+          </p>
+        )}
         {unset > 0 && (
           <div className="f-callout">
             <strong>{unset} agent{unset === 1 ? " has" : "s have"} no model yet.</strong> Pick one on each card below, or let the page choose a sensible low-cost starting point from the providers whose keys are set in Render.

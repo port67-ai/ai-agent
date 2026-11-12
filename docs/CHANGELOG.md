@@ -224,3 +224,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-008 (new), FAC-HAR-006, FAC-HAR-007. PRD 1.14.0.
 - Evidence: tsc, factory lint, full npm test and next build in a sandbox copy. Not seen in a live browser. The journey is a fixed description; gates are enforced by the existing engine rules, not by this diagram.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0030 - 2026-11-12 - Auto-approve the producer start step (test switch)
+- Author/harness: Claude (Cowork); owner asked to assume the producer step is approved for build so agents and agent-to-agent flow can be tested, while keeping the option to put a Port67 person back in the loop.
+- What/why: New env switch PORT67_AUTO_APPROVE_PRODUCER=true (off by default; auto-approve.ts). When a customer or producer requests research, the server records public-data authorisation under the approver "port67-auto-approve", writes a producer_step_auto_approved audit entry and runs the four research agents in the background, once per project. The research route body moved into runResearchSegment so manual and automatic runs share one code path with the same consent, cap, metering and lease checks. The AI agents page shows a Test mode banner while the switch is on. Source review, insight acceptance and later approvals stay human. Files: auto-approve.ts, service.ts, ai-agents.ts, AiAgents.tsx, tests/factory-auto-approve.test.ts, package.json.
+- Requirements: FAC-HAR-009 (new), FAC-MKT-020. PRD 1.15.0.
+- Evidence: tsc and the new integration test with stubbed transport (no paid calls). Background work relies on the long-lived Render server process; not verified live.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

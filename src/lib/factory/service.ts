@@ -38,6 +38,7 @@ import {
 } from "./engine";
 import { demoRepository, repository, type Repository } from "./repository";
 import { researchReady, researchSegment } from "./research";
+import { autoApproveProducer, AUTO_APPROVER } from "./auto-approve";
 import {
   segments,
   type Principal,
@@ -212,6 +213,138 @@ async function seed(a: Principal) {
     db.projects.push(p);
     return p;
   });
+}
+async function runResearchSegment(a: Principal, projectId: string, segment: Segment) {
+  const p = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
+  requireProviderConsent(p);
+    const selection = await resolveSelection(repo(a), researchSlot(segment));
+    const run: ResearchRun = {
+      id: id(),
+      stage: "research",
+      at: new Date().toISOString(),
+      status: "running",
+      segment,
+      provider: selection.provider,
+      model: selection.model,
+      leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
+      contextHash: digest(JSON.stringify(p.brief)),
+      contextSnapshot: structuredClone(p.brief),
+      usageStatus: "unknown",
+    };
+    await repo(a).mutate(a.workspaceId, (state) => {
+      const current = find(state.projects, projectId, a);
+      requireProviderConsent(current);
+      if (digest(JSON.stringify(current.brief)) !== run.contextHash)
+        throw new Error(
+          "Brief changed before research reservation; refresh and authorise the current context",
+        );
+      if (
+        current.runs.length >=
+        Math.max(
+          1,
+          Math.min(
+            50,
+            Number.parseInt(
+              process.env.PORT67_MAX_RESEARCH_RUNS || "12",
+              10,
+            ) || 12,
+          ),
+        )
+      )
+        throw new Error("Research invocation cap reached for this project");
+      if (current.runs.some((r) => r.status === "running"))
+        throw new Error(
+          "Research already running; wait before starting another task",
+        );
+      current.runs.push(run);
+    });
+    let acceptedError = "";
+    try {
+      const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection));
+      acceptedError = await repo(a).mutate(a.workspaceId, (state) => {
+        const current = find(state.projects, projectId, a);
+        const record = current.runs.find((r) => r.id === run.id)!;
+        // Meter the returned response before considering whether its findings can be accepted.
+        record.usage = result.usage;
+        record.usageStatus = Object.keys(result.usage).length
+          ? "recorded"
+          : "unknown";
+        record.providerRequestId = result.providerRequestId;
+        const contextError =
+          record.status !== "running"
+            ? "Research task was recovered or cancelled; no late findings accepted"
+            : !hasProviderConsent(current) ||
+                record.contextHash !== digest(JSON.stringify(current.brief))
+              ? "Research context or authorisation changed; no stale findings accepted"
+              : "";
+        const error =
+          contextError ||
+          result.error ||
+          (current.sources.length + result.sources.length > 150
+            ? "Source limit reached; findings rejected but provider usage retained"
+            : "");
+        record.status = error ? "failed" : "completed";
+        record.finishedAt = new Date().toISOString();
+        if (error) record.error = error;
+        else if (result.gaps?.length) record.gaps = result.gaps;
+        if (!error)
+          current.sources.push(
+            ...result.sources.map((source) => ({
+              ...source,
+              researchRunId: run.id,
+              contextHash: run.contextHash,
+            })),
+          );
+        current.revision++;
+        current.updatedAt = new Date().toISOString();
+        current.audit.push({
+          id: id(),
+          at: new Date().toISOString(),
+          actor: a.subject,
+          role: a.role,
+          action: error ? "research_rejected" : "research_completed",
+          detail: `${run.id}: ${segment}; usage ${record.usageStatus}; billed cost unreconciled`,
+        });
+        return error;
+      });
+    } catch (error) {
+      await repo(a).mutate(a.workspaceId, (state) => {
+        const record = find(state.projects, projectId, a).runs.find(
+          (r) => r.id === run.id,
+        )!;
+        record.status = "failed";
+        record.usageStatus = record.usage ? "recorded" : "unknown";
+        record.error =
+          error instanceof Error ? error.message : "Research failed";
+      });
+      throw error;
+    }
+    if (acceptedError) throw new Error(acceptedError);
+}
+
+/** Test mode: authorise public data and run the four research agents for a customer's request, in the background. */
+async function autoStartResearch(a: Principal, projectId: string) {
+  const op: Principal = { ...a, role: "operator", subject: AUTO_APPROVER, admin: false };
+  const r = repo(op);
+  const fresh = await r.mutate(op.workspaceId, (state) => {
+    const index = state.projects.findIndex((x) => x.id === projectId);
+    if (index < 0) return false;
+    const current = state.projects[index];
+    if (current.runs.some((x) => x.stage === "research")) return false;
+    const next = transition(current, { type: "authoriseAI", confirm: true }, op);
+    next.audit.push({ id: id(), at: new Date().toISOString(), actor: AUTO_APPROVER, role: "operator", action: "producer_step_auto_approved", detail: "Public-data authorisation and research start approved automatically (test mode)" });
+    state.projects[index] = next;
+    return true;
+  });
+  if (!fresh) return;
+  for (const segment of segments) {
+    try {
+      if (!(await stageReady(r, "research"))) return;
+      await runResearchSegment(op, projectId, segment);
+    } catch {
+      // The failed run is already recorded on the project; carry on with the other researchers.
+    }
+  }
 }
 export async function handleFactory(
   request: Request,
@@ -650,111 +783,7 @@ export async function handleFactory(
           );
         if (!segments.includes(data.segment as Segment))
           throw new Error("Invalid research segment");
-        requireProviderConsent(p);
-        const segment = data.segment as Segment;
-        const selection = await resolveSelection(repo(a), researchSlot(segment));
-        const run: ResearchRun = {
-          id: id(),
-          stage: "research",
-          at: new Date().toISOString(),
-          status: "running",
-          segment,
-          provider: selection.provider,
-          model: selection.model,
-          leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
-          contextHash: digest(JSON.stringify(p.brief)),
-          contextSnapshot: structuredClone(p.brief),
-          usageStatus: "unknown",
-        };
-        await repo(a).mutate(a.workspaceId, (state) => {
-          const current = find(state.projects, projectId, a);
-          requireProviderConsent(current);
-          if (digest(JSON.stringify(current.brief)) !== run.contextHash)
-            throw new Error(
-              "Brief changed before research reservation; refresh and authorise the current context",
-            );
-          if (
-            current.runs.length >=
-            Math.max(
-              1,
-              Math.min(
-                50,
-                Number.parseInt(
-                  process.env.PORT67_MAX_RESEARCH_RUNS || "12",
-                  10,
-                ) || 12,
-              ),
-            )
-          )
-            throw new Error("Research invocation cap reached for this project");
-          if (current.runs.some((r) => r.status === "running"))
-            throw new Error(
-              "Research already running; wait before starting another task",
-            );
-          current.runs.push(run);
-        });
-        let acceptedError = "";
-        try {
-          const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection));
-          acceptedError = await repo(a).mutate(a.workspaceId, (state) => {
-            const current = find(state.projects, projectId, a);
-            const record = current.runs.find((r) => r.id === run.id)!;
-            // Meter the returned response before considering whether its findings can be accepted.
-            record.usage = result.usage;
-            record.usageStatus = Object.keys(result.usage).length
-              ? "recorded"
-              : "unknown";
-            record.providerRequestId = result.providerRequestId;
-            const contextError =
-              record.status !== "running"
-                ? "Research task was recovered or cancelled; no late findings accepted"
-                : !hasProviderConsent(current) ||
-                    record.contextHash !== digest(JSON.stringify(current.brief))
-                  ? "Research context or authorisation changed; no stale findings accepted"
-                  : "";
-            const error =
-              contextError ||
-              result.error ||
-              (current.sources.length + result.sources.length > 150
-                ? "Source limit reached; findings rejected but provider usage retained"
-                : "");
-            record.status = error ? "failed" : "completed";
-            record.finishedAt = new Date().toISOString();
-            if (error) record.error = error;
-            else if (result.gaps?.length) record.gaps = result.gaps;
-            if (!error)
-              current.sources.push(
-                ...result.sources.map((source) => ({
-                  ...source,
-                  researchRunId: run.id,
-                  contextHash: run.contextHash,
-                })),
-              );
-            current.revision++;
-            current.updatedAt = new Date().toISOString();
-            current.audit.push({
-              id: id(),
-              at: new Date().toISOString(),
-              actor: a.subject,
-              role: a.role,
-              action: error ? "research_rejected" : "research_completed",
-              detail: `${run.id}: ${segment}; usage ${record.usageStatus}; billed cost unreconciled`,
-            });
-            return error;
-          });
-        } catch (error) {
-          await repo(a).mutate(a.workspaceId, (state) => {
-            const record = find(state.projects, projectId, a).runs.find(
-              (r) => r.id === run.id,
-            )!;
-            record.status = "failed";
-            record.usageStatus = record.usage ? "recorded" : "unknown";
-            record.error =
-              error instanceof Error ? error.message : "Research failed";
-          });
-          throw error;
-        }
-        if (acceptedError) throw new Error(acceptedError);
+        await runResearchSegment(a, projectId, data.segment as Segment);
         return json({
           project: projectView(
             find((await repo(a).read(a.workspaceId)).projects, projectId, a),
@@ -773,6 +802,8 @@ export async function handleFactory(
           state.projects[index] = next;
           return projectView(next, a);
         });
+        if (data.type === "requestResearch" && autoApproveProducer() && !a.demo)
+          void autoStartResearch(a, projectId).catch(() => undefined);
         return json({ project: result });
       }
     }
