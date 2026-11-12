@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { accountErrorMessage, type AccountPhase } from "@/lib/factory/account-errors";
 import { getApps, initializeApp } from "firebase/app";
 import { createUserWithEmailAndPassword, getAuth, inMemoryPersistence, reload, sendEmailVerification, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
@@ -12,9 +13,9 @@ export function AccountLogin({ onAuthenticated }: { onAuthenticated: (idToken: s
   const [message, setMessage] = useState("");
   async function authClient() {
     const response = await fetch("/api/factory/auth-config", { cache: "no-store" });
-    if (!response.ok) throw new Error("Unavailable");
+    if (!response.ok) throw Object.assign(new Error("Account setup unavailable"), {code:response.status===503 ? "factory/auth-config-missing" : "factory/auth-config-unavailable"});
     const config = await response.json();
-    if (config.projectId !== "ai-agency-3671b" || !config.apiKey || !config.authDomain) throw new Error("Unavailable");
+    if (config.projectId !== "ai-agency-3671b" || !config.apiKey || !config.authDomain) throw Object.assign(new Error("Account setup missing"),{code:"factory/auth-config-missing"});
     const app = getApps().find((item) => item.name === "port67-account") || initializeApp({ apiKey: config.apiKey, authDomain: config.authDomain, projectId: config.projectId }, "port67-account");
     const auth = getAuth(app);
     await setPersistence(auth, inMemoryPersistence);
@@ -22,12 +23,14 @@ export function AccountLogin({ onAuthenticated }: { onAuthenticated: (idToken: s
   }
   async function run(action: "submit" | "refresh" | "resend") {
     setPending(true); setMessage("");
+    let phase:AccountPhase=action === "submit" ? (mode === "signup" ? "signup" : "signin") : "verification";
     try {
       const auth = await authClient();
       if (action === "submit") {
         const result = mode === "signup" ? await createUserWithEmailAndPassword(auth, email, password) : await signInWithEmailAndPassword(auth, email, password);
         setPassword("");
         if (!result.user.emailVerified) {
+          phase="verification";
           setVerification(true);
           if (mode === "signup") await sendEmailVerification(result.user);
           setMessage("Verify your email to open your account. Check your inbox, then select Check verification.");
@@ -41,13 +44,14 @@ export function AccountLogin({ onAuthenticated }: { onAuthenticated: (idToken: s
       }
       await reload(auth.currentUser);
       if (!auth.currentUser.emailVerified) { setVerification(true); setMessage("Your email is still awaiting verification."); return; }
+      phase="session";
       const token = await auth.currentUser.getIdToken(true);
       try { await onAuthenticated(token); }
       finally { await signOut(auth); }
       setVerification(false);
-    } catch {
+    } catch (error) {
       setPassword("");
-      setMessage("We could not complete that request. Check your details and try again, or verify your email first.");
+      setMessage(accountErrorMessage(error,phase));
     } finally { setPending(false); }
   }
   return <section className="f-account-login">

@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {accountErrorMessage} from '../src/lib/factory/account-errors';
+assert.match(accountErrorMessage({code:'factory/auth-config-missing'},'signup'),/not configured.*Port67/i);
+assert.match(accountErrorMessage({code:'auth/operation-not-allowed'},'signup'),/Email\/Password authentication.*Firebase/i);
+assert.match(accountErrorMessage({code:'auth/invalid-api-key'},'signup'),/Firebase.*configuration/i);
+assert.match(accountErrorMessage({code:'auth/weak-password'},'signup'),/password/i);
+assert.match(accountErrorMessage({code:'auth/network-request-failed'},'signup'),/connection/i);
+assert.match(accountErrorMessage({code:'factory/session-unavailable'},'session'),/verified.*workspace/i);
+assert.match(accountErrorMessage(new Error('private provider secret'),'verification'),/verification/i);
+assert.ok(!accountErrorMessage(new Error('private provider secret'),'signup').includes('private provider secret'));
+assert.equal(accountErrorMessage({code:'auth/user-not-found'},'signin'),accountErrorMessage({code:'auth/wrong-password'},'signin'));
+assert.match(accountErrorMessage({code:'factory/auth-config-missing'},'signin'),/Account access/);
+console.log('Safe phase-specific signup diagnostics passed');

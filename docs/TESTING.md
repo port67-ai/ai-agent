@@ -15,3 +15,5 @@ Record command, result, date, environment and tested commit/CI run before markin
 Live-foundation checks and limits: FOUNDATION_VERIFICATION.md. npm run audit:security gates high/critical findings; moderate findings remain tracked. Browser includes setup/consent/revocation; cloud/model transport is stubbed and must be smoke-tested separately.
 
 CHG-0009 tests: npm test includes provider/identity/account/API/storage-schema/metering/campaign/archive contracts. npm run test:firestore uses demo-only Firestore emulator with Java21 and verifies real Admin persistence/transactions and browser-deny rules; CI runs it. npm run test:browser includes synthetic journey plus explicit account/admin UI fixtures. No mock is live acceptance; cloud/provider checks still required. Evidence ACCOUNTS_VERIFICATION.md.
+
+CHG-0010: factory-account-errors.test.ts validates allowlisted diagnostics and no raw-error leaks/unknown-user enumeration. Account browser test reproduces auth-config503 with zero Firebase requests, then a mocked Firebase OPERATION_NOT_ALLOWED response with a specific setup message. Fixtures use fake credentials only and do not establish real sign-up activation.
