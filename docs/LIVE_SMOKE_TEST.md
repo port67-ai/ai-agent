@@ -1,6 +1,6 @@
 # Live research smoke test
 
-Prepared 2026-11-12 (CHG-0015). Purpose: prove, on Render with real accounts, that cited research and AI drafting work end to end, cheaply and under the $25 monthly cap. Nothing here is VERIFIED until the evidence section is filled in with dated results.
+Prepared 2026-11-12 (CHG-0015); script updated for the channel, claim-level research, richer direction, copy pack and video flow (CHG-0020 to CHG-0024). Purpose: prove, on Render with real accounts, that channel-led research, strategy, copy and an optional draft video work end to end, cheaply and under the $25 monthly cap. Nothing here is VERIFIED until the evidence section is filled in with dated results.
 
 ## Chosen test configuration
 
@@ -24,17 +24,44 @@ A research call is roughly a few thousand input tokens and one to two thousand o
 
 ## Steps (public data only)
 
-1. Render: set the variables above, save, deploy, wait for Live, then complete the AI models steps above. Admin, Workspace setup: the research and synthesis checks should read ready. Configuration presence is not connection verification.
-2. As the client (jpell@me.com) create a brief for a public-data business, for example a real, well-known public company or a fictional one using only public information. No private customer data.
-3. Client: authorise the current brief for AI use (exact-brief consent). Revoking later stops future calls only.
-4. Producer (producer@port67.ai): select the client account, open Research room, run research for one segment first. Check cited sources appear, review each URL and claim, and note whether citations support the text.
-5. Run the other three segments only if the first was sound.
-6. Draft insights, accept or reject, draft direction, review, share.
-7. Client approves the direction. Producer creates production drafts. Client reviews assets.
-8. Admin: open Private API costs. Confirm every call shows provider, model and an estimate, none unknown, month use is small, and the cap line reads correctly. Reconcile one call against the Google billing page if available.
-9. Restart or redeploy and confirm the project, sources and ledger persisted.
-10. Negative checks: a second client cannot see the first client's project; a guessed project ID fails; set PORT67_MONTHLY_BUDGET_USD to 0.01, try one more run, confirm it is refused with the cap message, then restore it.
+Roles: client jpell@me.com, producer producer@port67.ai, admin jed@port67.ai. Use a real, well-known public business or a fictional one described only with public information. No private customer data.
+
+**A. Set up (admin)**
+
+1. Render: set the variables above, save, deploy, wait for Live. Complete the AI models steps above. Workspace setup should show the research and synthesis checks ready (presence of configuration is not proof of connection).
+2. Optional, for video: enable Firebase Storage for ai-agency-3671b and set PORT67_FIREBASE_STORAGE_BUCKET if the bucket is not the default.
+
+**B. Brief and channels (client)**
+
+3. Create a brief (business, objective, website, competitors, inspiration).
+4. Open the Research room. Under "Where will this launch?" choose one to three channels (for example LinkedIn and YouTube for a B2B business, or Instagram and TikTok for a consumer one). Expect icon buttons that toggle with a tick, a counter, and a limit of five.
+5. Click Request research. Expect "Research requested for ..." with the date. Confirm you cannot authorise AI or run research as the client.
+
+**C. Research (producer)**
+
+6. Sign in as the producer, select the client account, open the Research room. Expect a banner showing the channels the customer asked for.
+7. Authorise public project data (exact-brief consent). Revoking later stops future calls only.
+8. Click Start research. It runs the four segments in turn, one paid call each, and should finish with a confirmation. If a segment fails, note which and the message.
+9. For each segment check: sources appear; each source shows its own claim and evidence (not the same pasted paragraph); a support rating; the "Not found or unverified" list where relevant. Open at least three URLs and note whether the cited page supports the claim. Note whether the answers focus on the chosen channels.
+10. Review each source (supported or rejected).
+
+**D. Strategy (producer, then client)**
+
+11. Draft insights with AI, accept or reject. Draft the direction with AI.
+12. Check the direction shows positioning, key messages each with proof and source count, audience segments, tone, claims to avoid, and plans only the chosen channels. Share it. As the client, approve it.
+
+**E. Content (producer, then client)**
+
+13. Production tab: Create production drafts, then Draft copy pack with AI. Open the Asset library and check the AI copy pack: every item names a chosen channel, a key message and its evidence; no number appears that is not in the sources.
+14. Share the copy pack and the storyboard. As the client approve both.
+15. Video is optional, so first try a content item that needs none: confirm the copy approval alone is enough to download. Then check the Render buttons stay disabled until BOTH the copy set and the storyboard are approved. Click Render 480p draft, download it and check it plays. Only then try Render HD (1080p) and compare file sizes.
+
+**F. Costs and safety (admin)**
+
+16. Private API costs: every call shows provider, model and an estimate, none unknown, month use is small, and the cap line is correct. Reconcile one call against the Google billing page if available. Note the cost of the whole run.
+17. Redeploy and confirm the project, channels, sources, assets, videos and ledger persisted.
+18. Negative checks: a second client cannot see the first client's project or videos; a guessed project or video ID fails; set PORT67_MONTHLY_BUDGET_USD to 0.01, try one more AI run, confirm it is refused with the cap message, then restore it. Change the channel choice after the direction exists and confirm it is refused.
 
 ## Evidence to record (do not mark VERIFIED without it)
 
-Date, Render commit, model ID, number of calls, total estimated and reconciled cost, citations quality notes, anything unknown or failed, results of steps 9 and 10, and who ran it.
+Date, Render commit, model IDs, number of calls, total estimated and reconciled cost, citation quality notes (step 9), whether the model followed the finding format, direction and copy quality notes, video size and playback result, anything unknown or failed, results of steps 17 and 18, and who ran it.

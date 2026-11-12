@@ -1,3 +1,10 @@
+# Latest handover: launch channels and updated smoke test (CHG-0024, PRD 1.9.0)
+
+2026-11-12; Claude. Research room has a launch channel picker (nine channels, logo buttons, up to five). Customers choose channels and request research; the producer authorises AI and clicks Start research, which runs the four segments in turn. Channels flow into research prompts, direction drafting and copy-pack channels, and lock once a direction exists. Customers cannot run paid research (cost and consent control); if the owner wants customers to trigger it, that is a deliberate policy change needing a cap and consent design. docs/LIVE_SMOKE_TEST.md is now the full end-to-end script. Unverified: look and feel in a live browser, live model behaviour with channel-aware prompts.
+
+---
+Earlier handover follows.
+
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
 2026-11-12; Claude. MP4 render now needs an approved storyboard and an approved copy set, defaults to 480p, and offers HD 1080p on request. Video is optional; content without video needs nothing. Note the video test file had been missing from the repo copy until this change; confirm tests/factory-video.test.ts is in the commit (package.json test:factory runs it). Template renders never use AI tokens, so the saving is encode time, memory and storage; an AI video model would be a separate future slot. Unverified live: Firebase Storage upload and memory on the production instance.

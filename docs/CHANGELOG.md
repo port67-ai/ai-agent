@@ -182,3 +182,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-ART-006 (amended). PRD 1.8.0.
 - Evidence: tests cover the copy gate, size validation, default 480, HD larger than draft. "Tokens" saved is compute and storage only: template renders never used AI tokens.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0024 — 2026-11-12 — Launch channel picker in the Research room; updated smoke test script
+- Author/harness: Claude (Cowork); owner supplied the Core Social Media Channels list and asked for icon buttons, customer selection and a research kick-off.
+- What/why: channels.ts holds the nine channels with summaries and playbook notes from the owner's brief and Simple Icons glyphs (CC0). ChannelPicker shows logo toggle buttons at the top of the Research room. Customers and producers can set channels (setChannels) and a customer can send requestResearch; neither can authorise AI or run paid research, which remain producer actions. The producer's Start research saves the channels then runs the four segments in turn. Channels steer research prompts (launch channels and playbooks), direction drafting (plan only for chosen channels) and the copy pack (channel enum). Locked once a direction exists. docs/LIVE_SMOKE_TEST.md rewritten as a step-by-step script for the whole flow, and corrected: AI authorisation is a producer action, not a client one. Files: channels.ts, ChannelPicker.tsx, Research.tsx, Portal.tsx, engine.ts, model.ts, research.ts, synthesis.ts, content.ts, portal.css, tests/factory-channels.test.tsx.
+- Requirements: FAC-MKT-019 (new). PRD 1.9.0.
+- Evidence: tests plus a static render screenshot. A customer cannot start paid research by design; confirm that matches intent.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

@@ -1,5 +1,6 @@
 import { accountScope, canCreateProject, linkProjectOwnership } from "./accounts";
 import { productionCapabilities } from "./registry";
+import { validChannels } from "./channels";
 import { createHash, randomUUID } from "node:crypto";
 import {
   segments,
@@ -264,7 +265,7 @@ export function transition(
     "approveAsset",
     "requestAssetChanges",
   ];
-  if (!customerActions.includes(type) && type !== "updateBrief") operator(a);
+  if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch"].includes(type)) operator(a);
   if (customerActions.includes(type) && a.role !== "customer")
     throw new Error("Customer approval identity required");
   if (requestId && p.processed.includes(requestId)) return p;
@@ -281,6 +282,15 @@ export function transition(
     };
   } else if (type === "revokeAI") {
     delete p.aiConsent;
+  } else if (type === "setChannels" || type === "requestResearch") {
+    // Customers and producers may choose channels and ask for research until direction work begins.
+    if (p.strategies.length)
+      throw new Error("Channels are locked after direction work begins; request a scoped change from Port67");
+    if (c.channels !== undefined || type === "setChannels") p.channels = validChannels(c.channels);
+    if (type === "requestResearch") {
+      if (!p.channels?.length) throw new Error("Choose at least one launch channel first");
+      p.researchRequest = { at: now(), by: a.subject, channels: [...p.channels] };
+    }
   } else if (type === "updateBrief") {
     if (p.strategies.length)
       throw new Error(

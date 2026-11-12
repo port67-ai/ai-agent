@@ -207,6 +207,10 @@ export type Project = {
   tasks: ProductionTask[];
   assets: Asset[];
   videos?: Video[];
+  /** Launch channels (IDs from channels.ts) chosen for this campaign; they steer research, direction and copy. */
+  channels?: string[];
+  /** A customer's request for the producer to start research on the chosen channels. */
+  researchRequest?: { at: string; by: string; channels: string[] };
   capabilities: Capability[];
   audit: Audit[];
   runs: ResearchRun[];

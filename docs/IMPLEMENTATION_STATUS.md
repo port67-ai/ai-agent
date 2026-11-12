@@ -139,6 +139,7 @@ CHG-0006: first remote application run passed npm ci, tests, lint, types and bui
 | FAC-MKT-016 | Owner-requested 2026-11-12 (CHG-0020) | IN_PROGRESS | Finding parser, per-source claims, gaps and confidence covered with stubbed transport; live provider behaviour with the new format unverified |
 | FAC-MKT-017 | Owner-requested 2026-11-12 (CHG-0021) | IN_PROGRESS | Strategy fields, key-message proof validation, AI contract and Direction page covered by tests; live model quality unverified |
 | FAC-MKT-018 | Owner-requested 2026-11-12 (CHG-0022) | IN_PROGRESS | Copy pack gates, evidence-bound validation and metered draft asset covered with stubbed transport; live output quality and the portal button in a browser unverified |
+| FAC-MKT-019 | Owner-requested 2026-11-12 (CHG-0024) | IN_PROGRESS | Catalogue, role-aware selection and request, locking, channel-aware prompts and picker markup covered by tests/factory-channels.test.tsx; look and feel checked in a static render only, not in a live browser |
 | FAC-DEV-008 | Authorised next-stage scope | IN_PROGRESS | Local audit 0 high/critical, CI gate added; remote result in GitHub; 15 moderate findings tracked |
 
 FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION is not implied: see FOUNDATION_VERIFICATION.md for exact local evidence and RENDER_ACTIVATION.md for outstanding infrastructure tests. Earlier “acceptance pending” entries describe full requirements, not absence of bounded local tests.

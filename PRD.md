@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.8.0  
+**Version:** 1.9.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1362,6 +1362,7 @@ These requirements extend the authorised managed-service MVP; they do not approv
 | FAC-MKT-016 | Grounded research returns claim-level findings: each finding is a single claim tied to the page it cites, with a short quote, so a reviewer approves or rejects claims through their own source rather than a pasted answer. A finding counts only if its page was a real citation. Research also records what it could not find (gaps) and a confidence rating, shown to producers. Research prompts are specific per segment and require the business website as a source for the business segment. |
 | FAC-MKT-017 | The campaign direction carries a positioning statement, audience segments with needs, key messages each with proof and the reviewed source IDs that support it, a tone of voice, and claims to avoid, in addition to the earlier fields. AI drafting must supply all of them and is rejected if a key message cites a source outside the direction's evidence. Earlier directions without these fields remain valid and keep their fingerprints. |
 | FAC-MKT-018 | A producer can draft an AI copy pack for an approved direction that has key messages and production drafts. Copy is written only from the approved direction and its reviewed sources; each item must express one of the direction's key messages, cite only that message's sources and contain no number absent from the supplied material, or the output is rejected with usage retained. The pack is a draft asset that follows the normal producer and customer approval; it is metered, capped and routed through the AI models page. Image, video and audio generation by a model are not implemented. |
+| FAC-MKT-019 | In the Research room a customer or producer chooses up to five launch channels from nine core social channels (LinkedIn, Facebook, Instagram, TikTok, YouTube, Pinterest, Reddit, WhatsApp, X and Threads), shown as logo buttons. The choice steers research prompts, direction drafting and the channels copy may target. A customer can request research on the chosen channels; only a producer can authorise AI use and start the paid research, which runs the four research segments in turn. Channels and requests are locked once direction work begins. |
 | FAC-DEV-008 | Gate CI on dependency audits with no high or critical findings. Document remaining findings and compatibility constraints; do not force unreviewed major migrations. |
 
 ## 25.2 Account-owned production and private costs — owner-requested extension
@@ -1382,7 +1383,7 @@ These requirements extend the authorised managed-service MVP; they do not approv
 
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, and CHG-0023 for 1.8.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, and CHG-0024 for 1.9.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|
