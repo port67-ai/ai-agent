@@ -1,3 +1,24 @@
+# Latest handover: AI agents tab and animated research flow (CHG-0027, PRD 1.12.0)
+
+2026-11-12; Claude. Admin has an AI agents tab (route admin/ai-agents, ai-agents.ts): each agent, its model, stats and recent calls. The cost ledger now records which agent made each call (optional agent field set in metering.ts); older rows are counted as unattributed. The Research room panel has an animated flow for producers and account owners, with a producer-only live activity feed (provider, model, elapsed, tokens, errors). Research runs now store finishedAt. Not done: drafting runs (insights, direction, copy pack) have no equivalent live flow in the Research room, and no producer notification when a customer requests research. Smoke test steps 8 and 16 should also check the AI agents tab and the flow.
+
+---
+Earlier handover follows.
+
+# Latest handover: research progress panel (CHG-0026, PRD 1.11.0)
+
+2026-11-12; Claude. The owner asked how a customer knows what the research is and whether each agent is working after Request research. The Research room now has a panel with four researcher cards and statuses (queued, researching now, done with counts, needs attention), derived server-side in projectView so customers never see run internals. Auto-refresh every eight seconds while pending. Reminder: after a customer request nothing runs until a producer clicks Start research; the panel says Queued. Consider a producer notification (email or in-app) when a request arrives, not built. Unverified: live behaviour in a browser.
+
+---
+Earlier handover follows.
+
+# Latest handover: baseline principles in the PRD (CHG-0025, PRD 1.10.0)
+
+2026-11-12; Claude. Documentation only: PRD section 25.4 adds FAC-BAS-001 to 006 (agents do the middle work, warehouse-first data, approved tool layer, URL to multiple on-brand static ads, optional UGC avatar ads, creative velocity). 001 and 004 are partly met by the research, direction and copy work; 002, 003, 005 and 006 are not built. Vendors and figures from the owner's summary are unverified candidates; open vendor decisions are listed in section 23.1. Suggested next build candidates when the owner chooses: multi-variant static ads from a URL (004), then variant tracking (006); data pipeline (002) belongs with phase-two measurement.
+
+---
+Earlier handover follows.
+
 # Latest handover: launch channels and updated smoke test (CHG-0024, PRD 1.9.0)
 
 2026-11-12; Claude. Research room has a launch channel picker (nine channels, logo buttons, up to five). Customers choose channels and request research; the producer authorises AI and clicks Start research, which runs the four segments in turn. Channels flow into research prompts, direction drafting and copy-pack channels, and lock once a direction exists. Customers cannot run paid research (cost and consent control); if the owner wants customers to trigger it, that is a deliberate policy change needing a cap and consent design. docs/LIVE_SMOKE_TEST.md is now the full end-to-end script. Unverified: look and feel in a live browser, live model behaviour with channel-aware prompts.

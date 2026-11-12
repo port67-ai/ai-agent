@@ -140,6 +140,14 @@ CHG-0006: first remote application run passed npm ci, tests, lint, types and bui
 | FAC-MKT-017 | Owner-requested 2026-11-12 (CHG-0021) | IN_PROGRESS | Strategy fields, key-message proof validation, AI contract and Direction page covered by tests; live model quality unverified |
 | FAC-MKT-018 | Owner-requested 2026-11-12 (CHG-0022) | IN_PROGRESS | Copy pack gates, evidence-bound validation and metered draft asset covered with stubbed transport; live output quality and the portal button in a browser unverified |
 | FAC-MKT-019 | Owner-requested 2026-11-12 (CHG-0024) | IN_PROGRESS | Catalogue, role-aware selection and request, locking, channel-aware prompts and picker markup covered by tests/factory-channels.test.tsx; look and feel checked in a static render only, not in a live browser |
+| FAC-MKT-020 | Owner-requested 2026-11-12 (CHG-0026) | IN_PROGRESS | Per-researcher status derivation, customer-safe view and panel markup covered by tests/factory-research-progress.test.tsx and a static render; automatic refresh and the live flow in a browser unverified |
+| FAC-MKT-021 | Owner-requested 2026-11-12 (CHG-0027) | IN_PROGRESS | Flow, role split and activity feed covered by tests/factory-research-progress.test.tsx and static renders at desktop and phone widths; real-time animation in a live browser unverified |
+| FAC-BAS-001 | Owner-adopted 2026-11-12 (CHG-0025) | IN_PROGRESS | Research, insight, direction and copy agents run under producer coordination with gates; data and platform access are not built |
+| FAC-BAS-002 | Owner-adopted 2026-11-12 (CHG-0025) | NOT_VERIFIED | Not implemented; phase two. Pipeline and warehouse choice open |
+| FAC-BAS-003 | Owner-adopted 2026-11-12 (CHG-0025) | NOT_VERIFIED | Registry and metering exist for research and drafting providers; image, video, transcription and contact-data tools not built or chosen |
+| FAC-BAS-004 | Owner-adopted 2026-11-12 (CHG-0025) | IN_PROGRESS | Research to direction to copy pack and a single branded artwork template exist; multi-variant researched static ads not built |
+| FAC-BAS-005 | Owner-adopted 2026-11-12 (CHG-0025) | NOT_VERIFIED | Not implemented; needs rights, consent and cost design |
+| FAC-BAS-006 | Owner-adopted 2026-11-12 (CHG-0025) | NOT_VERIFIED | Not implemented; variant tracking and phase-two measurement open |
 | FAC-DEV-008 | Authorised next-stage scope | IN_PROGRESS | Local audit 0 high/critical, CI gate added; remote result in GitHub; 15 moderate findings tracked |
 
 FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION is not implied: see FOUNDATION_VERIFICATION.md for exact local evidence and RENDER_ACTIVATION.md for outstanding infrastructure tests. Earlier “acceptance pending” entries describe full requirements, not absence of bounded local tests.
@@ -152,6 +160,7 @@ FAC-MKT-002–006 now include optional bounded AI drafts. FACTORY_VERIFICATION i
 | FAC-CST-009 | Owner-requested 2026-11-12 | IN_PROGRESS | Pre-dispatch metering, usage/pricing/unknowns, admin-only API, cache/tool accounting, export/archive and reconciliation tested; actual provider invoice comparison pending |
 | FAC-HAR-004 | Owner-requested 2026-11-12 | IN_PROGRESS | All four drafting adapters and grounded OpenAI/Gemini adapters tested with explicit transport fixtures; selected live models unverified |
 | FAC-HAR-005 | Owner-requested 2026-11-12 (CHG-0016) | IN_PROGRESS | Admin AI models page, per-job routing, public price suggestions and owner price overrides covered by tests/factory-ai-routing.test.ts; live public-price fetch and live providers unverified |
+| FAC-HAR-006 | Owner-requested 2026-11-12 (CHG-0027) | IN_PROGRESS | Ledger attribution, agent overview, running-now detection and admin-only route covered by tests/factory-ai-agents.test.ts; the page in a live browser unverified |
 | FAC-ART-006 | Owner-requested 2026-11-12 (CHG-0019) | IN_PROGRESS | Template MP4 render, approval gates, local store and download covered by tests/factory-video.test.ts with a real encode; Firebase Storage upload, memory use on the production instance and the portal buttons in a browser unverified |
 | FAC-TEN-009 | Owner-requested 2026-11-12 (CHG-0014) | IN_PROGRESS | Admin-managed producer registry by verified email, immediate revocation, no admin escalation, fail-closed registry and audit trail tested with fixtures; live Firebase/Firestore behaviour, staff MFA and client sign-up approval not yet verified |
 

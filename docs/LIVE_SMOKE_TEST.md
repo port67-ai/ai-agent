@@ -42,6 +42,7 @@ Roles: client jpell@me.com, producer producer@port67.ai, admin jed@port67.ai. Us
 6. Sign in as the producer, select the client account, open the Research room. Expect a banner showing the channels the customer asked for.
 7. Authorise public project data (exact-brief consent). Revoking later stops future calls only.
 8. Click Start research. It runs the four segments in turn, one paid call each, and should finish with a confirmation. If a segment fails, note which and the message.
+8a. While it runs, watch the animated flow: the connectors should move, each researcher should switch to "Researching now" in turn, and the Live activity list should name the provider and model, with an elapsed timer. As the client, open the same page in another browser: you should see the flow and states with no model or error detail.
 9. For each segment check: sources appear; each source shows its own claim and evidence (not the same pasted paragraph); a support rating; the "Not found or unverified" list where relevant. Open at least three URLs and note whether the cited page supports the claim. Note whether the answers focus on the chosen channels.
 10. Review each source (supported or rejected).
 
@@ -58,7 +59,7 @@ Roles: client jpell@me.com, producer producer@port67.ai, admin jed@port67.ai. Us
 
 **F. Costs and safety (admin)**
 
-16. Private API costs: every call shows provider, model and an estimate, none unknown, month use is small, and the cap line is correct. Reconcile one call against the Google billing page if available. Note the cost of the whole run.
+16. AI agents tab (admin): each research and drafting agent shows the model you chose, its calls, tokens and estimated cost, and the recent calls list matches what you ran. Then Private API costs: every call shows provider, model and an estimate, none unknown, month use is small, and the cap line is correct. Reconcile one call against the Google billing page if available. Note the cost of the whole run.
 17. Redeploy and confirm the project, channels, sources, assets, videos and ledger persisted.
 18. Negative checks: a second client cannot see the first client's project or videos; a guessed project or video ID fails; set PORT67_MONTHLY_BUDGET_USD to 0.01, try one more AI run, confirm it is refused with the cap message, then restore it. Change the channel choice after the direction exists and confirm it is refused.
 

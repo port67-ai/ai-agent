@@ -13,6 +13,7 @@ import {
 } from "./shared";
 import InsightEditor from "./InsightEditor";
 import ChannelPicker from "./ChannelPicker";
+import ResearchProgress from "./ResearchProgress";
 const gapsFor = (p: { runs: { segment?: string; status: string; gaps?: string[] }[] }, segment: string) =>
   [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
 export default function Research({
@@ -23,6 +24,8 @@ export default function Research({
   live,
   onRun,
   onRunAll,
+  runningSegment,
+  onRefresh,
   onRecover,
   aiReady,
   onGenerate,
@@ -32,12 +35,15 @@ export default function Research({
   onGenerate: () => void;
   onRun: (segment: Segment) => void;
   onRunAll: () => void;
+  runningSegment?: Segment | null;
+  onRefresh: () => void;
   onRecover: (id: string) => void;
 }) {
   const [segment, setSegment] = useState<Segment>("brand");
   return (
     <>
       <ChannelPicker p={p} operator={operator} busy={busy} live={live} command={command} onRunAll={onRunAll} />
+      <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />
       {operator && (
         <section className="f-panel f-ai-consent">
           <div>

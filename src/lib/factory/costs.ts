@@ -5,7 +5,7 @@ export const ADMIN_LEDGER_NAMESPACE = 'factory-admin-ledger';
 export const MAX_LEDGER_CALLS = 150;
 export type ApiUsage = { inputTokens: number; outputTokens: number; cachedInputTokens?: number; cacheCreationInputTokens?: number; toolCalls?: number; toolUsageUnknown?: boolean };
 export type Pricing = { updatedAt: string; inputPerMillion: number; outputPerMillion: number; cachedInputPerMillion?: number; cacheCreationPerMillion?: number; toolPerCall?: number };
-export type ApiCallInput = { accountId: string; workspaceId: string; projectId: string; runId: string; stage: string; provider: string; model: string; actor: string };
+export type ApiCallInput = { accountId: string; workspaceId: string; projectId: string; runId: string; stage: string; provider: string; model: string; actor: string; /** Which agent made the call, e.g. research:brand or synthesis:content. */ agent?: string };
 export type ApiCall = ApiCallInput & { id: string; createdAt: string; finishedAt?: string; status: 'reserved'|'completed'|'failed'|'unknown'; usage?: ApiUsage; rawUsage?: Record<string, number>; providerRequestId?: string; pricing?: Pricing; estimatedMicroUsd?: number; reconciliation?: {actualMicroUsd: number; reference: string; actor: string; at: string} };
 type Ledger = { apiCalls?: ApiCall[]; ledgerArchives?: string[] };
 function text(value: string) { if(typeof value !== 'string' || !value.trim() || value.length>200) throw new Error('Invalid ledger metadata'); return value; }
@@ -32,7 +32,7 @@ export function pricingFor(provider: string, model: string, admin?: Record<strin
   return normalizePricing(p);
 }
 export async function reserveApiCall(repo: Repository, input: ApiCallInput): Promise<string> {
-  const metadata = Object.fromEntries(['accountId','workspaceId','projectId','runId','stage','provider','model','actor'].map(k=>[k,text(input[k as keyof ApiCallInput])])) as ApiCallInput;
+  const metadata = Object.fromEntries(['accountId','workspaceId','projectId','runId','stage','provider','model','actor'].map(k=>[k,text(input[k as Exclude<keyof ApiCallInput,'agent'>])])) as ApiCallInput;
   let adminPricing: Record<string, Pricing>|undefined;
   try { adminPricing=(await repo.read(AI_ROUTING_NAMESPACE)).aiRouting?.pricing; } catch { /* unreadable prices mean unknown cost, which the cap holds at its call hold */ }
   const pricing=pricingFor(metadata.provider,metadata.model,adminPricing);
@@ -41,7 +41,8 @@ export async function reserveApiCall(repo: Repository, input: ApiCallInput): Pro
   // Archived batches are immutable history. Their ids are re-checked inside the mutation so archiving cannot hide spend.
   const archiveIds=(await ledgerNamespaces(repo)).slice(1);
   const archived=(await Promise.all(archiveIds.map(async id=>{const db=await repo.read(id) as Ledger; if(!db.apiCalls) throw Error('Ledger archive is unavailable; spend cannot be checked'); return db.apiCalls;}))).flat();
-  const row: ApiCall={...metadata,id:randomUUID(),createdAt:new Date().toISOString(),status:'reserved',...(pricing?{pricing}:{})};
+  const agent=input.agent===undefined?undefined:text(input.agent);
+  const row: ApiCall={...metadata,...(agent?{agent}:{}),id:randomUUID(),createdAt:new Date().toISOString(),status:'reserved',...(pricing?{pricing}:{})};
   return repo.mutate(ADMIN_LEDGER_NAMESPACE,db=>{ const ledger=db as Ledger; const rows=ledger.apiCalls??=[]; if(rows.length>=MAX_LEDGER_CALLS) throw new Error('Admin ledger capacity reached; export and archive ledger before further API calls');
     if(JSON.stringify(ledger.ledgerArchives||[])!==JSON.stringify(archiveIds)) throw new Error('Ledger archive changed during the spend check; retry');
     assertWithinBudget([...archived,...rows],budget,metadata.projectId);

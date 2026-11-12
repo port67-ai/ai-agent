@@ -5,6 +5,7 @@ import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVeri
 import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
 import { safeProviderConfiguration } from "./providers";
 import { runContent } from "./content-run";
+import { agentsOverview } from "./ai-agents";
 import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
@@ -388,6 +389,10 @@ export async function handleFactory(
       if(data.action==="remove") return json({team:await removeTeamMember(repository,data.email,a.subject)});
       return json({error:"Unknown team action"},400);
     }
+    if (route === "admin/ai-agents") {
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      return json(await agentsOverview(repository));
+    }
     if (route === "admin/ai-routing") {
       // Owner only. Chooses provider and model per job and holds prices; API keys stay in Render.
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
@@ -714,6 +719,7 @@ export async function handleFactory(
                 ? "Source limit reached; findings rejected but provider usage retained"
                 : "");
             record.status = error ? "failed" : "completed";
+            record.finishedAt = new Date().toISOString();
             if (error) record.error = error;
             else if (result.gaps?.length) record.gaps = result.gaps;
             if (!error)
