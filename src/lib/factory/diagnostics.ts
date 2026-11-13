@@ -12,7 +12,7 @@ export type DiagnosticsContext = {
   ledger?: { id: string; at: string; finishedAt?: string; agent?: string; provider: string; model: string; status: string; inputTokens?: number; outputTokens?: number; providerRequestId?: string }[];
 };
 export type DiagEvent = { at: string; finishedAt?: string; seconds?: number; kind: "run" | "audit"; agent: string; status: string; provider?: string; model?: string; text: string; usage?: Record<string, number>; requestId?: string; note?: string };
-const agentOf = (r: Project["runs"][number]) => (r.stage === "scope" ? "scope:business" : (r.stage || "research") === "research" ? "research:" + (r.segment || "?") : "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "content" ? "content" : "strategy"));
+const agentOf = (r: Project["runs"][number]) => (r.stage === "scope" ? "scope:business" : r.stage === "review" ? "review:" + String(r.capabilityId || "").replace("review.", "") : (r.stage || "research") === "research" ? "research:" + (r.segment || "?") : "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "content" ? "content" : "strategy"));
 const secs = (a: string, b?: string) => (b && Number.isFinite(Date.parse(a)) && Number.isFinite(Date.parse(b)) ? Math.round((Date.parse(b) - Date.parse(a)) / 100) / 10 : undefined);
 const GAP_MS = 3 * 60 * 1000;
 export type Execution = { start: string; end: string; runs: number; failed: number };

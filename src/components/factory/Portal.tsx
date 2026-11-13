@@ -884,7 +884,7 @@ export default function Portal() {
                           )
                         }
                       >
-                        Drafts, copy pack and share (producer agent) <Sparkles size={17} />
+                        Drafts, copy pack and share (producer orchestrator) <Sparkles size={17} />
                       </button>
                     )}
                     {operator && (

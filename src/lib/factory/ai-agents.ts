@@ -15,6 +15,10 @@ const PURPOSE: Record<string, { capability: string; purpose: string }> = {
   "synthesis:insights": { capability: "analysis.insights", purpose: "Turns reviewed sources into draft insights, each tied to the evidence behind it." },
   "synthesis:strategy": { capability: "drafting.direction", purpose: "Drafts the campaign direction: positioning, key messages with proof, tone, channels and claims to avoid." },
   "synthesis:content": { capability: "drafting.content", purpose: "Writes channel copy from the approved direction and its evidence only; rejected if it invents a figure." },
+  "review:scope": { capability: "review.scope", purpose: "Walled garden: sees only the brief and the stored classification and questions. Checks they fit the business; sends them back once if not." },
+  "review:sources": { capability: "review.sources", purpose: "Walled garden: sees only each source, the business and the questions its segment was asked. Accepts or rejects each source; never sees insights or the direction." },
+  "review:insights": { capability: "review.insights", purpose: "Walled garden: sees only each draft insight and its own evidence. Accepts or rejects each; sends the set back once with notes if too few are supported. Never sees the direction." },
+  "review:direction": { capability: "review.direction", purpose: "Walled garden: sees only the draft direction, its accepted insights, the objective and the launch channels. Decides whether it is ready for the account owner; sends it back once with notes. Never sees raw sources." },
 };
 export type AgentStats = { calls: number; completed: number; failed: number; unknown: number; inFlight: number; inputTokens: number; outputTokens: number; estimatedMicroUsd: number; lastAt?: string; lastStatus?: "completed" | "failed" | "unknown" | "reserved" };
 const IN_FLIGHT_MS = 120000;
@@ -49,7 +53,7 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
     const eff = routing.effective.find((e) => e.slot === slot.id);
     return {
       id: slot.id as string,
-      group: slot.id === "scope:business" ? "scoping" : slot.stage === "research" ? "research" : "drafting",
+      group: slot.id === "scope:business" ? "scoping" : slot.id.startsWith("review:") ? "review" : slot.stage === "research" ? "research" : "drafting",
       name: cap?.name || slot.label,
       purpose: meta.purpose,
       kind: "ai" as const,
@@ -61,7 +65,7 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
   });
   const templates = [
     ...productionCapabilities.map((c) => ({ id: c.id as string, group: "production", name: c.name, purpose: c.outputContract, kind: "template" as const, capability: { id: c.id, version: c.version, input: c.inputContract, output: c.outputContract, permissions: [...c.permissions] }, model: undefined, problem: undefined, stats: undefined })),
-    { id: "orchestration.producer", group: "producer", name: "Producer agent", purpose: "Accepts sources and insights, drafts and shares the direction, then after the account owner approves it creates the production drafts and AI copy pack and shares the assets. Stops at every customer approval. Switch: PORT67_PRODUCER_AGENT.", kind: "template" as const, capability: { id: "orchestration.producer", version: "1.0.0", input: "Project record: sources, insights, direction, production drafts, asset statuses", output: "Audited producer steps; stops at customer approval gates", permissions: ["write-scoped-draft"] }, model: undefined, problem: undefined, stats: undefined },
+    { id: "orchestration.producer", group: "producer", name: "Producer orchestrator", purpose: "Rules only. Decides which producer reviewer or drafting agent goes next, applies each verdict, carries reviewer notes back to the right drafter once, and enforces the loop limits. After the account owner approves the direction it creates the production drafts and AI copy pack and shares the assets. Stops at every customer approval. Switch: PORT67_PRODUCER_AGENT.", kind: "template" as const, capability: { id: "orchestration.producer", version: "1.0.0", input: "Project record: sources, insights, direction, production drafts, asset statuses", output: "Audited producer steps; stops at customer approval gates", permissions: ["write-scoped-draft"] }, model: undefined, problem: undefined, stats: undefined },
     { id: "production.video", group: "production", name: "Video renderer", purpose: "Renders an approved storyboard to a 480p draft or 1080p MP4 from the approved direction. A template render: no AI model and no AI cost.", kind: "template" as const, capability: undefined, model: undefined, problem: undefined, stats: undefined },
   ];
   const recent = [...rows]

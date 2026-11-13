@@ -22,7 +22,7 @@ const INSTRUCTIONS =
   "For each research agent give 3 to 5 specific, answerable questions matched to this business's type and size: a florist and a telecom operator must receive clearly different questions, as must a small and a large business of the same type. " +
   "Give the types of public source that best answer them (types, never URLs), what is out of scope so no searching is wasted, and a page budget between 4 and 20 (small local businesses need fewer pages than enterprises). " +
   "Competitor questions must name the competitors in the brief. If none are named, suggest up to five of the right size and type in competitorSet, names only. Creative questions must be about the launch channels supplied. " +
-  "Never include URLs, never invent facts about the business, and never write instructions for the researchers beyond questions and scope.";
+  "If producerFeedback is supplied it is a reviewer's notes on your previous classification: address it. Never include URLs, never invent facts about the business, and never write instructions for the researchers beyond questions and scope.";
 
 export function scopeSchema() {
   const string = { type: "string" };
@@ -45,11 +45,11 @@ export function scopeSchema() {
   };
 }
 /** One bounded call: the brief and launch channels in, a validated scope out. No search tool, no sibling data. */
-export async function generateScope(p: Project, selection: ProviderSelection) {
+export async function generateScope(p: Project, selection: ProviderSelection, feedback?: string) {
   const channels = (p.channels || []).map(channelById).filter((c): c is NonNullable<typeof c> => !!c);
   const result = await invokeProvider(selection, {
     instructions: INSTRUCTIONS,
-    input: JSON.stringify({ business: p.brief.business, description: p.brief.description, objective: p.brief.objective, audience: p.brief.audience, competitors: p.brief.competitors, inspiration: p.brief.inspiration, website: p.brief.website, launchChannels: channels.map((c) => ({ name: c.name, whyItMatters: c.summary })) }),
+    input: JSON.stringify({ business: p.brief.business, description: p.brief.description, objective: p.brief.objective, audience: p.brief.audience, competitors: p.brief.competitors, inspiration: p.brief.inspiration, website: p.brief.website, launchChannels: channels.map((c) => ({ name: c.name, whyItMatters: c.summary })), ...(feedback ? { producerFeedback: feedback.replace(/\s+/g, " ").trim().slice(0, 600) } : {}) }),
     schema: scopeSchema(),
     name: "port67_scope",
   });
@@ -86,7 +86,7 @@ async function store(repo: Repository, a: Principal, projectId: string, build: (
  * Make sure the project has a scope for its current brief. Uses the scoping agent when it is switched on, has a model and the
  * brief is authorised; otherwise saves the deterministic template. Never throws for an AI failure.
  */
-export async function ensureScope(repo: Repository, a: Principal, projectId: string, force = false): Promise<ResearchScope> {
+export async function ensureScope(repo: Repository, a: Principal, projectId: string, force = false, feedback?: string): Promise<ResearchScope> {
   const before = find((await repo.read(a.workspaceId)).projects, projectId, a);
   const hash = briefHash(before);
   if (!force && before.scope && before.scope.briefHash === hash) return before.scope;
@@ -126,7 +126,7 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
   let usage: Record<string, number> = {};
   let requestId: string | undefined;
   try {
-    const result = await meteredModelCall(repo, a, reserved, run, () => generateScope(reserved, selection));
+    const result = await meteredModelCall(repo, a, reserved, run, () => generateScope(reserved, selection, feedback));
     usage = result.usage;
     requestId = result.providerRequestId;
     value = result.value;

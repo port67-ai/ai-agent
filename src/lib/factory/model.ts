@@ -33,6 +33,27 @@ export type Brief = {
   brandColor: string;
   logoData?: string;
 };
+/** The four walled-garden producer reviewers. Each sees only its own inputs. */
+export type ReviewGate = "scope" | "sources" | "insights" | "direction";
+export type ReviewRecord = {
+  id: string;
+  at: string;
+  gate: ReviewGate;
+  /** "ai" when a model made the judgement, "rules" when only the free checks ran (no model, no authorisation, or limit reached). */
+  by: "ai" | "rules";
+  provider?: string;
+  model?: string;
+  runId?: string;
+  /** What was reviewed: scope version, a source batch, insight ids or the direction hash. */
+  subject: string;
+  verdict: "pass" | "rework" | "hold";
+  summary: string;
+  /** Guidance for the redraft when the verdict is rework. */
+  notes?: string;
+  items: { id: string; verdict: "accept" | "reject"; reason: string }[];
+  /** Why the model was not used, when by is rules. */
+  skipped?: string;
+};
 export type Source = {
   accountId?: string;
   projectId?: string;
@@ -166,7 +187,7 @@ export type ResearchRun = {
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "scope" | "research" | "insights" | "strategy" | "content";
+  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -231,7 +252,15 @@ export type Project = {
     at: string;
     lastFingerprint: string;
     log: { at: string; step: string; outcome: "done" | "failed"; detail: string }[];
+    /** Rework budget used per gate since the last manual run. One redraft per gate, then a hand-over to a human. */
+    reworks?: Partial<Record<ReviewGate, number>>;
+    /** A reviewer sent work back: the next step redrafts it once with these notes. */
+    pending?: { gate: "insights" | "direction"; notes: string };
+    /** A reviewer's final word when the rework budget is spent: a human decides. */
+    hold?: { gate: ReviewGate; subject: string; notes: string };
   };
+  /** Every producer reviewer verdict with its reasons, newest last. Producers and admins only. */
+  reviews?: ReviewRecord[];
   /** A customer's request for the producer to start research on the chosen channels. */
   researchRequest?: { at: string; by: string; channels: string[] };
   capabilities: Capability[];
