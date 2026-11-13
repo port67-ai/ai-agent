@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0037: OpenAI research returned findings with no inline citations. Findings are now accepted if their URL is a page the search tool reported consulting (include web_search_call.action.sources). If a run still fails, read the diagnostic: "N consulted pages; M findings parsed" tells whether the tool reported pages and whether the model wrote findings in the required format.
+
 2026-11-13; Claude; CHG-0036: live run 1 diagnosis. OpenAI brand/customer: answered but no citations (likely the 1800 output-token limit consumed by reasoning; raised to 5000, diagnostics added). Gemini competitor/creative: HTTP 429 quota/rate limit on gemini-3.8-flash with search grounding; switch those agents to OpenAI on the map or fix the Gemini plan. Pickers in the header now labelled.
 
 2026-11-13; Claude; CHG-0035: the first live research attempt failed on all four agents with no visible reason. Provider errors are now kept and shown (agent card, blockers, connector hover, and the Research runs list for producers); research timeout raised to 100 s. Re-run with Start research (auto-start does not repeat once runs exist). Failed calls with unknown usage hold $1 each against the cap until reconciled in Private API costs.

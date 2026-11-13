@@ -58,8 +58,26 @@ async function main() {
   const none = await researchSegment(project, 'brand');
   globalThis.fetch = original;
   assert.equal(none.sources.length, 0);
-  assert.match(none.error!, /No usable cited sources returned \(status incomplete, max_output_tokens; 2 output items; 0 characters of text; 0 citations\)/);
+  assert.match(none.error!, /No usable cited sources returned \(status incomplete, max_output_tokens; 2 output items; 0 characters of text; 0 citations; 0 consulted pages; 0 findings parsed\)/);
   assert.equal(body.max_output_tokens, 5000, 'research gets room for reasoning plus the answer');
+  // Findings without inline citation markers count only when the search tool itself reported the page.
+  let sent: { include?: string[] } = {};
+  const uncited = ['FINDING | Opens at 7am | https://shop.test/hours | "open from 7am"', 'FINDING | Invented claim | https://never-searched.test/page | "x"', 'GAP | No price list', 'CONFIDENCE | limited'].join('\n');
+  globalThis.fetch = (async (_u: unknown, init?: { body?: string }) => {
+    sent = JSON.parse(init!.body!);
+    return Response.json({ id: 'r3', status: 'completed', usage: { input_tokens: 5, output_tokens: 90 }, output: [{ type: 'reasoning' }, { type: 'web_search_call', action: { type: 'search', sources: [{ url: 'https://shop.test/hours', title: 'Shop hours' }, { url: 'https://other.test/', title: 'Unused page' }] } }, { type: 'message', content: [{ type: 'output_text', text: uncited, annotations: [] }] }] });
+  }) as typeof fetch;
+  const viaTool = await researchSegment(project, 'brand');
+  globalThis.fetch = original;
+  assert.deepEqual(sent.include, ['web_search_call.action.sources'], 'the search tool is asked to report the pages it used');
+  assert.equal(viaTool.error, undefined);
+  assert.equal(viaTool.sources.length, 1, 'only a consulted page with a finding becomes a source');
+  assert.equal(viaTool.sources[0].url, 'https://shop.test/hours');
+  assert.equal(viaTool.sources[0].title, 'Shop hours');
+  assert.deepEqual(viaTool.sources[0].findings, [{ claim: 'Opens at 7am', quote: '"open from 7am"' }]);
+  assert.match(viaTool.sources[0].method, /no inline citation marker/);
+  assert.ok(!viaTool.sources.some((x) => x.url.includes('never-searched')), 'a URL the tool never returned is not evidence');
+
   console.log('Research findings: claim-level excerpts, gaps, confidence and citation matching passed');
 }
 void main().catch(e => { console.error(e); process.exit(1); });
