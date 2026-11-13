@@ -28,6 +28,10 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0038 follow-up: Diagnostics panel now defaults to the latest execution only (selector for earlier ones or full history); there is no stored error file, the report is generated from the project's runs and audit on each load.
+
+2026-11-13; Claude; CHG-0038 follow-up from the owner's diagnostics: (1) a researcher that returns only GAP lines (creative, 14:25) is now a completed run with the gaps kept, not a failure; (2) scope staleness now covers launch channels as well as the brief, because the scope still asked about Instagram after the channel changed to Facebook. Scope v2 on foymore lodge is therefore stale and will be redone at the next Start research. Unverified live: whether the creative researcher finds citable pages for a niche business.
+
 2026-11-13; Claude; CHG-0038 follow-up: "Research invocation cap reached for this project" means the project has used PORT67_MAX_RESEARCH_RUNS runs (default 12, max 50), failed runs included. Scoping runs no longer count. To continue on a project that hit it, raise PORT67_MAX_RESEARCH_RUNS in Render (for example 30).
 
 2026-11-13; Claude; CHG-0038 follow-up: the producer's Research room showed no Business scope or Research preparation panel (panels returned null while loading and cancelled their own fetch on parent re-render). They now use one hook (useProjectGet) and show Loading or a red error line. If a panel still shows an error, paste it.

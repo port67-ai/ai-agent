@@ -1,6 +1,6 @@
 import { meteredModelCall } from "./metering";
 import { resolveSelection } from "./ai-routing";
-import { access, digest, hasProviderConsent, id, operator } from "./engine";
+import { access, digest, hasProviderConsent, id, operator, scopeHash } from "./engine";
 import { channelById } from "./channels";
 import { invokeProvider, type ProviderSelection } from "./providers";
 import { AUDIENCES, CATEGORIES, CONFIDENCES, REACHES, SIZES, templateScope, validateScope, type ResearchScope, type ScopeEntry } from "./scope";
@@ -67,7 +67,7 @@ const find = (projects: Project[], projectId: string, a: Principal) => {
   access(p, a);
   return p;
 };
-const briefHash = (p: Project) => digest(JSON.stringify(p.brief));
+const briefHash = (p: Project) => scopeHash(p);
 const entry = (s: ResearchScope): ScopeEntry => ({ version: s.version, at: s.at, source: s.source, category: s.classification.category, businessType: s.classification.businessType, size: s.classification.size, ...(s.model ? { model: s.model } : {}) });
 /** Saves a scope on the project record, keeps the history, and audits it. */
 async function store(repo: Repository, a: Principal, projectId: string, build: (current: Project) => ResearchScope) {
@@ -108,7 +108,7 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
     provider: selection.provider,
     model: selection.model,
     leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
-    contextHash: hash,
+    contextHash: digest(JSON.stringify(before.brief)),
     contextSnapshot: structuredClone(before.brief),
     usageStatus: "unknown",
   };

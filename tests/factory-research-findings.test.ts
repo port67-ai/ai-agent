@@ -60,6 +60,13 @@ async function main() {
   assert.equal(none.sources.length, 0);
   assert.match(none.error!, /No usable cited sources returned \(status incomplete, max_output_tokens; 2 output items; 0 characters of text; 0 citations; 0 consulted pages; 0 findings parsed\)/);
   assert.equal(body.max_output_tokens, 5000, 'research gets room for reasoning plus the answer');
+  // Only GAP lines is an honest answer: kept as gaps, not a failure, and never as evidence.
+  globalThis.fetch = (async () => Response.json({ id: 'r4', status: 'completed', usage: { input_tokens: 5, output_tokens: 90 }, output: [{ type: 'web_search_call' }, { content: [{ type: 'output_text', text: 'GAP | Could not verify public profiles\nGAP | No engagement data found', annotations: [] }] }] })) as typeof fetch;
+  const gapsOnly = await researchSegment(project, 'creative');
+  globalThis.fetch = original;
+  assert.equal(gapsOnly.sources.length, 0);
+  assert.equal(gapsOnly.error, undefined, 'a gaps-only answer is not a failure');
+  assert.deepEqual(gapsOnly.gaps, ['Could not verify public profiles', 'No engagement data found']);
   // Findings without inline citation markers count only when the search tool itself reported the page.
   let sent: { include?: string[] } = {};
   const uncited = ['FINDING | Opens at 7am | https://shop.test/hours | "open from 7am"', 'FINDING | Invented claim | https://never-searched.test/page | "x"', 'GAP | No price list', 'CONFIDENCE | limited'].join('\n');

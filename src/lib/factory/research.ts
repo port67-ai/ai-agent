@@ -209,8 +209,9 @@ export async function researchSegment(
     usage,
     providerRequestId,
     ...(parsed.gaps.length ? { gaps: parsed.gaps } : {}),
-    ...(!sources.length && result.text.trim() ? { note: result.text.replace(/\s+/g, " ").trim().slice(0, 600) } : {}),
-    error: sources.length
+    ...(!sources.length && !parsed.gaps.length && result.text.trim() ? { note: result.text.replace(/\s+/g, " ").trim().slice(0, 600) } : {}),
+    // An honest answer of only GAP lines (nothing citable found) is a result, not a failure: the gaps are kept for the producer.
+    error: sources.length || parsed.gaps.length
       ? undefined
       : `No usable cited sources returned (${diagnose(selection.provider, data, result.text, citationsSeen, consulted.length, parsed.findings.length)}). Add sources manually; do not treat uncited synthesis as evidence.`,
   };

@@ -35,6 +35,7 @@ import {
   transition,
   requireProviderConsent,
   hasProviderConsent,
+  scopeHash,
 } from "./engine";
 import { demoRepository, repository, type Repository } from "./repository";
 import { researchReady, researchSegment } from "./research";
@@ -623,7 +624,7 @@ export async function handleFactory(
         // Producers and admins only: customers never see the scoping output. With none stored yet, a free template preview is returned.
         operator(a);
         const stored = !!p.scope;
-        const shown = p.scope || templateScope(p, { briefHash: digest(JSON.stringify(p.brief)), version: 0 });
+        const shown = p.scope || templateScope(p, { briefHash: scopeHash(p), version: 0 });
         return json({ scope: shown, stored, current: stored && scopeCurrent(p), history: p.scopeHistory || [], scoping: { enabled: scopingEnabled() } });
       }
       if (path[2] === "diagnostics" && request.method === "GET") {
@@ -639,6 +640,7 @@ export async function handleFactory(
         }
         return json(buildDiagnostics({ ...p, researchNote: projectView(p, a).researchNote }, {
           now: new Date().toISOString(),
+          since: new URL(request.url).searchParams.get("since") || "latest",
           switches: { PORT67_RESEARCH_ENABLED: process.env.PORT67_RESEARCH_ENABLED === "true", PORT67_SYNTHESIS_ENABLED: process.env.PORT67_SYNTHESIS_ENABLED === "true", PORT67_SCOPING_ENABLED: process.env.PORT67_SCOPING_ENABLED !== "false", scopingAgentActive: scopingEnabled(), PORT67_AUTO_APPROVE_PRODUCER: autoApproveProducer(), openaiKeySet: keyConfigured("openai"), geminiKeySet: keyConfigured("gemini"), anthropicKeySet: keyConfigured("anthropic"), deepseekKeySet: keyConfigured("deepseek") },
           routes: routing.effective.map((e) => ({ agent: e.slot, ...("error" in e ? { problem: String(e.error) } : { provider: e.provider, model: e.model, source: e.source }) })),
           ledger,

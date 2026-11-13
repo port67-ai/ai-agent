@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import { classifyByRules, templateScope, validateScope, scopeFromClassification, CATEGORY_LABEL } from '../src/lib/factory/scope';
 import { prepareResearchPlan, researchDossier, renderDossierMarkdown } from '../src/lib/factory/research-plan';
-import { createProject, digest } from '../src/lib/factory/engine';
+import { createProject, scopeHash } from '../src/lib/factory/engine';
 import { scopeCurrent } from '../src/lib/factory/scope-run';
 import { segments } from '../src/lib/factory/model';
 
@@ -53,9 +53,23 @@ assert.equal(prepareResearchPlan(florist).scope, undefined, 'no stored scope: th
 const md = renderDossierMarkdown(researchDossier(planned, 'operator', '2026-11-13T10:00:00Z'));
 assert.match(md, /Scoped as: Local shop or service \(Local shop or service; size small; reach local; audience b2c/);
 assert.ok(CATEGORY_LABEL.telecom);
-const hashed = { ...florist, scope: { ...sf, briefHash: digest(JSON.stringify(florist.brief)) } };
+const hashed = { ...florist, scope: { ...sf, briefHash: scopeHash(florist) } };
 assert.equal(scopeCurrent(hashed), true);
 assert.equal(scopeCurrent({ ...hashed, brief: { ...hashed.brief, objective: 'A different goal now' } }), false, 'a changed brief makes the stored scope stale');
+assert.equal(scopeCurrent({ ...hashed, channels: ['facebook'] }), false, 'changing the launch channels also makes it stale');
+
+// Diagnostics windows: runs within ten minutes are one execution; the default report covers the latest only.
+import { buildDiagnostics, executions } from '../src/lib/factory/diagnostics';
+const hist = mk({ business: 'History Co', description: 'x' });
+const run = (id: string, at: string, status: 'failed' | 'completed', error?: string) => ({ id, at, finishedAt: new Date(Date.parse(at) + 5000).toISOString(), status, stage: 'research' as const, segment: 'brand' as const, provider: 'openai', model: 'm', ...(error ? { error } : {}) });
+hist.runs.push(run('a', '2026-11-13T11:00:00Z', 'failed', 'OLD ERROR'), run('b', '2026-11-13T11:02:00Z', 'failed', 'OLD ERROR TWO'), run('c', '2026-11-13T14:00:00Z', 'failed', 'NEW ERROR'));
+assert.equal(executions(hist).length, 2, 'a gap of more than ten minutes starts a new execution');
+const ctx = { now: '2026-11-13T15:00:00Z', switches: {}, routes: [] };
+const latest = buildDiagnostics(hist, ctx);
+assert.match(latest.markdown, /NEW ERROR/);assert.ok(!/OLD ERROR/.test(latest.markdown), 'earlier executions do not leak into the latest report');assert.equal(latest.report.failures.length, 1);
+const full = buildDiagnostics(hist, { ...ctx, since: 'all' });
+assert.match(full.markdown, /OLD ERROR/);assert.equal(full.report.failures.length, 3);assert.match(full.markdown, /Showing the full history \(2 executions\)/);
+assert.ok(!/OLD ERROR/.test(buildDiagnostics(hist, { ...ctx, since: '2026-11-13T13:00:00Z' }).markdown), 'a chosen start time also cuts earlier history');
 
 async function main(){
 const dir=await mkdtemp(join(tmpdir(),'port67-scope-'));Object.assign(process.env,{PORT67_DATA_DIR:dir,PORT67_SESSION_SECRET:'s'.repeat(48),PORT67_OPERATOR_PASSWORD:'p'.repeat(24),PORT67_FIREBASE_PROJECT_ID:'ai-agency-3671b',PORT67_ADMIN_UIDS:'owner',PORT67_OPERATOR_UIDS:'producer',PORT67_RESEARCH_ENABLED:'true',PORT67_SYNTHESIS_ENABLED:'true',PORT67_RESEARCH_MODEL:'test-research',PORT67_SYNTHESIS_MODEL:'test-drafting',PORT67_OPENAI_API_KEY:'test-only',PORT67_ANTHROPIC_API_KEY:'test-only',PORT67_DEEPSEEK_API_KEY:'test-only',PORT67_GEMINI_API_KEY:'test-only',PORT67_RESEARCH_PROVIDER:'openai',PORT67_AUTO_APPROVE_PRODUCER:'true'});
@@ -109,7 +123,7 @@ const p2=(await(await req(route2)).json()).project;assert.equal(p2.runs.filter((
 // Diagnostics: timestamps, models, full error text and the ledger (admin only).
 const dg=await(await req(route2+'/diagnostics')).json();
 assert.ok(dg.report.failures.some((f:{agent:string;at:string;text:string})=>f.agent==='scope:business'&&/^\d{4}-\d\d-\d\dT/.test(f.at)&&f.text.length>10),'the failed scoping call is listed with a timestamp and its error');
-assert.match(dg.markdown,/## Failures \(1\)/);assert.match(dg.markdown,/## Timeline \(UTC\)/);assert.match(dg.markdown,/scope:business/);assert.match(dg.markdown,/PORT67_SCOPING_ENABLED: true/);assert.ok(!/test-only/.test(dg.markdown),'no key values');assert.equal(dg.report.ledger,undefined,'producers do not get the cost ledger');
+assert.match(dg.markdown,/## Failures \(1\)/);assert.match(dg.markdown,/Showing events from .*\(latest execution\)/);assert.match(dg.markdown,/## Timeline \(UTC\)/);assert.match(dg.markdown,/scope:business/);assert.match(dg.markdown,/PORT67_SCOPING_ENABLED: true/);assert.ok(!/test-only/.test(dg.markdown),'no key values');assert.equal(dg.report.ledger,undefined,'producers do not get the cost ledger');
 await login('owner');await req('accounts',{accountId:customer.accountId});const dga=await(await req(route2+'/diagnostics')).json();assert.ok(Array.isArray(dga.report.ledger)&&dga.report.ledger.some((c:{agent:string})=>c.agent==='scope:business'),'admin diagnostics include the call ledger');
 await login('producer');await req('accounts',{accountId:customer.accountId});
 // 5. Switched off: no scoping call, template scope with the reason.

@@ -12,7 +12,8 @@ export function DiagnosticsPanel({ p }: { p: Project }) {
   const [actionError, setActionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [tick, setTick] = useState(0);
-  const { data, error: loadError } = useProjectGet<Data>(`/api/factory/projects/${p.id}/diagnostics`, p.revision * 1000 + tick);
+  const [since, setSince] = useState("latest");
+  const { data, error: loadError } = useProjectGet<Data>(`/api/factory/projects/${p.id}/diagnostics?since=${encodeURIComponent(since)}`, p.revision * 1000 + tick);
   const error = actionError || loadError || "";
   if (!data) return <section className="f-panel"><h2><Bug size={18} aria-hidden="true" /> Diagnostics</h2>{error ? <p className="f-team-error" role="alert">Diagnostics unavailable: {error}</p> : <p className="f-small" role="status">Loading diagnostics…</p>}</section>;
   const r = data.report;
@@ -29,7 +30,7 @@ export function DiagnosticsPanel({ p }: { p: Project }) {
     const url = URL.createObjectURL(new Blob([data.markdown], { type: "text/markdown" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `port67-diagnostics-${r.project.id.slice(0, 8)}-${r.generatedAt.slice(0, 19).replace(/[:T]/g, "-")}.md`;
+    a.download = `port67-diagnostics-${since === "all" ? "full" : "latest"}-${r.project.id.slice(0, 8)}-${r.generatedAt.slice(0, 19).replace(/[:T]/g, "-")}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -43,6 +44,13 @@ export function DiagnosticsPanel({ p }: { p: Project }) {
           </p>
         </div>
         <div className="f-actions">
+          <label className="f-small">Show{" "}
+            <select value={since} onChange={(e) => setSince(e.target.value)} aria-label="Which executions to include">
+              <option value="latest">Latest execution only</option>
+              <option value="all">Full history</option>
+              {r.executions.slice(0, -1).reverse().map((x) => <option key={x.start} value={x.start}>From {x.start.slice(0, 16).replace("T", " ")} UTC ({x.runs} runs)</option>)}
+            </select>
+          </label>
           <button type="button" className="f-button secondary small" onClick={() => setTick((n) => n + 1)}>Refresh</button>
           <button type="button" className="f-button small" onClick={() => void copy()}><Copy size={14} /> {copied ? "Copied" : "Copy all"}</button>
           <button type="button" className="f-button secondary small" onClick={download}><Download size={14} /> Download (.md)</button>

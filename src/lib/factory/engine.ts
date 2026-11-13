@@ -213,6 +213,8 @@ function motion(p: Project, s: Strategy) {
 export function makeAsset(_p: Project, a: Asset) {
   return a.content;
 }
+/** Fingerprint of what a scope was made from: the brief and the launch channels. A change to either makes the stored scope stale. */
+export const scopeHash = (p: Pick<Project, "brief" | "channels">) => digest(JSON.stringify({ brief: p.brief, channels: p.channels || [] }));
 export const hasProviderConsent = (p: Project) =>
   p.aiConsent?.dataClass === "PUBLIC" &&
   p.aiConsent.briefHash === digest(JSON.stringify(p.brief));
