@@ -245,7 +245,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
           "Brief changed before research reservation; refresh and authorise the current context",
         );
       if (
-        current.runs.length >=
+        current.runs.filter((r) => r.stage !== "scope").length >=
         Math.max(
           1,
           Math.min(

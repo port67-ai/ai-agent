@@ -38,7 +38,7 @@ export async function runSynthesis(
         "A provider task is already running; wait or recover its expired lease",
       );
     if (
-      current.runs.length >=
+      current.runs.filter((r) => r.stage !== "scope").length >=
       Math.max(
         1,
         Math.min(
