@@ -28,6 +28,14 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0038 follow-up: Accept all draft insights (Research room), Approve all assets (Assets, account owner and test-mode producer) and an optional PORT67_PRODUCER_APPROVALS=true switch so a producer or admin can press the customer's Approve direction / Approve asset buttons while testing (recorded as on the customer's behalf; off by default; remove before real customers). The account owner already approves direction and assets.
+
+2026-11-13; Claude; CHG-0038 follow-up: one Accept all button for unreviewed sources (command reviewAllSources, audited as sources_bulk_accepted). A future AI source-review agent must follow the loop rules in docs/RESEARCH_RUNBOOK.md before it is built.
+
+2026-11-13; Claude; CHG-0038 follow-up: Accept evidence / Reject existed on every source card but were 10px faint text; restyled as real buttons. Source review is per source, in the Research room tabs (not in preparation or the dossier).
+
+2026-11-13; Claude; CHG-0038 follow-up: added a Gate 1 callout with a Go to source review button in the Research room (the review tabs were far down the page).
+
 2026-11-13; Claude; CHG-0038 follow-up: second run completed all four researchers (72 sources, all unreviewed: Gate 1 is next). Map and failing list now follow the latest call, not lifetime failures; unpriced agents show cost unknown (research calls have no price because the web search tool price is not set on the model: set it in the model overlay). Executions end on an agent repeat or a three minute gap.
 
 2026-11-13; Claude; CHG-0038 follow-up: Diagnostics panel now defaults to the latest execution only (selector for earlier ones or full history); there is no stored error file, the report is generated from the project's runs and audit on each load.

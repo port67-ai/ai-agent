@@ -39,6 +39,27 @@ export default function Assets({ p, operator, busy, command, renderVideo }: Acti
           </a>
         )}
       </div>
+      {(() => {
+        const waiting = p.assets.filter((x: Asset) => x.status === "shared");
+        const canApprove = operator ? !!p.producerApprovals : !p.deliveryPaused;
+        return waiting.length > 0 && canApprove ? (
+          <div className="f-callout">
+            <strong>{waiting.length} asset{waiting.length === 1 ? " is" : "s are"} waiting for approval.</strong>
+            <div className="f-actions">
+              <button
+                className="f-button"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm(`Approve all ${waiting.length} shared assets${operator ? " on the customer's behalf (test mode)" : ""}? Each one can still be downloaded only after approval.`))
+                    void command({ type: "approveAllAssets" }, `${waiting.length} assets approved`);
+                }}
+              >
+                Approve all {waiting.length} assets <Check size={14} />
+              </button>
+            </div>
+          </div>
+        ) : null;
+      })()}
       {!p.assets.length ? (
         <Empty title="The library is ready for your first creation">
           Assets appear after Port67 produces from an approved campaign
@@ -144,7 +165,7 @@ export default function Assets({ p, operator, busy, command, renderVideo }: Acti
                     )}
                   </div>
                 )}
-                {!operator && !p.deliveryPaused && a.status === "shared" && (
+                {((!operator && !p.deliveryPaused) || (operator && p.producerApprovals)) && a.status === "shared" && (
                   <div className="f-review">
                     <Field label="Feedback">
                       <textarea
@@ -171,7 +192,7 @@ export default function Assets({ p, operator, busy, command, renderVideo }: Acti
                           )
                         }
                       >
-                        Approve asset <Check size={14} />
+                        {operator ? "Approve asset (on behalf)" : "Approve asset"} <Check size={14} />
                       </button>
                       <button
                         className="f-text-button"

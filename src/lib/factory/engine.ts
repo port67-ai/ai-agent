@@ -267,10 +267,15 @@ export function transition(
     "requestStrategyChanges",
     "approveAsset",
     "requestAssetChanges",
+    "approveAllAssets",
   ];
   if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch"].includes(type)) operator(a);
-  if (customerActions.includes(type) && a.role !== "customer")
+  // Test mode only (PORT67_PRODUCER_APPROVALS=true, off by default): a producer may press the customer's approval buttons so the
+  // journey can be clicked through. Every such approval is recorded as given on the customer's behalf.
+  const onBehalf = customerActions.includes(type) && a.role === "operator" && process.env.PORT67_PRODUCER_APPROVALS === "true";
+  if (customerActions.includes(type) && a.role !== "customer" && !onBehalf)
     throw new Error("Customer approval identity required");
+  const approver = onBehalf ? `${a.subject} (on behalf of the customer, test mode)` : a.subject;
   if (requestId && p.processed.includes(requestId)) return p;
   if (type === "authoriseAI") {
     if (c.confirm !== true)
@@ -351,6 +356,38 @@ export function transition(
       );
     source.status = c.status;
     invalidateDirection(p);
+  } else if (type === "reviewAllSources") {
+    // One deliberate, single-shot action: accept every unreviewed public source at once. It never runs by itself, never calls a model,
+    // and does nothing when nothing is waiting, so repeating it (or a later automated reviewer) cannot loop.
+    if (c.confirm !== true) throw new Error("Confirm that you accept every unreviewed public source");
+    const waiting = p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed");
+    if (!waiting.length) throw new Error("No unreviewed public sources to accept");
+    for (const s of waiting) s.status = "supported";
+    invalidateDirection(p);
+    const by = segments.map((k) => `${k} ${waiting.filter((s) => s.segment === k).length}`).join(", ");
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "sources_bulk_accepted", detail: `${waiting.length} sources accepted without individual review (${by})` });
+  } else if (type === "reviewAllInsights") {
+    // Single-shot like reviewAllSources: only draft insights whose sources are all accepted, nothing automatic, nothing when none wait.
+    if (c.confirm !== true) throw new Error("Confirm that you accept every draft insight");
+    const drafts = p.insights.filter((i) => (i.status || "reviewed") === "draft");
+    const ready = drafts.filter((i) => i.sourceIds.every((e) => p.sources.some((s) => s.id === e && s.status === "supported")));
+    if (!ready.length) throw new Error(drafts.length ? "Draft insights need accepted supporting sources first" : "No draft insights to accept");
+    for (const i of ready) i.status = "reviewed";
+    const latestDirection = p.strategies.at(-1);
+    if (latestDirection && ready.some((i) => latestDirection.insightIds.includes(i.id))) invalidateDirection(p);
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "insights_bulk_accepted", detail: `${ready.length} of ${drafts.length} draft insights accepted together` });
+  } else if (type === "approveAllAssets") {
+    const s = approved(p);
+    const shared = p.assets.filter((x) => x.status === "shared" && x.strategyHash === s.hash);
+    if (!shared.length) throw new Error("No shared assets are waiting for approval");
+    const feedback = text(c.feedback, "feedback", 2000);
+    for (const x of shared) {
+      x.status = "approved";
+      x.approvedBy = approver;
+      x.approvedAt = now();
+      if (feedback) x.feedback = feedback;
+    }
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "assets_bulk_approved", detail: `${shared.length} assets approved together${onBehalf ? " on behalf of the customer (test mode)" : ""}` });
   } else if (type === "reviewInsight") {
     const insight = p.insights.find((i) => i.id === c.id);
     if (!insight) throw new Error("Insight not found");
@@ -492,7 +529,7 @@ export function transition(
     s.status = type === "approveStrategy" ? "approved" : "changes_requested";
     s.feedback = text(c.feedback, "feedback", 2000, type !== "approveStrategy");
     if (s.status === "approved") {
-      s.approvedBy = a.subject;
+      s.approvedBy = approver;
       s.approvedAt = now();
     }
   } else if (type === "produce") {
@@ -569,7 +606,7 @@ export function transition(
       );
       asset.status = type === "approveAsset" ? "approved" : "changes_requested";
       if (asset.status === "approved") {
-        asset.approvedBy = a.subject;
+        asset.approvedBy = approver;
         asset.approvedAt = now();
       }
     }
@@ -597,6 +634,7 @@ export function transition(
     action: type,
     detail: `Revision ${p.revision}`,
   });
+  if (onBehalf) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "approved_on_behalf", detail: `${type} given by a producer on the customer's behalf (test mode)` });
   return p;
 }
 export function researchProgress(p: Project): NonNullable<Project["researchProgress"]> {
@@ -620,6 +658,7 @@ export function projectView(input: Project, a: Principal): Project {
     else if (autoApproveProducer()) p.researchNote = "Starting automatically.";
   }
   if (a.role === "operator") {
+    p.producerApprovals = process.env.PORT67_PRODUCER_APPROVALS === "true";
     p.aiAuthorised = hasProviderConsent(p);
     return p;
   }
