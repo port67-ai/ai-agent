@@ -2,7 +2,7 @@ import type { ApiCall } from "./costs";
 import { accountDirectory } from "./accounts";
 import type { Repository } from "./repository";
 import type { Project } from "./model";
-import { digest } from "./engine";
+import { scopeHash } from "./engine";
 
 // Observability for the whole agent system: where data flows (calls, tokens, cost, latency per edge),
 // where it is stored (counts per Firestore record), and where it is blocked or not flowing at all.
@@ -130,7 +130,7 @@ export function pipelineStats(projects: Project[]): PipelineStats {
       ai: count((p) => p.scope?.source === "ai"),
       template: count((p) => p.scope?.source === "template"),
       manual: count((p) => p.scope?.source === "manual"),
-      stale: count((p) => !!p.scope && p.scope.briefHash !== digest(JSON.stringify(p.brief))),
+      stale: count((p) => !!p.scope && p.scope.briefHash !== scopeHash(p)),
       byCategory: projects.reduce<Record<string, number>>((m, p) => (p.scope ? { ...m, [p.scope.classification.category]: (m[p.scope.classification.category] || 0) + 1 } : m), {}),
     },
     waiting: {
@@ -147,7 +147,7 @@ export type ScopeRow = { accountId: string; projectId: string; business: string;
 export function scopeRows(projects: Project[], limit = 40): ScopeRow[] {
   return projects
     .filter((p) => !!p.scope)
-    .map((p) => ({ accountId: p.accountId || p.workspaceId, projectId: p.id, business: p.brief.business, category: p.scope!.classification.category, businessType: p.scope!.classification.businessType, size: p.scope!.classification.size, reach: p.scope!.classification.reach, audienceModel: p.scope!.classification.audienceModel, regulated: p.scope!.classification.regulated, source: p.scope!.source, version: p.scope!.version, at: p.scope!.at, ...(p.scope!.model ? { model: p.scope!.model } : {}), current: p.scope!.briefHash === digest(JSON.stringify(p.brief)) }))
+    .map((p) => ({ accountId: p.accountId || p.workspaceId, projectId: p.id, business: p.brief.business, category: p.scope!.classification.category, businessType: p.scope!.classification.businessType, size: p.scope!.classification.size, reach: p.scope!.classification.reach, audienceModel: p.scope!.classification.audienceModel, regulated: p.scope!.classification.regulated, source: p.scope!.source, version: p.scope!.version, at: p.scope!.at, ...(p.scope!.model ? { model: p.scope!.model } : {}), current: p.scope!.briefHash === scopeHash(p) }))
     .sort((a, b) => b.at.localeCompare(a.at))
     .slice(0, limit);
 }
