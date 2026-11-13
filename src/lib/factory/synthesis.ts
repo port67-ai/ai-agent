@@ -121,6 +121,15 @@ function identifiers(value: unknown, allowed: string[], kind: string) {
     throw new Error(`Model referenced an unknown or unreviewed ${kind}`);
   return [...new Set(value)] as string[];
 }
+/** A model sometimes runs a few characters over a field limit. Cut it at a word boundary instead of throwing the whole draft away; a human reviews every draft. */
+function clip(value: unknown, max: number): unknown {
+  if (typeof value !== "string") return value;
+  const t = value.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const at = cut.lastIndexOf(" ");
+  return (at > max * 0.6 ? cut.slice(0, at) : cut).replace(/[\s,;:.\-]+$/, "") + "…";
+}
 export function validateInsights(
   raw: unknown,
   context: SynthesisContext,
@@ -140,8 +149,8 @@ export function validateInsights(
     if (!["limited", "moderate", "strong"].includes(String(i.confidence)))
       throw new Error("Invalid insight confidence");
     return {
-      title: text(i.title, "title", 200, true),
-      interpretation: text(i.interpretation, "interpretation", 3000, true),
+      title: text(clip(i.title, 200), "title", 200, true),
+      interpretation: text(clip(i.interpretation, 3000), "interpretation", 3000, true),
       sourceIds,
       confidence:
         sourceIds.length < 2
@@ -173,43 +182,41 @@ export function validateDirection(
     "evidenceIds",
     "insightIds",
   ]);
-  const evidenceIds = identifiers(o.evidenceIds, context.sourceIds, "source");
   const insightIds = identifiers(
     o.insightIds,
     context.insights.map((i) => i.id),
     "insight",
   );
-  if (
-    context.insights
-      .filter((i) => insightIds.includes(i.id))
-      .some((i) => i.sourceIds.some((id) => !evidenceIds.includes(id)))
-  )
-    throw new Error(
-      "Direction omits the source evidence behind its selected insights",
-    );
+  // The evidence behind every selected insight is part of the direction; add any the model left out rather than reject the draft.
+  const evidenceIds = [
+    ...new Set([
+      ...identifiers(o.evidenceIds, context.sourceIds, "source"),
+      ...context.insights.filter((i) => insightIds.includes(i.id)).flatMap((i) => i.sourceIds),
+    ]),
+  ];
   if (!Array.isArray(o.keyMessages) || o.keyMessages.length < 1 || o.keyMessages.length > 6)
     throw new Error("Direction needs one to six key messages");
   const keyMessages = o.keyMessages.map((value) => {
     const k = object(value);
     keys(k, ["message", "proof", "sourceIds"]);
     const ids = identifiers(k.sourceIds, evidenceIds, "source");
-    return { message: text(k.message, "key message", 300, true), proof: text(k.proof, "key message proof", 600, true), sourceIds: ids };
+    return { message: text(clip(k.message, 300), "key message", 300, true), proof: text(clip(k.proof, 600), "key message proof", 600, true), sourceIds: ids };
   });
   return {
-    positioning: text(o.positioning, "positioning", 600, true),
-    audienceSegments: text(o.audienceSegments, "audience segments", 2500, true),
+    positioning: text(clip(o.positioning, 600), "positioning", 600, true),
+    audienceSegments: text(clip(o.audienceSegments, 2500), "audience segments", 2500, true),
     keyMessages,
-    tone: text(o.tone, "tone", 600, true),
-    doNotClaim: text(o.doNotClaim, "claims to avoid", 1500, true),
-    audience: text(o.audience, "audience", 1200, true),
-    message: text(o.message, "message", 600, true),
-    rationale: text(o.rationale, "rationale", 6000, true),
-    design: text(o.design, "design", 3000, true),
-    channels: text(o.channels, "channels", 600, true),
-    format: text(o.format, "format", 600, true),
-    cta: text(o.cta, "cta", 100, true),
-    hypothesis: text(o.hypothesis, "hypothesis", 2000, true),
-    uncertainties: text(o.uncertainties, "uncertainties", 3000, true),
+    tone: text(clip(o.tone, 600), "tone", 600, true),
+    doNotClaim: text(clip(o.doNotClaim, 1500), "claims to avoid", 1500, true),
+    audience: text(clip(o.audience, 1200), "audience", 1200, true),
+    message: text(clip(o.message, 600), "message", 600, true),
+    rationale: text(clip(o.rationale, 6000), "rationale", 6000, true),
+    design: text(clip(o.design, 3000), "design", 3000, true),
+    channels: text(clip(o.channels, 600), "channels", 600, true),
+    format: text(clip(o.format, 600), "format", 600, true),
+    cta: text(clip(o.cta, 100), "cta", 100, true),
+    hypothesis: text(clip(o.hypothesis, 2000), "hypothesis", 2000, true),
+    uncertainties: text(clip(o.uncertainties, 3000), "uncertainties", 3000, true),
     evidenceIds,
     insightIds,
   };
@@ -295,14 +302,15 @@ export async function generateSynthesis(p: Project, stage: SynthesisStage, chose
         ? validateInsights(raw, context)
         : validateDirection(raw, context);
     return { value, usage, providerRequestId, ...metadata, error: "" };
-  } catch {
+  } catch (e) {
+    const why = e instanceof SyntaxError ? "the reply was not valid JSON" : e instanceof Error ? e.message.replace(/\s+/g, " ").slice(0, 160) : "unknown";
     return {
       value: null,
       ...metadata,
       usage,
       providerRequestId,
       error:
-        "AI output failed the structured evidence/insight contract; usage retained, no draft accepted",
+        `AI output failed the structured evidence/insight contract (${why}); usage retained, no draft accepted`,
     };
   }
 }

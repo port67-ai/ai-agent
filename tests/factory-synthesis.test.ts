@@ -118,6 +118,13 @@ assert.equal(
   validateDirection(proposed, directionContext).message,
   proposed.message,
 );
+// A model that runs a little over a field limit is clipped, not rejected; evidence behind a selected insight it forgot is added.
+const long = validateDirection({ ...proposed, cta: "Book your first clay pigeon session today and bring the whole family along for a full day outdoors with expert instructors", message: "word ".repeat(200) }, directionContext);
+assert.ok(long.cta.length <= 100 && long.cta.endsWith("…"), "an over-long call to action is clipped at a word boundary");
+assert.ok(long.message.length <= 600);
+const twoSources = { ...directionContext, sourceIds: [...directionContext.sourceIds, "extra-source"], insights: directionContext.insights.map((i) => ({ ...i, sourceIds: [...i.sourceIds, "extra-source"] })) };
+assert.ok(validateDirection(proposed, twoSources).evidenceIds.includes("extra-source"), "evidence behind a selected insight that the model left out is added");
+assert.throws(() => validateDirection({ ...proposed, cta: undefined }, directionContext), /cta is required/, "missing fields are still rejected");
 assert.throws(
   () =>
     validateDirection(
