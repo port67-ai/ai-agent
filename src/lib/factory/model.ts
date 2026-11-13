@@ -223,6 +223,15 @@ export type Project = {
   scope?: ResearchScope;
   /** Earlier classifications, newest last, so a change of scope is traceable. */
   scopeHistory?: ScopeEntry[];
+  /** The producer agent's state: where it stopped and why, the progress fingerprint it stopped at, and its step log. Producers and admins only. */
+  producerAgent?: {
+    passes: number;
+    status: "waiting_customer" | "waiting_human" | "blocked" | "done";
+    reason: string;
+    at: string;
+    lastFingerprint: string;
+    log: { at: string; step: string; outcome: "done" | "failed"; detail: string }[];
+  };
   /** A customer's request for the producer to start research on the chosen channels. */
   researchRequest?: { at: string; by: string; channels: string[] };
   capabilities: Capability[];

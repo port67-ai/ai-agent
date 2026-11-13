@@ -874,6 +874,21 @@ export default function Portal() {
                     </button>
                     {operator && (
                       <button
+                        className="f-button"
+                        disabled={busy || !approved || !!principal.demo}
+                        title="Creates the production drafts and the AI copy pack, then shares the assets with the account owner. Runs the producer agent; it never approves for them."
+                        onClick={() =>
+                          void run(
+                            () => api("projects/" + p.id + "/producer-agent", {}),
+                            "Producer agent finished: drafts and AI copy pack created and shared with the account owner where possible. Check the Producer agent panel in the Research room for any step that stopped.",
+                          )
+                        }
+                      >
+                        Drafts, copy pack and share (producer agent) <Sparkles size={17} />
+                      </button>
+                    )}
+                    {operator && (
+                      <button
                         className="f-button secondary"
                         disabled={
                           busy ||

@@ -37,7 +37,7 @@ export function executions(p: Project): Execution[] {
   }
   return out;
 }
-const NOTABLE = /fail|reject|error|scope|auto_approved|authoris|research_|ai_draft/i;
+const NOTABLE = /fail|reject|error|scope|auto_approved|authoris|research_|ai_draft|producer_agent/i;
 function buildReport(p: Project, ctx: DiagnosticsContext) {
   const all = executions(p);
   const mode = ctx.since || "latest";

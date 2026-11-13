@@ -61,6 +61,7 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
   });
   const templates = [
     ...productionCapabilities.map((c) => ({ id: c.id as string, group: "production", name: c.name, purpose: c.outputContract, kind: "template" as const, capability: { id: c.id, version: c.version, input: c.inputContract, output: c.outputContract, permissions: [...c.permissions] }, model: undefined, problem: undefined, stats: undefined })),
+    { id: "orchestration.producer", group: "producer", name: "Producer agent", purpose: "Accepts sources and insights, drafts and shares the direction, then after the account owner approves it creates the production drafts and AI copy pack and shares the assets. Stops at every customer approval. Switch: PORT67_PRODUCER_AGENT.", kind: "template" as const, capability: { id: "orchestration.producer", version: "1.0.0", input: "Project record: sources, insights, direction, production drafts, asset statuses", output: "Audited producer steps; stops at customer approval gates", permissions: ["write-scoped-draft"] }, model: undefined, problem: undefined, stats: undefined },
     { id: "production.video", group: "production", name: "Video renderer", purpose: "Renders an approved storyboard to a 480p draft or 1080p MP4 from the approved direction. A template render: no AI model and no AI cost.", kind: "template" as const, capability: undefined, model: undefined, problem: undefined, stats: undefined },
   ];
   const recent = [...rows]

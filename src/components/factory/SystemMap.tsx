@@ -222,8 +222,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           {COLS.map((x, i) => <Link key={"wr" + i} d={`M${x + NW - 34} ${300 + AH} L${x + NW - 34} 470`} color={COLOR.store} dim={!(byId.get(researchIds[i])?.stats?.calls)} label={i === 0 ? "cited findings" : undefined} lx={x + NW - 26} ly={452} />)}
           <Bar y={472} title="Firestore · sources and findings" sub={`${P.sources.total} sources · ${P.sources.findings} claim-level findings · ${P.gaps} gaps · ${P.sources.unreviewed} unreviewed`} />
 
-          <text x="30" y="568" className="sm-band">4 · REVIEW</text>
-          <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
+          <text x="30" y="568" className="sm-band">4 · REVIEW</text>          <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
           <Node id="gate-1" x={COLS[0]} y={590} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Review sources" lines={["Gate 1 · producer", `${P.sources.supported} supported · ${P.sources.rejected} rejected`]} state={gateState(waiting.sourceReview) as NodeProps["state"]} badge={gateBadge(waiting.sourceReview)} />
           <Link d={`M${COLS[0] + NW} 642 L${COLS[1] - 2} 642`} color={COLOR.gate} dim={!P.sources.supported} />
           {agentNode("synthesis:insights")}
@@ -296,7 +295,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
         <li><i style={{ background: COLOR.mon }} /> Monitoring</li>
         <li><i style={{ background: COLOR.bad }} /> Failed or unknown</li>
       </ul>
-      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). Port67 never posts to a channel.</p>
+      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). The producer agent (rules only, no model or cost) runs the producer steps in bands 4 and 5 for you, with every step audited and recorded on the project, and stops at the two customer gates: direction approval and asset approval. Port67 never posts to a channel.</p>
     </section>
   );
 }
