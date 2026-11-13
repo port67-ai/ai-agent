@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0036: live run 1 diagnosis. OpenAI brand/customer: answered but no citations (likely the 1800 output-token limit consumed by reasoning; raised to 5000, diagnostics added). Gemini competitor/creative: HTTP 429 quota/rate limit on gemini-3.8-flash with search grounding; switch those agents to OpenAI on the map or fix the Gemini plan. Pickers in the header now labelled.
+
 2026-11-13; Claude; CHG-0035: the first live research attempt failed on all four agents with no visible reason. Provider errors are now kept and shown (agent card, blockers, connector hover, and the Research runs list for producers); research timeout raised to 100 s. Re-run with Start research (auto-start does not repeat once runs exist). Failed calls with unknown usage hold $1 each against the cap until reconciled in Private API costs.
 
 2026-11-13; Claude; CHG-0034: the system map is now interactive. Hover a connector for calls, tokens, cost and time; click an AI agent to choose its provider, model and prices in an overlay. The old per-card and Advanced model editors (AiModels.tsx) are removed. Not exercised in a live browser.

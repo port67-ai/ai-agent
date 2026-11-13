@@ -48,6 +48,18 @@ async function main() {
   assert.ok(other.excerpt.includes('FINDING'), 'cited page with no finding keeps the original text for review');
   assert.ok(!r.sources.some(s => s.url.includes('invented.test')), 'a finding is never a source unless the page was cited');
   assert.deepEqual(r.gaps, ['No pricing found for the rival']);
+
+  // No citations: the error says why (status, truncation, counts), never content.
+  let body: { max_output_tokens?: number } = {};
+  globalThis.fetch = (async (_u: unknown, init?: { body?: string }) => {
+    body = JSON.parse(init!.body!);
+    return Response.json({ id: 'r2', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, usage: { input_tokens: 5, output_tokens: 1800 }, output: [{ type: 'reasoning' }, { type: 'web_search_call' }] });
+  }) as typeof fetch;
+  const none = await researchSegment(project, 'brand');
+  globalThis.fetch = original;
+  assert.equal(none.sources.length, 0);
+  assert.match(none.error!, /No usable cited sources returned \(status incomplete, max_output_tokens; 2 output items; 0 characters of text; 0 citations\)/);
+  assert.equal(body.max_output_tokens, 5000, 'research gets room for reasoning plus the answer');
   console.log('Research findings: claim-level excerpts, gaps, confidence and citation matching passed');
 }
 void main().catch(e => { console.error(e); process.exit(1); });
