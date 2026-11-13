@@ -101,6 +101,7 @@ export default function ResearchProgress({
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
+      {!anyStarted && p.researchNote && <p className="f-callout" role="status">{p.researchNote}{operator ? " You can still click Start research above to run it by hand." : ""}</p>}
       <p className="f-small">
         Four specialist researchers each search the public web for their own question and must cite every finding.
         {channels.length ? ` They focus on ${channels.join(", ")}.` : ""} Nothing is used until Port67 has reviewed the sources.
@@ -110,7 +111,7 @@ export default function ResearchProgress({
         <FlowLink mode={requested ? "done" : "idle"} />
         <FlowNode mode={requested ? "done" : "idle"} icon={Send} title="Research requested" sub={requested ? new Date(p.researchRequest!.at).toLocaleDateString("en-GB") : "Not yet requested"} />
         <FlowLink mode={anyStarted ? "done" : requested ? "flow" : "idle"} />
-        <FlowNode mode={anyStarted ? "done" : requested ? "active" : "idle"} icon={Clock} title="Port67 starts" sub={anyStarted ? "Under way" : requested ? (operator ? "Click Start research above" : "Waiting for a producer") : "After the request"} />
+        <FlowNode mode={anyStarted ? "done" : requested ? "active" : "idle"} icon={Clock} title="Port67 starts" sub={anyStarted ? "Under way" : requested ? (p.researchNote ? (operator ? "See note below" : p.researchNote) : operator ? "Click Start research above" : "Waiting for a producer") : "After the request"} />
         <FlowLink mode={anyRunning ? "flow" : anyStarted ? "done" : "idle"} />
         <div className="f-flow-agents">
           {segments.map((segment) => {

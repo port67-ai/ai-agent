@@ -22,7 +22,7 @@ pipeline.waiting.sourceReview = 2; pipeline.sources.unreviewed = 3;
 const edges = edgeStats(rows);
 const flow = { pipeline, edges, models: modelStats(rows), blockers: findBlockers(pipeline, edges, agents.filter((a) => a.kind === 'ai').map((a) => ({ id: a.id, name: a.name, hasModel: !!a.model }))), projectsError: '' } as unknown as React.ComponentProps<typeof SystemMap>['flow'];
 
-const html = renderToStaticMarkup(React.createElement(SystemMap, { agents, flow }));
+const html = renderToStaticMarkup(React.createElement(SystemMap, { agents, flow, onSelectAgent: () => undefined }));
 for (const t of ['Business brief', 'Launch channels', 'Request research', 'Producer start', 'Firestore · project record', 'Firestore · sources and findings', 'Review sources', 'Accept insights', 'Approve direction', 'Production agents', 'Firebase Storage', 'Publish yourself', 'Monitoring · API call ledger', 'Dashboards', 'Alerts', 'Troubleshooting']) assert.match(html, new RegExp(t), t);
 for (const m of ['openai · gpt-a', 'gemini · gem-b', 'anthropic · claude-c']) assert.match(html, new RegExp(m), 'agent shows its model: ' + m);
 assert.match(html, /No model chosen yet/);

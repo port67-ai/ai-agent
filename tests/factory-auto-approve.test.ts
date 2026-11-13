@@ -18,7 +18,7 @@ let p=await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,
 assert.ok(p.researchRequest);assert.equal(p.runs.length,0);assert.equal(calls,0);
 // Switch on: the next request authorises public data and runs all four researchers without a producer.
 process.env.PORT67_AUTO_APPROVE_PRODUCER='true';
-await command({type:'requestResearch'});
+await project();// self-healing: merely viewing the project starts a request made before the switch was on
 for(let i=0;i<60&&(await project()).runs.filter((r:{status:string})=>r.status==='completed').length<4;i++)await new Promise(r=>setTimeout(r,100));
 p=await project();
 assert.equal(p.runs.filter((r:{status:string})=>r.status==='completed').length,4,'four researchers ran');
@@ -32,6 +32,15 @@ await login('customer');await command({type:'requestResearch'});await new Promis
 const plan=await(await req(route+'/research-plan')).json();assert.equal(plan.plan.segments.length,4);assert.ok(plan.plan.checks.length>=8);
 const doss=await(await req(route+'/research-dossier')).json();assert.equal(doss.dossier.totals.unreviewed,0,'customer dossier hides unreviewed sources');assert.match(doss.markdown,/# Research dossier/);
 await login('producer');await req('accounts',{accountId:customer.accountId});const pd=await(await req(route+'/research-dossier')).json();assert.ok(pd.dossier.totals.unreviewed>=4,'producer dossier shows every source');
+// Not ready: the reason is recorded, shown to the producer, and customers see a neutral line.
+await login('customer');process.env.PORT67_RESEARCH_ENABLED='false';
+const two=(await(await req('projects',{business:'Second fixture',objective:'Explain a useful everyday product',contact:'fake@example.test'})).json()).project;
+const r2='projects/'+two.id;
+await req(r2,{type:'setChannels',channels:['instagram']});await req(r2,{type:'requestResearch'});await new Promise(r=>setTimeout(r,400));
+const asCustomer=(await(await req(r2)).json()).project;assert.equal(asCustomer.runs.length,0);assert.match(asCustomer.researchNote,/setting up your research/);assert.ok(!/PORT67_/.test(asCustomer.researchNote),'customers never see configuration names');
+await login('producer');await req('accounts',{accountId:customer.accountId});
+const asProducer=(await(await req(r2)).json()).project;assert.match(asProducer.researchNote,/Automatic start could not run: research is not ready/);
+process.env.PORT67_RESEARCH_ENABLED='true';
 await login('owner');const overview=await(await req('admin/ai-agents')).json();assert.equal(overview.switches.autoApproveProducer,true);assert.ok(overview.flow.pipeline.sources.total>=4&&overview.flow.edges.some((e:{agent:string})=>e.agent==='research:brand'),'flow observability sees the ledger and the project');assert.equal(overview.flow.pipeline.waiting.sourceReview,1,'unreviewed sources show as blocked at gate 1');
 console.log('Auto-approved producer step: off by default, customer request runs four researchers, sources stay unreviewed, audited, not repeated');
 }finally{globalThis.fetch=original;delete process.env.PORT67_AUTO_APPROVE_PRODUCER;await rm(dir,{recursive:true,force:true});}

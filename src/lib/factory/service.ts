@@ -324,27 +324,48 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
 }
 
 /** Test mode: authorise public data and run the four research agents for a customer's request, in the background. */
-async function autoStartResearch(a: Principal, projectId: string) {
-  const op: Principal = { ...a, role: "operator", subject: AUTO_APPROVER, admin: false };
-  const r = repo(op);
-  const fresh = await r.mutate(op.workspaceId, (state) => {
-    const index = state.projects.findIndex((x) => x.id === projectId);
-    if (index < 0) return false;
-    const current = state.projects[index];
-    if (current.runs.some((x) => x.stage === "research")) return false;
-    const next = transition(current, { type: "authoriseAI", confirm: true }, op);
-    next.audit.push({ id: id(), at: new Date().toISOString(), actor: AUTO_APPROVER, role: "operator", action: "producer_step_auto_approved", detail: "Public-data authorisation and research start approved automatically (test mode)" });
-    state.projects[index] = next;
-    return true;
+const autoRunning = new Set<string>();
+async function noteAutoFailure(r: Repository, op: Principal, projectId: string, detail: string) {
+  await r.mutate(op.workspaceId, (state) => {
+    const current = state.projects.find((x) => x.id === projectId);
+    if (current) current.audit.push({ id: id(), at: new Date().toISOString(), actor: AUTO_APPROVER, role: "operator", action: "producer_step_auto_failed", detail });
   });
-  if (!fresh) return;
-  for (const segment of segments) {
-    try {
-      if (!(await stageReady(r, "research"))) return;
-      await runResearchSegment(op, projectId, segment);
-    } catch {
-      // The failed run is already recorded on the project; carry on with the other researchers.
+}
+async function autoStartResearch(a: Principal, projectId: string) {
+  const key = a.workspaceId + "/" + projectId;
+  if (autoRunning.has(key)) return;
+  autoRunning.add(key);
+  try {
+    const op: Principal = { ...a, role: "operator", subject: AUTO_APPROVER, admin: false };
+    const r = repo(op);
+    const before = find((await r.read(op.workspaceId)).projects, projectId, op);
+    if (!before.researchRequest || before.runs.some((x) => (x.stage || "research") === "research")) return;
+    // After a failed attempt wait two minutes so a polling page does not retry on every refresh.
+    const lastFail = [...before.audit].reverse().find((x) => x.action === "producer_step_auto_failed");
+    if (lastFail && Date.parse(lastFail.at) + 120000 > Date.now()) return;
+    if (!(await stageReady(r, "research"))) {
+      await noteAutoFailure(r, op, projectId, "research is not ready: choose a model for the research agents on the AI agents page, set a provider key in Render and set PORT67_RESEARCH_ENABLED=true.");
+      return;
     }
+    await r.mutate(op.workspaceId, (state) => {
+      const index = state.projects.findIndex((x) => x.id === projectId);
+      if (index < 0) return;
+      const next = transition(state.projects[index], { type: "authoriseAI", confirm: true }, op);
+      next.audit.push({ id: id(), at: new Date().toISOString(), actor: AUTO_APPROVER, role: "operator", action: "producer_step_auto_approved", detail: "Public-data authorisation and research start approved automatically (test mode)" });
+      state.projects[index] = next;
+    });
+    for (const segment of segments) {
+      try {
+        await runResearchSegment(op, projectId, segment);
+      } catch (error) {
+        // The failed run is recorded on the project; carry on with the other researchers.
+        await noteAutoFailure(r, op, projectId, (segment + ": " + (error instanceof Error ? error.message : "failed")).slice(0, 240));
+      }
+    }
+  } catch (error) {
+    await noteAutoFailure(repo({ ...a, role: "operator", subject: AUTO_APPROVER }), { ...a, role: "operator", subject: AUTO_APPROVER }, projectId, (error instanceof Error ? error.message : "unexpected error").slice(0, 240)).catch(() => undefined);
+  } finally {
+    autoRunning.delete(key);
   }
 }
 export async function handleFactory(
@@ -584,8 +605,11 @@ export async function handleFactory(
       const projectId = path[1];
       const db = await repo(a).read(a.workspaceId);
       const p = find(db.projects, projectId, a);
-      if (path.length === 2 && request.method === "GET")
+      if (path.length === 2 && request.method === "GET") {
+        // Self-healing: a request made before the switch was on, or one that could not start, is retried on the next view.
+        if (autoApproveProducer() && !a.demo && p.researchRequest) void autoStartResearch(a, projectId).catch(() => undefined);
         return json({ project: projectView(p, a) });
+      }
       if (path[2] === "research-plan" && request.method === "GET")
         return json({ plan: prepareResearchPlan(p) });
       if (path[2] === "research-dossier" && request.method === "GET") {

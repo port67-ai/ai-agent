@@ -28,6 +28,10 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0034: the system map is now interactive. Hover a connector for calls, tokens, cost and time; click an AI agent to choose its provider, model and prices in an overlay. The old per-card and Advanced model editors (AiModels.tsx) are removed. Not exercised in a live browser.
+
+2026-11-13; Claude; CHG-0033: auto-start now retries when the project is viewed and records/ shows why it could not start (reason in audit as producer_step_auto_failed). Typical causes: no model chosen on the AI agents page, no provider key, PORT67_RESEARCH_ENABLED not true.
+
 2026-11-13; Claude; CHG-0032. The red Factory MVP check was a lint failure only (check:factory, prefer-const in tests/factory-research-progress.test.tsx), fixed. Before every commit run, in this order: `npx eslint src/lib/factory src/components/factory src/app/portal src/app/api/factory 'tests/factory*.ts*'`, `npx tsc --noEmit`, `npm test`, `npm run build`, then `python3 scripts/check_docs_governance.py --base origin/main`. Browser acceptance (Playwright) and the Firestore emulator test only run in CI. Owner decision 2026-11-13: MP4 and Firebase Storage enablement and the PORT67_SESSION_SECRET rotation are PARKED until the jpell@me.com research run has been executed; do not start them early. Next for the owner: run docs/RESEARCH_RUNBOOK.md with jpell@me.com using the existing completed brief.
 
 2026-11-13; Claude; CHG-0031; PRD 1.16.0. The AI agents page now has ONE dark system map (replaces the journey and data-flow diagrams), a "where data is blocked or not flowing" list and a cost-by-model table, all from observability.ts. The Research room gained a Research preparation panel (readiness, assumptions, questions per agent) and a downloadable Research dossier; the questions are also sent to the research agents. To test with the jpell@me.com account follow docs/RESEARCH_RUNBOOK.md. Not verified live: the map and panels in a browser at real data volumes, the questions improving research quality, background research on the 512 MB instance. Readiness is advisory, not a block.

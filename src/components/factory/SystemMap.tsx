@@ -1,6 +1,7 @@
 "use client";
 import { Activity, Bell, Building2, Clapperboard, Cloud, Database, Download, FileText, Film, Globe, HardDrive, LayoutDashboard, PenLine, Palette, Search, Send, Share2, ShieldCheck, Sparkles, Target, UserCheck, Users } from "lucide-react";
-import type { ComponentType } from "react";
+import { useRef, useState, type ComponentType, type MouseEvent } from "react";
+import { edgeTip, usd, type Tip } from "./edge-tip";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
 
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
@@ -22,15 +23,24 @@ const AGENT_ICON: Record<string, Icon> = {
   "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine,
 };
-const usd = (micro: number) => "$" + (micro / 1e6).toFixed(micro >= 1e6 ? 2 : 4);
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const secs = (ms?: number) => (ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
-type NodeProps = { x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string };
-function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id }: NodeProps) {
+type NodeProps = { x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
+function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint }: NodeProps) {
   const stroke = state === "failed" ? COLOR.bad : state === "blocked" ? COLOR.gate : color;
   return (
-    <g className={"sm-node" + (state ? " " + state : "")} data-node={id}>
+    <g
+      className={"sm-node" + (state ? " " + state : "") + (onSelect ? " sm-clickable" : "")}
+      data-node={id}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-label={onSelect ? `${title}: ${hint || "choose model"}` : undefined}
+      onClick={onSelect}
+      onKeyDown={onSelect ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect()) : undefined}
+      onMouseMove={onHover}
+      onMouseLeave={onLeave}
+    >
       <rect x={x} y={y} width={w} height={h} rx={14} className="sm-box" stroke={stroke} fill={stroke} strokeDasharray={dashed || state === "idle" ? "5 4" : undefined} />
       <I size={20} x={x + 12} y={y + 10} color={stroke} strokeWidth={1.8} />
       <text x={x + 40} y={y + 25} className="sm-title">{short(title, Math.floor((w - 50) / 7.2))}</text>
@@ -62,17 +72,28 @@ function Bar({ y, title, sub, x = 30, w = 832 }: { y: number; title: string; sub
     </g>
   );
 }
-function Link({ d, color, live = false, dim = false, label, lx, ly, warn }: { d: string; color: string; live?: boolean; dim?: boolean; label?: string; lx?: number; ly?: number; warn?: boolean }) {
+function Link({ d, color, live = false, dim = false, hot = false, label, lx, ly, warn }: { d: string; color: string; live?: boolean; dim?: boolean; hot?: boolean; label?: string; lx?: number; ly?: number; warn?: boolean }) {
   return (
     <g>
-      <path d={d} fill="none" stroke={color} strokeWidth={dim ? 1.2 : 1.8} strokeDasharray={live || dim ? "6 5" : undefined} className={"sm-link" + (live ? " flow" : "") + (dim ? " dim" : "")} markerEnd={"url(#sm-" + (dim ? "dim" : "arrow") + ")"} />
+      <path d={d} fill="none" stroke={color} strokeWidth={dim ? 1.2 : 1.8} strokeDasharray={live || dim ? "6 5" : undefined} className={"sm-link" + (live ? " flow" : "") + (dim ? " dim" : "") + (hot ? " hot" : "")} markerEnd={"url(#sm-" + (dim ? "dim" : "arrow") + ")"} />
       {label && lx !== undefined && ly !== undefined && <text x={lx} y={ly} className={"sm-edge" + (warn ? " warn" : "")}>{label}</text>}
     </g>
   );
 }
 
-export default function SystemMap({ agents, flow }: { agents: Agent[]; flow: Flow }) {
+export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Agent[]; flow: Flow; onSelectAgent?: (id: string) => void }) {
   const byId = new Map(agents.map((a) => [a.id, a]));
+  const wrap = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
+  const showAt = (id: string, clientX: number, clientY: number) => {
+    const r = wrap.current?.getBoundingClientRect();
+    if (!r) return;
+    setHover({ id, x: Math.max(4, Math.min(clientX - r.left + 14, r.width - 296)), y: Math.max(4, clientY - r.top + 14) });
+  };
+  const tipFor = (id: string): Tip | null => {
+    const a = byId.get(id);
+    return a ? edgeTip(a.name, a.model?.model ? { provider: String(a.model.provider), model: a.model.model } : undefined, flow.edges.filter((e) => e.agent === id)) : null;
+  };
   const P = flow.pipeline;
   const edgesFor = (id: string) => flow.edges.filter((e) => e.agent === id);
   const provColor = (id?: string) => PROVIDERS.find((p) => p.id === id)?.color || COLOR.out;
@@ -108,8 +129,10 @@ export default function SystemMap({ agents, flow }: { agents: Agent[]; flow: Flo
     return (
       <Node key={id} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
-        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `${stat.failed + stat.unknown} failed or unknown` : stat.calls ? "Healthy" : a.model ? "Idle: no data has flowed" : "Cannot run"]}
-        state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined} />
+        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `${stat.failed + stat.unknown} failed or unknown` : stat.calls ? "Healthy" : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
+        state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
+        onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
+        onHover={(e) => showAt(id, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
     );
   };
   // API connector from an agent to the provider it uses, routed along its own lane so lines do not merge.
@@ -128,7 +151,15 @@ export default function SystemMap({ agents, flow }: { agents: Agent[]; flow: Flo
     const gx = 868 + idx * 5;
     const ty = py + 18 + (idx % 4) * 11;
     const d = `M${x0} ${y0} L${x0} ${ly} L${gx} ${ly} L${gx} ${ty} L${PX - 2} ${ty}`;
-    return <Link key={"api-" + id} d={d} color={provColor(prov)} live={stat.inFlight > 0} dim={stat.calls === 0} label={stat.calls ? `${stat.calls} · ${usd(stat.estimatedMicroUsd)}` : ""} lx={x0 + 8} ly={ly - 3} warn={stat.failed + stat.unknown > 0} />;
+    const tip = tipFor(id);
+    return (
+      <g key={"api-" + id} className={hover?.id === "edge:" + id ? "sm-hot" : ""}>
+        <Link d={d} color={provColor(prov)} live={stat.inFlight > 0} dim={stat.calls === 0} hot={hover?.id === "edge:" + id} label={stat.calls ? `${stat.calls} · ${usd(stat.estimatedMicroUsd)}` : ""} lx={x0 + 8} ly={ly - 3} warn={stat.failed + stat.unknown > 0} />
+        <path d={d} className="sm-hit" tabIndex={0} role="img" aria-label={tip?.summary} data-edge={id}
+          onMouseMove={(e) => showAt("edge:" + id, e.clientX, e.clientY)} onMouseLeave={() => setHover(null)}
+          onFocus={(e) => { const b = e.currentTarget.getBoundingClientRect(); showAt("edge:" + id, b.left + b.width / 2, b.top + b.height / 2); }} onBlur={() => setHover(null)} />
+      </g>
+    );
   };
   const total = flow.models.reduce((n, m) => n + m.microUsd, 0);
   const calls = flow.models.reduce((n, m) => n + m.calls, 0);
@@ -144,9 +175,10 @@ export default function SystemMap({ agents, flow }: { agents: Agent[]; flow: Flo
       <div className="f-section-heading">
         <div>
           <h2>How data flows through Port67</h2>
-          <p className="f-small">Every line between a form, agent, store or model is a real call or write. Line colour is the provider; moving dashes mean a call is running now; faint dashes mean nothing has flowed yet; amber means a person is blocking the next step.</p>
+          <p className="f-small">Every line between a form, agent, store or model is a real call or write. Hover a line to see its calls, tokens and cost; click an agent to choose its model. Line colour is the provider; moving dashes mean a call is running now; faint dashes mean nothing has flowed yet; amber means a person is blocking the next step.</p>
         </div>
       </div>
+      <div className="sm-wrap" ref={wrap} onMouseLeave={() => setHover(null)}>
       <div className="f-flow-scroll">
         <svg className="sm-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Map of forms, AI agents with their models, Firestore stores, LLM API connections, human gates, monitoring and outputs">
           <defs>
@@ -224,6 +256,16 @@ export default function SystemMap({ agents, flow }: { agents: Agent[]; flow: Flo
           <Node id="out-alerts" x={COLS[1] + 155} y={1368} h={56} color={flow.blockers.some((b) => b.level !== "idle") ? COLOR.gate : COLOR.mon} icon={Bell} title="Alerts" lines={[`${flow.blockers.filter((b) => b.level !== "idle").length} blocked or failed`]} />
           <Node id="out-trouble" x={COLS[3]} y={1368} h={56} color={COLOR.mon} icon={Search} title="Troubleshooting" lines={["Recent calls, below"]} />
         </svg>
+      </div>
+      {hover && (() => {
+        const t = tipFor(hover.id.replace(/^edge:/, ""));
+        return t ? (
+          <div className="sm-tip" role="tooltip" style={{ left: hover.x, top: hover.y }}>
+            <strong>{t.title}</strong>
+            <dl>{t.rows.map((r) => (<><dt key={"k" + r.label}>{r.label}</dt><dd key={"v" + r.label} className={r.warn ? "warn" : ""}>{r.value}</dd></>))}</dl>
+          </div>
+        ) : null;
+      })()}
       </div>
       <ul className="f-legend sm-legend">
         <li><i style={{ background: COLOR.input }} /> Input form</li>

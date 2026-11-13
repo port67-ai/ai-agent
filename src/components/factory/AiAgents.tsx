@@ -1,29 +1,13 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Bot, Building2, CheckCircle2, Clapperboard, Cpu, Download, Loader2, Palette, PenLine, Save, Search, Settings2, Sparkles, Target, Users, Wand2 } from "lucide-react";
+import { Bot, Building2, CheckCircle2, Clapperboard, Cpu, Loader2, Palette, PenLine, Search, Sparkles, Target, Users, Wand2 } from "lucide-react";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
-import type { AiRoute, AiRoutingConfig } from "@/lib/factory/model";
+import type { AiRoute } from "@/lib/factory/model";
 import type { Pricing } from "@/lib/factory/costs";
-import AiModels from "./AiModels";
 import SystemMap from "./SystemMap";
 import FlowHealth from "./FlowHealth";
-
-type Routing = {
-  config: AiRoutingConfig;
-  providers: { id: AiRoute["provider"]; label: string; research: boolean; keyConfigured: boolean; keyName: string }[];
-};
-type Suggest = { models: Record<string, string[]>; best: Record<string, string | undefined>; suggested: { research: AiRoute | null; synthesis: AiRoute | null }; notes: string[] };
-type Price = { input: string; output: string; cached: string; tool: string };
-const today = () => new Date().toISOString().slice(0, 10);
-const num = (v: string) => (v.trim() === "" ? undefined : Number(v));
-const toPrice = (p?: Pricing): Price => ({ input: p ? String(p.inputPerMillion) : "", output: p ? String(p.outputPerMillion) : "", cached: p?.cachedInputPerMillion === undefined ? "" : String(p.cachedInputPerMillion), tool: p?.toolPerCall === undefined ? "" : String(p.toolPerCall) });
-const fromPrice = (p: Price) => ({ updatedAt: today(), inputPerMillion: num(p.input), outputPerMillion: num(p.output), ...(num(p.cached) === undefined ? {} : { cachedInputPerMillion: num(p.cached) }), ...(num(p.tool) === undefined ? {} : { toolPerCall: num(p.tool) }) });
-async function post<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch("/api/factory/admin/" + path, { method: body === undefined ? "GET" : "POST", headers: body === undefined ? {} : { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Request failed");
-  return data;
-}
+import ModelDialog from "./ModelDialog";
+import { post, type Routing, type Suggest } from "./agent-client";
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
 type Agent = Overview["agents"][number];
 const icons: Record<string, typeof Bot> = {
@@ -46,8 +30,7 @@ export default function AiAgents() {
   const [data, setData] = useState<Overview | null>(null);
   const [routing, setRouting] = useState<Routing | null>(null);
   const [suggest, setSuggest] = useState<Suggest | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState<{ provider: string; model: string; price: Price }>({ provider: "", model: "", price: toPrice() });
+  const [picking, setPicking] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -64,23 +47,17 @@ export default function AiAgents() {
   useEffect(() => {
     const first = setTimeout(() => void load(), 0);
     const timer = setInterval(() => {
-      if (document.visibilityState === "visible" && !editing) void load();
+      if (document.visibilityState === "visible" && !picking) void load();
     }, 10000);
     return () => {
       clearTimeout(first);
       clearInterval(timer);
     };
-  }, [load, editing]);
+  }, [load, picking]);
 
-  const priceFor = (provider: string, model: string) => toPrice(routing?.config.pricing?.[`${provider}:${model}`]);
-  async function openEditor(agent: Agent) {
+  async function openPicker(id: string) {
     setNotice("");
     setError("");
-    setEditing(agent.id);
-    const own = routing?.config.slots?.[agent.id];
-    const provider = own?.provider || agent.model?.provider || "";
-    const model = own?.model || agent.model?.model || "";
-    setForm({ provider, model, price: priceFor(provider, model) });
     if (!suggest) {
       try {
         setSuggest(await post<Suggest>("ai-routing", { action: "suggest" }));
@@ -88,6 +65,7 @@ export default function AiAgents() {
         /* the model field still accepts typing */
       }
     }
+    setPicking(id);
   }
   async function run(fn: () => Promise<string | void>) {
     setBusy(true);
@@ -103,28 +81,6 @@ export default function AiAgents() {
       setBusy(false);
     }
   }
-  const fetchPrice = () =>
-    run(async () => {
-      if (!form.provider || !form.model.trim()) throw new Error("Choose a provider and model first");
-      const r = await post<{ fetchedAt: string; prices: { key: string; found: boolean; pricing?: Pricing }[] }>("ai-routing", { action: "public-prices", models: [{ provider: form.provider, model: form.model.trim() }] });
-      const hit = r.prices[0];
-      if (!hit?.found || !hit.pricing) throw new Error("No public price found for that model. Enter the price by hand.");
-      setForm((f) => ({ ...f, price: { ...toPrice(hit.pricing), tool: f.price.tool } }));
-      return `Public price filled in (${r.fetchedAt}). Review it, add the search fee, then save.`;
-    });
-  const saveAgent = (agent: Agent) =>
-    run(async () => {
-      const cfg = routing!.config;
-      const slots: Record<string, AiRoute> = { ...(cfg.slots || {}) };
-      const pricing: Record<string, Pricing> = { ...(cfg.pricing || {}) };
-      if (form.provider) {
-        slots[agent.id] = { provider: form.provider as AiRoute["provider"], model: form.model.trim() };
-        if (form.price.input.trim() !== "" || form.price.output.trim() !== "") pricing[`${form.provider}:${form.model.trim()}`] = fromPrice(form.price) as Pricing;
-      } else delete slots[agent.id];
-      await post("ai-routing", { action: "save", settings: { defaults: { research: cfg.defaults?.research ?? null, synthesis: cfg.defaults?.synthesis ?? null }, slots, pricing } });
-      setEditing(null);
-      return `${agent.name} saved. New runs use it straight away.`;
-    });
   const applySuggested = () =>
     run(async () => {
       const r = await post<Suggest>("ai-routing", { action: "suggest" });
@@ -136,7 +92,7 @@ export default function AiAgents() {
       const pricing: Record<string, Pricing> = { ...(cfg.pricing || {}) };
       for (const x of pub.prices) if (x.found && x.pricing) pricing[x.key] = x.pricing;
       await post("ai-routing", { action: "save", settings: { defaults: { research: r.suggested.research ?? cfg.defaults?.research ?? null, synthesis: r.suggested.synthesis ?? cfg.defaults?.synthesis ?? null }, slots: cfg.slots || {}, pricing } });
-      return "Suggested defaults saved with public prices. Add each model's search fee on its card, then check the prices.";
+      return "Suggested defaults saved with public prices. Click an agent on the map to add its search fee and check the prices.";
     });
 
   if (!data) return <section className="f-panel">{error ? <p className="f-team-error" role="alert">{error}</p> : <p className="f-small">Loading AI agents…</p>}</section>;
@@ -176,7 +132,7 @@ export default function AiAgents() {
         {notice && <p className="f-team-ok" role="status">{notice}</p>}
         {data.ledgerError && <p className="f-team-error" role="alert">{data.ledgerError}</p>}
       </section>
-      <SystemMap agents={data.agents} flow={data.flow} />
+      <SystemMap agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} />
       <FlowHealth flow={data.flow} />
       {groups.map((g) => (
         <section className="f-panel" key={g.id}>
@@ -190,12 +146,8 @@ export default function AiAgents() {
             {data.agents.filter((a) => a.group === g.id).map((a: Agent) => {
               const Icon = icons[a.id] || Bot;
               const running = (a.stats?.inFlight || 0) > 0;
-              const open = editing === a.id;
-              const keyed = (id: string) => routing?.providers.find((p) => p.id === id);
-              const options = (routing?.providers || []).filter((p) => a.group !== "research" || p.research);
-              const models = suggest?.models[form.provider] || [];
               return (
-                <article id={"agent-" + a.id} key={a.id} className={"f-agent " + (open ? "editing " : "") + (running ? "running" : a.problem || (a.kind === "ai" && !a.model) ? "failed" : "")}>
+                <article id={"agent-" + a.id} key={a.id} className={"f-agent " + (running ? "running" : a.problem || (a.kind === "ai" && !a.model) ? "failed" : "")}>
                   <div className="f-agent-head">
                     <span className="f-agent-icon">
                       <Icon size={18} />
@@ -215,65 +167,7 @@ export default function AiAgents() {
                       <span className="f-small">
                         {a.stats!.calls} call{a.stats!.calls === 1 ? "" : "s"} ({a.stats!.completed} done, {a.stats!.failed + a.stats!.unknown} failed or unknown) · {a.stats!.inputTokens.toLocaleString()} in / {a.stats!.outputTokens.toLocaleString()} out tokens · {usd(a.stats!.estimatedMicroUsd)} · last {ago(a.stats!.lastAt)}
                       </span>
-                      {!open && (
-                        <button className="f-button secondary small" disabled={busy || !routing} onClick={() => void openEditor(a)}>
-                          <Settings2 size={14} /> {a.model ? "Change model" : "Choose model"}
-                        </button>
-                      )}
-                      {open && (
-                        <div className="f-agent-editor">
-                          <label>
-                            Provider
-                            <select value={form.provider} disabled={busy} onChange={(e) => {
-                              const provider = e.target.value;
-                              const model = provider ? suggest?.best[provider] || "" : "";
-                              setForm({ provider, model, price: priceFor(provider, model) });
-                            }}>
-                              <option value="">Use the stage default</option>
-                              {options.map((p) => (
-                                <option key={p.id} value={p.id} disabled={!p.keyConfigured}>
-                                  {p.label}{p.keyConfigured ? "" : " (key not set in Render)"}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label>
-                            Model ID
-                            <input list={"agent-models-" + a.id} disabled={busy || !form.provider} maxLength={180} placeholder="Exact model ID" value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value, price: priceFor(f.provider, e.target.value.trim()) }))} />
-                            <datalist id={"agent-models-" + a.id}>
-                              {models.map((m) => (
-                                <option key={m} value={m} />
-                              ))}
-                            </datalist>
-                          </label>
-                          {form.provider && (
-                            <>
-                              <p className="f-small">
-                                Prices, USD per million tokens ({keyed(form.provider)?.label}). Spend caps use these figures.
-                              </p>
-                              <div className="f-ai-price">
-                                {(["input", "output", "cached", "tool"] as const).map((k) => (
-                                  <label key={k}>
-                                    {k === "input" ? "Input" : k === "output" ? "Output" : k === "cached" ? "Cached input" : "Search per call"}
-                                    <input inputMode="decimal" disabled={busy} value={form.price[k]} onChange={(e) => setForm((f) => ({ ...f, price: { ...f.price, [k]: e.target.value } }))} />
-                                  </label>
-                                ))}
-                              </div>
-                              <button type="button" className="f-text-button" disabled={busy || !form.model.trim()} onClick={() => void fetchPrice()}>
-                                <Download size={14} /> Fetch public price
-                              </button>
-                            </>
-                          )}
-                          <div className="f-actions">
-                            <button className="f-button small" disabled={busy || (!!form.provider && !form.model.trim())} onClick={() => void saveAgent(a)}>
-                              <Save size={14} /> Save
-                            </button>
-                            <button className="f-text-button" disabled={busy} onClick={() => setEditing(null)}>
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      <span className="f-small">Change this agent&apos;s model by clicking it on the map above.</span>
                     </>
                   ) : (
                     <span className="f-agent-state">
@@ -300,12 +194,6 @@ export default function AiAgents() {
           </div>
         </section>
       ))}
-      <details className="f-panel f-advanced">
-        <summary>
-          <Settings2 size={16} /> Stage defaults, every agent at once and all prices
-        </summary>
-        <AiModels />
-      </details>
       <section className="f-panel">
         <div className="f-section-heading">
           <h2>Recent agent calls</h2>
@@ -330,6 +218,18 @@ export default function AiAgents() {
         )}
         {data.totals.unattributed > 0 && <p className="f-small">{data.totals.unattributed} earlier call{data.totals.unattributed === 1 ? "" : "s"} were recorded before agents were named and are not counted per agent.</p>}
       </section>
+      {picking && routing && (() => {
+        const ag = data.agents.find((x) => x.id === picking);
+        return ag ? (
+          <ModelDialog
+            agent={{ id: ag.id, name: ag.name, group: ag.group, model: ag.model?.model ? { provider: String(ag.model.provider), model: ag.model.model } : undefined }}
+            routing={routing}
+            suggest={suggest}
+            onClose={() => setPicking(null)}
+            onSaved={(message) => { setPicking(null); setNotice(message); void load(); }}
+          />
+        ) : null;
+      })()}
     </>
   );
 }
