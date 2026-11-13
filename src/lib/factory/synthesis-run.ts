@@ -23,6 +23,7 @@ export async function runSynthesis(
   a: Principal,
   projectId: string,
   stage: SynthesisStage,
+  feedback?: string,
 ): Promise<Project> {
   operator(a);
   if (a.demo) throw new Error("Paid AI drafting is disabled in synthetic demo");
@@ -38,7 +39,7 @@ export async function runSynthesis(
         "A provider task is already running; wait or recover its expired lease",
       );
     if (
-      current.runs.filter((r) => r.stage !== "scope").length >=
+      current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >=
       Math.max(
         1,
         Math.min(
@@ -76,7 +77,7 @@ export async function runSynthesis(
   });
   let error = "";
   try {
-    const result = await meteredModelCall(repo,a,reservation.project,reservation.run,()=>generateSynthesis(reservation.project, stage, selection));
+    const result = await meteredModelCall(repo,a,reservation.project,reservation.run,()=>generateSynthesis(reservation.project, stage, selection, feedback));
     error = await repo.mutate(a.workspaceId, (state) => {
       const index = state.projects.findIndex((p) => p.id === projectId);
       const current = state.projects[index];

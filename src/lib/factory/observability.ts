@@ -188,13 +188,13 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
     out.push({ level: "failed", where: name, text: `${e.failed ? n(e.failed, "call failed", "calls failed") : ""}${e.failed && e.unknown ? " and " : ""}${e.unknown ? n(e.unknown, "call has", "calls have") + " unknown usage" : ""} on ${e.provider} ${e.model}.${errors[e.agent] ? " Last error: " + errors[e.agent].message : ""}` });
   }
   for (const a of aiAgents) {
-    if (!a.hasModel) out.push({ level: "idle", where: a.name, text: a.id === "scope:business" ? "No model chosen: the free template scope is used instead of an AI classification." : "No model chosen, so this agent cannot run." });
+    if (!a.hasModel) out.push({ level: "idle", where: a.name, text: a.id === "scope:business" ? "No model chosen: the free template scope is used instead of an AI classification." : a.id.startsWith("review:") ? "No model chosen: this producer reviewer uses its free rule checks only." : "No model chosen, so this agent cannot run." });
     else if (!edges.some((e) => e.agent === a.id)) out.push({ level: "idle", where: a.name, text: "Has not made an API call yet: no data has flowed through it." });
   }
   return out;
 }
 export type AgentError = { at: string; message: string; provider: string; model: string };
-const agentOfRun = (r: Project["runs"][number]) => r.stage === "scope" ? "scope:business" : ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : "content") : "");
+const agentOfRun = (r: Project["runs"][number]) => r.stage === "scope" ? "scope:business" : r.stage === "review" ? "review:" + String(r.capabilityId || "").replace("review.", "") : ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : "content") : "");
 /** The most recent failure message per agent, read from run records. */
 export function lastErrors(projects: Project[]): Record<string, AgentError> {
   const out: Record<string, AgentError> = {};

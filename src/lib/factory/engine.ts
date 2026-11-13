@@ -376,6 +376,30 @@ export function transition(
     const latestDirection = p.strategies.at(-1);
     if (latestDirection && ready.some((i) => latestDirection.insightIds.includes(i.id))) invalidateDirection(p);
     p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "insights_bulk_accepted", detail: `${ready.length} of ${drafts.length} draft insights accepted together` });
+  } else if (type === "reviewSourcesBatch" || type === "reviewInsightsBatch") {
+    // Verdicts from the producer reviewers: each item decides one waiting source or draft insight. Anything already decided,
+    // unknown, or not eligible is skipped, so replaying a batch changes nothing.
+    const items = Array.isArray(c.items) ? (c.items as { id?: unknown; verdict?: unknown }[]) : [];
+    let accepted = 0;
+    let rejected = 0;
+    for (const it of items.slice(0, 100)) {
+      if (it.verdict !== "accept" && it.verdict !== "reject") continue;
+      if (type === "reviewSourcesBatch") {
+        const s = p.sources.find((x) => x.id === it.id);
+        if (!s || s.kind !== "public_source" || s.status !== "unreviewed") continue;
+        s.status = it.verdict === "accept" ? "supported" : "rejected";
+      } else {
+        const i = p.insights.find((x) => x.id === it.id);
+        if (!i || (i.status || "reviewed") !== "draft") continue;
+        if (it.verdict === "accept" && !i.sourceIds.every((e) => p.sources.some((s) => s.id === e && s.status === "supported"))) continue;
+        i.status = it.verdict === "accept" ? "reviewed" : "rejected";
+      }
+      if (it.verdict === "accept") accepted++;
+      else rejected++;
+    }
+    if (!accepted && !rejected) throw new Error("Nothing waiting to decide");
+    invalidateDirection(p);
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: type === "reviewSourcesBatch" ? "sources_reviewed_by_producer" : "insights_reviewed_by_producer", detail: `${accepted} accepted, ${rejected} rejected by the ${type === "reviewSourcesBatch" ? "source" : "insight"} producer` });
   } else if (type === "approveAllAssets") {
     const s = approved(p);
     const shared = p.assets.filter((x) => x.status === "shared" && x.strategyHash === s.hash);
@@ -667,6 +691,7 @@ export function projectView(input: Project, a: Principal): Project {
   delete p.scope;
   delete p.scopeHistory;
   delete p.producerAgent;
+  delete p.reviews;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");
   const visible = new Set(p.strategies.flatMap((s) => s.evidenceIds));

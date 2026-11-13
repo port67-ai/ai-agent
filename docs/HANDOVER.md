@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0040: the producer agent is now an orchestrator plus four walled-garden reviewers (scope, source, insight, direction), each with its own model slot on the AI agents page (Producer reviewers group), free rule checks first, one metered call each, one rework per gate then a hold for a person. Reviewer verdicts and holds show in the Producer orchestrator panel (Research room). Choose a model for each reviewer, ideally different from the drafters; with none chosen they use the free checks only. Verdicts need PORT67_SYNTHESIS_ENABLED=true and an authorised brief to use a model. PORT67_PRODUCER_AGENT=true runs it automatically. Not verified live.
+
 2026-11-13; Claude; CHG-0039: producer agent (rules only) runs the producer steps between approvals and stops at the account owner gates; see docs/CHANGELOG.md CHG-0039. Set PORT67_PRODUCER_AGENT=true in Render to run it automatically; the button works without it. Not yet verified live with the AI steps. Combined button on Production: Drafts, copy pack and share.
 
 2026-11-13; Claude; CHG-0038 follow-up: Draft direction with AI failed the evidence/insight contract with no reason shown. The error now names the validation reason; over-long fields are clipped and omitted insight evidence is added rather than rejecting the draft. If it fails again, the diagnostics line will say why; paste it.

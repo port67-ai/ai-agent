@@ -27,6 +27,10 @@ export const SLOTS = [
   { id: "synthesis:insights", stage: "synthesis", label: "Drafting: insights", hint: "Turns reviewed sources into draft insights." },
   { id: "synthesis:strategy", stage: "synthesis", label: "Drafting: campaign direction", hint: "Drafts message, reasoning and creative direction." },
   { id: "synthesis:content", stage: "synthesis", label: "Drafting: copy pack", hint: "Writes channel copy from the approved direction and its evidence." },
+  { id: "review:scope", stage: "synthesis", label: "Producer: scope review", hint: "Checks the classification and each researcher's questions against the brief. Sees nothing else." },
+  { id: "review:sources", stage: "synthesis", label: "Producer: source review", hint: "Accepts or rejects each source. Sees only the sources, the business and its questions." },
+  { id: "review:insights", stage: "synthesis", label: "Producer: insight review", hint: "Accepts or rejects each draft insight against its own evidence. Sees no direction." },
+  { id: "review:direction", stage: "synthesis", label: "Producer: direction review", hint: "Decides whether the direction is ready for the account owner. Sees no raw sources." },
 ] as const satisfies readonly { id: string; stage: ProviderStage; label: string; hint: string }[];
 export type SlotId = (typeof SLOTS)[number]["id"];
 export const researchSlot = (segment: string) => `research:${segment}` as SlotId;
@@ -141,7 +145,7 @@ export async function resolveSelection(repo: Repository, slotId: SlotId, env: En
 export async function stageReady(repo: Repository, stage: ProviderStage, env: Env = process.env) {
   if (env[stage === "research" ? "PORT67_RESEARCH_ENABLED" : "PORT67_SYNTHESIS_ENABLED"] !== "true") return false;
   if (providerConfigured(stage, env)) return true;
-  for (const slot of SLOTS.filter((s) => s.stage === stage && s.id !== "scope:business")) {
+  for (const slot of SLOTS.filter((s) => s.stage === stage && !/^(scope|review):/.test(s.id))) {
     try {
       await resolveSelection(repo, slot.id, env);
       return true;

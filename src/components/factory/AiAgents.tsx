@@ -11,7 +11,7 @@ import { post, type Routing, type Suggest } from "./agent-client";
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
 type Agent = Overview["agents"][number];
 const icons: Record<string, typeof Bot> = {
-  "scope:business": Compass,
+  "scope:business": Compass, "review:scope": Compass, "review:sources": Search, "review:insights": Search, "review:direction": Sparkles,
   "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "production.video": Clapperboard,
 };
@@ -26,7 +26,8 @@ const groups: { id: string; title: string; note: string }[] = [
   { id: "research", title: "Research agents", note: "Search the public web and cite every finding." },
   { id: "drafting", title: "Drafting agents", note: "Write only from reviewed evidence and the approved direction." },
   { id: "production", title: "Production agents", note: "Template builders: no AI model, no AI cost." },
-  { id: "producer", title: "Producer agent", note: "Acts as the human producer between the approval steps. Rules only: no model of its own and no cost; the drafting steps it triggers use the agents above. It never approves for the account owner." },
+  { id: "review", title: "Producer reviewers", note: "Four walled-garden reviewers, each seeing only its own inputs: scope, sources, insights, direction. Free rule checks run first; a model is used only if you choose one here. Pick a different model from the drafters so a model does not mark its own work." },
+  { id: "producer", title: "Producer orchestrator", note: "Rules only: no model and no cost of its own. Decides which reviewer or drafter goes next, carries notes back once, and enforces the loop limits. It never approves for the account owner." },
 ];
 
 export default function AiAgents() {

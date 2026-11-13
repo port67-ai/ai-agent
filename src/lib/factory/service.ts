@@ -11,7 +11,7 @@ import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
 import { keyConfigured, resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
 import { runSynthesis } from "./synthesis-run";
-import { planNext, producerAgentAuto, runProducerAgent, STEP_LABEL } from "./producer-agent";
+import { planNext, producerAgentAuto, reviewScopeBeforeResearch, runProducerAgent, STEP_LABEL } from "./producer-agent";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
 import { randomBytes } from "node:crypto";
@@ -224,6 +224,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
   requireProviderConsent(find((await repo(a).read(a.workspaceId)).projects, projectId, a));
   // Classify the business once per brief so each researcher gets a narrow, business-specific ask. Never blocks research.
   await ensureScope(repo(a), a, projectId);
+  if (producerAgentAuto()) await reviewScopeBeforeResearch(repo(a), a, projectId);
   const p = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
     const selection = await resolveSelection(repo(a), researchSlot(segment));
     const run: ResearchRun = {
@@ -247,7 +248,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
           "Brief changed before research reservation; refresh and authorise the current context",
         );
       if (
-        current.runs.filter((r) => r.stage !== "scope").length >=
+        current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >=
         Math.max(
           1,
           Math.min(
@@ -664,7 +665,7 @@ export async function handleFactory(
         operator(a);
         const aiReady = await stageReady(repo(a), "synthesis").catch(() => false);
         const plan = planNext(p, aiReady);
-        return json({ state: p.producerAgent || null, next: "step" in plan ? { step: plan.step, label: STEP_LABEL[plan.step] } : null, stop: "stop" in plan ? plan.stop : null, automatic: producerAgentAuto(), aiReady });
+        return json({ state: p.producerAgent || null, reviews: (p.reviews || []).slice(-20), next: "step" in plan ? { step: plan.step, label: STEP_LABEL[plan.step] } : null, stop: "stop" in plan ? plan.stop : null, automatic: producerAgentAuto(), aiReady });
       }
       if (path[2] === "producer-agent" && request.method === "POST") {
         operator(a);
