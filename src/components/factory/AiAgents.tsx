@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Bot, Building2, CheckCircle2, Clapperboard, Cpu, Loader2, Palette, PenLine, Search, Sparkles, Target, Users, Wand2 } from "lucide-react";
+import { Bot, Building2, CheckCircle2, Clapperboard, Compass, Cpu, Loader2, Palette, PenLine, Search, Sparkles, Target, Users, Wand2 } from "lucide-react";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
 import type { AiRoute } from "@/lib/factory/model";
 import type { Pricing } from "@/lib/factory/costs";
@@ -11,6 +11,7 @@ import { post, type Routing, type Suggest } from "./agent-client";
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
 type Agent = Overview["agents"][number];
 const icons: Record<string, typeof Bot> = {
+  "scope:business": Compass,
   "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "production.video": Clapperboard,
 };
@@ -21,6 +22,7 @@ const ago = (iso?: string) => {
   return s < 90 ? `${s}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 };
 const groups: { id: string; title: string; note: string }[] = [
+  { id: "scoping", title: "Scoping agent", note: "Classifies the business from the brief and saves the classification and each researcher's questions to Firestore. Optional: without a model a free template scope is used." },
   { id: "research", title: "Research agents", note: "Search the public web and cite every finding." },
   { id: "drafting", title: "Drafting agents", note: "Write only from reviewed evidence and the approved direction." },
   { id: "production", title: "Production agents", note: "Template builders: no AI model, no AI cost." },

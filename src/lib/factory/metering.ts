@@ -3,6 +3,7 @@ import type { Principal, Project, ResearchRun } from './model';
 import type { Repository } from './repository';
 export function agentOf(run:ResearchRun):string {
  const stage=run.stage||'research';
+ if(stage==='scope') return 'scope:business';
  return stage==='research'?'research:'+(run.segment||'brand'):stage==='insights'?'synthesis:insights':stage==='content'?'synthesis:content':'synthesis:strategy';
 }
 type Result={usage:Record<string,number>;rawUsage?:unknown;providerRequestId?:string;error?:string};

@@ -2,6 +2,7 @@ import type { ApiCall } from "./costs";
 import { accountDirectory } from "./accounts";
 import type { Repository } from "./repository";
 import type { Project } from "./model";
+import { digest } from "./engine";
 
 // Observability for the whole agent system: where data flows (calls, tokens, cost, latency per edge),
 // where it is stored (counts per Firestore record), and where it is blocked or not flowing at all.
@@ -80,6 +81,8 @@ export type PipelineStats = {
   storyboards: number;
   assetsApproved: number;
   videos: number;
+  /** Classifications stored on projects in Firestore. */
+  scopes: { classified: number; ai: number; template: number; manual: number; stale: number; byCategory: Record<string, number> };
   waiting: { producerStart: number; sourceReview: number; insightReview: number; directionApproval: number; assetApproval: number };
 };
 export function pipelineStats(projects: Project[]): PipelineStats {
@@ -122,6 +125,14 @@ export function pipelineStats(projects: Project[]): PipelineStats {
     storyboards: sum((p) => p.assets.filter((a) => a.kind === "motion").length),
     assetsApproved: sum((p) => p.assets.filter((a) => a.status === "approved").length),
     videos: sum((p) => (p.videos || []).length),
+    scopes: {
+      classified: count((p) => !!p.scope),
+      ai: count((p) => p.scope?.source === "ai"),
+      template: count((p) => p.scope?.source === "template"),
+      manual: count((p) => p.scope?.source === "manual"),
+      stale: count((p) => !!p.scope && p.scope.briefHash !== digest(JSON.stringify(p.brief))),
+      byCategory: projects.reduce<Record<string, number>>((m, p) => (p.scope ? { ...m, [p.scope.classification.category]: (m[p.scope.classification.category] || 0) + 1 } : m), {}),
+    },
     waiting: {
       producerStart: count((p) => !!p.researchRequest && researchRun(p).length === 0),
       sourceReview: count((p) => p.sources.some((s) => s.status === "unreviewed")),
@@ -130,6 +141,15 @@ export function pipelineStats(projects: Project[]): PipelineStats {
       assetApproval: count((p) => p.assets.some((a) => a.status === "shared")),
     },
   };
+}
+export type ScopeRow = { accountId: string; projectId: string; business: string; category: string; businessType: string; size: string; reach: string; audienceModel: string; regulated: boolean; source: string; version: number; at: string; model?: string; current: boolean };
+/** Every stored classification, newest first: what the system believes each business is, readable in one place. */
+export function scopeRows(projects: Project[], limit = 40): ScopeRow[] {
+  return projects
+    .filter((p) => !!p.scope)
+    .map((p) => ({ accountId: p.accountId || p.workspaceId, projectId: p.id, business: p.brief.business, category: p.scope!.classification.category, businessType: p.scope!.classification.businessType, size: p.scope!.classification.size, reach: p.scope!.classification.reach, audienceModel: p.scope!.classification.audienceModel, regulated: p.scope!.classification.regulated, source: p.scope!.source, version: p.scope!.version, at: p.scope!.at, ...(p.scope!.model ? { model: p.scope!.model } : {}), current: p.scope!.briefHash === digest(JSON.stringify(p.brief)) }))
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, limit);
 }
 export async function loadAllProjects(repo: Repository): Promise<{ projects: Project[]; error: string }> {
   try {
@@ -161,13 +181,13 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
     out.push({ level: "failed", where: name, text: `${e.failed ? n(e.failed, "call failed", "calls failed") : ""}${e.failed && e.unknown ? " and " : ""}${e.unknown ? n(e.unknown, "call has", "calls have") + " unknown usage" : ""} on ${e.provider} ${e.model}.${errors[e.agent] ? " Last error: " + errors[e.agent].message : ""}` });
   }
   for (const a of aiAgents) {
-    if (!a.hasModel) out.push({ level: "idle", where: a.name, text: "No model chosen, so this agent cannot run." });
+    if (!a.hasModel) out.push({ level: "idle", where: a.name, text: a.id === "scope:business" ? "No model chosen: the free template scope is used instead of an AI classification." : "No model chosen, so this agent cannot run." });
     else if (!edges.some((e) => e.agent === a.id)) out.push({ level: "idle", where: a.name, text: "Has not made an API call yet: no data has flowed through it." });
   }
   return out;
 }
 export type AgentError = { at: string; message: string; provider: string; model: string };
-const agentOfRun = (r: Project["runs"][number]) => ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : "content") : "");
+const agentOfRun = (r: Project["runs"][number]) => r.stage === "scope" ? "scope:business" : ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : "content") : "");
 /** The most recent failure message per agent, read from run records. */
 export function lastErrors(projects: Project[]): Record<string, AgentError> {
   const out: Record<string, AgentError> = {};
@@ -185,6 +205,6 @@ export async function flowObservability(repo: Repository, rows: ApiCall[], aiAge
   const pipeline = pipelineStats(projects);
   const edges = edgeStats(rows, now);
   const errors = lastErrors(projects);
-  return { pipeline, edges, errors, models: modelStats(rows, now), blockers: findBlockers(pipeline, edges, aiAgents, errors), projectsError: error };
+  return { pipeline, edges, errors, scopes: scopeRows(projects), models: modelStats(rows, now), blockers: findBlockers(pipeline, edges, aiAgents, errors), projectsError: error };
 }
 export type FlowObservability = Awaited<ReturnType<typeof flowObservability>>;

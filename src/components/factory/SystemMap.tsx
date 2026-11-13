@@ -1,5 +1,5 @@
 "use client";
-import { Activity, Bell, Building2, Clapperboard, Cloud, Database, Download, FileText, Film, Globe, HardDrive, LayoutDashboard, PenLine, Palette, Search, Send, Share2, ShieldCheck, Sparkles, Target, UserCheck, Users } from "lucide-react";
+import { Activity, Bell, Building2, Clapperboard, Cloud, Compass, Database, Download, FileText, Film, Globe, HardDrive, LayoutDashboard, PenLine, Palette, Search, Send, Share2, ShieldCheck, Sparkles, Target, UserCheck, Users } from "lucide-react";
 import { useRef, useState, type ComponentType, type MouseEvent } from "react";
 import { edgeTip, usd, type Tip } from "./edge-tip";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
@@ -20,7 +20,7 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
 ];
 const COLOR = { input: "#22d3ee", agent: "#a78bfa", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
-  "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
+  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine,
 };
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
@@ -51,7 +51,7 @@ function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state 
         </g>
       )}
       {lines.map((l, i) => (
-        <text key={i} x={x + w / 2} y={y + (pill ? 76 : 48) + i * 15} textAnchor="middle" className="sm-sub">{short(l, 30)}</text>
+        <text key={i} x={x + w / 2} y={y + (pill ? 76 : 48) + i * 15} textAnchor="middle" className="sm-sub">{short(l, Math.floor(w / 6.3))}</text>
       ))}
       {badge && (
         <g>
@@ -104,6 +104,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
 
   // Agent positions (each row is a lane of the journey).
   const place: Record<string, { x: number; y: number }> = {
+    "scope:business": { x: COLS[0], y: 150 },
     "research:brand": { x: COLS[0], y: 300 },
     "research:customer": { x: COLS[1], y: 300 },
     "research:competitor": { x: COLS[2], y: 300 },
@@ -148,7 +149,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
     const x0 = pos.x + 34;
     const y0 = pos.y + AH;
     const ly = y0 + 14 + (idx % 4) * 8;
-    const gx = 868 + idx * 5;
+    const gx = 868 + idx * 4;
     const ty = py + 18 + (idx % 4) * 11;
     const d = `M${x0} ${y0} L${x0} ${ly} L${gx} ${ly} L${gx} ${ty} L${PX - 2} ${ty}`;
     const tip = tipFor(id);
@@ -164,12 +165,16 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   const total = flow.models.reduce((n, m) => n + m.microUsd, 0);
   const calls = flow.models.reduce((n, m) => n + m.calls, 0);
   const failedCalls = flow.models.reduce((n, m) => n + (m.failed || 0) + (m.unknown || 0), 0);
-  const H = 1440;
+  const H = 1590;
   const waiting = P.waiting;
   const insightGate = waiting.insightReview;
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
-  const ids = ["research:brand", "research:customer", "research:competitor", "research:creative", "synthesis:insights", "synthesis:strategy", "synthesis:content"];
+  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative"];
+  const ids = ["scope:business", ...researchIds, "synthesis:insights", "synthesis:strategy", "synthesis:content"];
+  const S = P.scopes || { classified: 0, ai: 0, template: 0, manual: 0, stale: 0, byCategory: {} };
+  const top = Object.entries(S.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(" · ");
+  const DY = 150;
   return (
     <section className="f-panel f-systemmap" aria-label="System map: how every agent, store, form and API connection fits together">
       <div className="f-section-heading">
@@ -194,15 +199,28 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <Node id="form-request" x={COLS[2]} y={90} h={64} color={COLOR.input} icon={Send} title="Request research" lines={[`${P.researchRequested} requested`]} />
           <Node id="producer-start" x={COLS[3]} y={90} h={64} color={COLOR.gate} icon={UserCheck} title="Producer start" lines={[P.waiting.producerStart ? `${P.waiting.producerStart} waiting` : "Authorise and start"]} state={gateState(P.waiting.producerStart) as NodeProps["state"]} badge={gateBadge(P.waiting.producerStart)} />
           {COLS.map((x, i) => <Link key={"in" + i} d={`M${x + NW / 2} 154 L${x + NW / 2} 196`} color={COLOR.input} />)}
-          <Bar y={198} title="Firestore · project record" sub={`${P.projects} projects · ${P.consented} authorised · ${P.researchRequested} research requests`} />
-          {COLS.map((x, i) => <Link key={"rd" + i} d={`M${x + NW / 2} 244 L${x + NW / 2} 298`} color={COLOR.store} label={i === 0 ? "reads brief" : undefined} lx={x + NW / 2 + 8} ly={274} />)}
+          <Bar y={198} title="Firestore · project record" sub={`${P.projects} projects · ${P.consented} authorised · ${P.researchRequested} research requests · ${S.classified} classified`} />
+          <Link d={`M${COLS[0] + NW / 2} 244 L${COLS[0] + NW / 2} 298`} color={COLOR.store} label="reads brief and channels" lx={COLS[0] + NW / 2 + 8} ly={276} />
 
-          <text x="30" y="286" className="sm-band">2 · RESEARCH</text>
-          {ids.slice(0, 4).map(agentNode)}
-          {COLS.map((x, i) => <Link key={"wr" + i} d={`M${x + NW - 34} ${300 + AH} L${x + NW - 34} 470`} color={COLOR.store} dim={!(byId.get(ids[i])?.stats?.calls)} label={i === 0 ? "cited findings" : undefined} lx={x + NW - 26} ly={452} />)}
+          {/* Everything below sits in a group moved down to make room for the scoping band. */}
+          <g transform={`translate(0 ${DY})`}>
+          <text x="30" y="136" className="sm-band">2 · SCOPING</text>
+          {agentNode("scope:business")}
+          <Link d={`M${COLS[0] + NW} 202 L${COLS[1] - 2} 202`} color={COLOR.agent} dim={!S.classified} />
+          <Node id="store-scope" x={COLS[1]} y={150} w={COLS[2] + NW - COLS[1]} h={AH} color={COLOR.store} icon={Database} title="Firestore · classification and scope"
+            lines={[`${S.classified} classified · ${S.ai} AI · ${S.template} template · ${S.manual} edited${S.stale ? " · " + S.stale + " stale" : ""}`, top || "No business classified yet", "Read by: research agents, preparation panel, dossier, GET /scope"]} />
+          <Link d={`M${COLS[2] + NW} 202 L${COLS[3] - 2} 202`} color={COLOR.gate} dim />
+          <Node id="scope-edit" x={COLS[3]} y={150} h={AH} color={COLOR.gate} icon={UserCheck} title="Producer scope edit" lines={["Optional · human", `${S.manual} edited by hand`]} dashed />
+          <Link d={`M${COLS[0] + NW / 2} ${150 + AH} L${COLS[0] + NW / 2} 298`} color={COLOR.store} dim={!S.classified} />
+          {[1, 2].map((i) => <Link key={"sc" + i} d={`M${COLS[i] + NW / 2} ${150 + AH} L${COLS[i] + NW / 2} 298`} color={COLOR.store} dim={!S.classified} label={i === 1 ? "scoped questions" : undefined} lx={COLS[i] + NW / 2 + 8} ly={286} />)}
+          <Link d={`M${COLS[3] + NW / 2} ${150 + AH} L${COLS[3] + NW / 2} 298`} color={COLOR.gate} dim />
+
+          <text x="30" y="286" className="sm-band">3 · RESEARCH</text>
+          {researchIds.map(agentNode)}
+          {COLS.map((x, i) => <Link key={"wr" + i} d={`M${x + NW - 34} ${300 + AH} L${x + NW - 34} 470`} color={COLOR.store} dim={!(byId.get(researchIds[i])?.stats?.calls)} label={i === 0 ? "cited findings" : undefined} lx={x + NW - 26} ly={452} />)}
           <Bar y={472} title="Firestore · sources and findings" sub={`${P.sources.total} sources · ${P.sources.findings} claim-level findings · ${P.gaps} gaps · ${P.sources.unreviewed} unreviewed`} />
 
-          <text x="30" y="568" className="sm-band">3 · REVIEW</text>
+          <text x="30" y="568" className="sm-band">4 · REVIEW</text>
           <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
           <Node id="gate-1" x={COLS[0]} y={590} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Review sources" lines={["Gate 1 · producer", `${P.sources.supported} supported · ${P.sources.rejected} rejected`]} state={gateState(waiting.sourceReview) as NodeProps["state"]} badge={gateBadge(waiting.sourceReview)} />
           <Link d={`M${COLS[0] + NW} 642 L${COLS[1] - 2} 642`} color={COLOR.gate} dim={!P.sources.supported} />
@@ -215,7 +233,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <Link d={`M${COLS[3] + NW - 34} ${590 + AH} L${COLS[3] + NW - 34} 742`} color={COLOR.store} dim={!P.directions.total} />
           <Bar y={744} title="Firestore · insights and direction" sub={`${P.insights.total} insights · ${P.directions.total} direction versions · ${P.directions.shared} shared · ${P.directions.approved} approved`} />
 
-          <text x="30" y="816" className="sm-band">4 · APPROVAL</text>
+          <text x="30" y="816" className="sm-band">5 · APPROVAL</text>
           <Link d={`M${COLS[0] + NW / 2} 790 L${COLS[0] + NW / 2} 838`} color={waiting.directionApproval ? COLOR.gate : COLOR.store} dim={!P.directions.total} />
           <Node id="gate-3" x={COLS[0]} y={840} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Approve direction" lines={["Gate 3 · customer", `${P.directions.approved} approved`]} state={gateState(waiting.directionApproval) as NodeProps["state"]} badge={gateBadge(waiting.directionApproval)} />
           <Link d={`M${COLS[0] + NW} 892 L${COLS[1] - 2} 892`} color={COLOR.gate} dim={!P.directions.approved} />
@@ -227,7 +245,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <Link d={`M${COLS[3] + NW / 2} ${840 + AH} L${COLS[3] + NW / 2} 1002`} color={COLOR.store} dim={!P.assetsApproved} />
           <Bar y={1004} title="Firestore · copy, storyboards and approvals" sub={`${P.copyPacks} copy packs · ${P.storyboards} storyboards · ${P.assetsApproved} approved assets`} />
 
-          <text x="30" y="1076" className="sm-band">5 · OUTPUT</text>
+          <text x="30" y="1076" className="sm-band">6 · OUTPUT</text>
           <Link d={`M${COLS[0] + NW / 2} 1050 L${COLS[0] + NW / 2} 1098`} color={COLOR.store} dim={!P.assetsApproved} />
           <Node id="video" x={COLS[0]} y={1100} h={80} color={COLOR.agent} icon={Film} title="Video render" lines={["Optional · 480p draft", `${P.videos} rendered`]} />
           <Link d={`M${COLS[0] + NW} 1140 L${COLS[1] - 2} 1140`} color={COLOR.store} dim={!P.videos} />
@@ -249,12 +267,13 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           {ids.map(apiLink)}
           {PROVIDERS.map((p, i) => <Link key={"tel" + p.id} d={`M${PX + PW} ${providerY[p.id] + PH / 2} L${1088 - i * 4} ${providerY[p.id] + PH / 2} L${1088 - i * 4} 1280 L${COLS[1] + 62 + 380} 1280`} color={COLOR.mon} dim />)}
 
-          <text x="30" y="1236" className="sm-band">6 · MONITORING</text>
+          <text x="30" y="1236" className="sm-band">7 · MONITORING</text>
           <Node id="monitoring" x={COLS[1] + 60} y={1240} w={380} h={80} color={COLOR.mon} icon={Activity} title="Monitoring · API call ledger" lines={[`${calls} calls · ${usd(total)} estimated`, `${failedCalls} failed or unknown`]} />
           {[COLS[0] + NW / 2, COLS[1] + 250, COLS[3] + NW / 2].map((x, i) => <Link key={"mo" + i} d={`M${COLS[1] + 250} 1320 L${COLS[1] + 250} 1344 L${x} 1344 L${x} 1366`} color={COLOR.mon} />)}
           <Node id="out-dash" x={COLS[0]} y={1368} h={56} color={COLOR.mon} icon={LayoutDashboard} title="Dashboards" lines={["Private API costs"]} />
           <Node id="out-alerts" x={COLS[1] + 155} y={1368} h={56} color={flow.blockers.some((b) => b.level !== "idle") ? COLOR.gate : COLOR.mon} icon={Bell} title="Alerts" lines={[`${flow.blockers.filter((b) => b.level !== "idle").length} blocked or failed`]} />
           <Node id="out-trouble" x={COLS[3]} y={1368} h={56} color={COLOR.mon} icon={Search} title="Troubleshooting" lines={["Recent calls, below"]} />
+          </g>
         </svg>
       </div>
       {hover && (() => {
@@ -275,7 +294,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
         <li><i style={{ background: COLOR.mon }} /> Monitoring</li>
         <li><i style={{ background: COLOR.bad }} /> Failed or unknown</li>
       </ul>
-      <p className="f-small">Stored: parsed results, usage counters, run records and the brief snapshot, in Firestore. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). Port67 never posts to a channel.</p>
+      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). Port67 never posts to a channel.</p>
     </section>
   );
 }

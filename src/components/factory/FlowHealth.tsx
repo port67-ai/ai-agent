@@ -42,6 +42,38 @@ export default function FlowHealth({ flow }: { flow: Flow }) {
       <section className="f-panel">
         <div className="f-section-heading">
           <div>
+            <h2>Business classifications</h2>
+            <p className="f-small">What the scoping step decided each business is. Saved on the project in Firestore, so the researchers, the preparation panel and the dossier all read the same record. Stale means the brief changed after it was classified; it is redone at the next research start.</p>
+          </div>
+        </div>
+        {!(flow.scopes || []).length ? (
+          <p className="f-small">No business has been classified yet. It happens automatically when research starts.</p>
+        ) : (
+          <div className="f-flow-scroll">
+            <table className="f-table">
+              <thead>
+                <tr><th>Business</th><th>Type</th><th>Size · reach</th><th>Audience</th><th>Source</th><th>Version</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {flow.scopes.map((r) => (
+                  <tr key={r.accountId + r.projectId}>
+                    <td><strong>{r.business}</strong></td>
+                    <td>{r.businessType}<br /><span className="f-small">{r.category.replace(/_/g, " ")}{r.regulated ? " · regulated" : ""}</span></td>
+                    <td>{r.size} · {r.reach}</td>
+                    <td>{r.audienceModel}</td>
+                    <td>{r.source === "ai" ? `AI${r.model ? " · " + r.model : ""}` : r.source}</td>
+                    <td>v{r.version}</td>
+                    <td>{r.current ? "Current" : "Stale"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      <section className="f-panel">
+        <div className="f-section-heading">
+          <div>
             <h2>Cost by model</h2>
             <p className="f-small">{top && top.microUsd > 0 ? `${top.provider} ${top.model} is the most expensive model so far (${top.sharePct}% of estimated spend).` : "No priced calls yet. Costs appear here once agents run."} Calls with no price are counted separately and are never treated as free.</p>
           </div>

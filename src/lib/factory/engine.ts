@@ -623,6 +623,8 @@ export function projectView(input: Project, a: Principal): Project {
   }
   delete p.aiConsent;
   delete p.aiAuthorised;
+  delete p.scope;
+  delete p.scopeHistory;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");
   const visible = new Set(p.strategies.flatMap((s) => s.evidenceIds));

@@ -22,13 +22,13 @@ await project();// self-healing: merely viewing the project starts a request mad
 for(let i=0;i<60&&(await project()).runs.filter((r:{status:string})=>r.status==='completed').length<4;i++)await new Promise(r=>setTimeout(r,100));
 p=await project();
 assert.equal(p.runs.filter((r:{status:string})=>r.status==='completed').length,4,'four researchers ran');
-assert.deepEqual(new Set(p.runs.map((r:{segment:string})=>r.segment)),new Set(['brand','customer','competitor','creative']));
-assert.equal(calls,4);assert.ok(p.sources.length>=4);
+assert.deepEqual(new Set(p.runs.filter((r:{stage:string})=>r.stage==='research').map((r:{segment:string})=>r.segment)),new Set(['brand','customer','competitor','creative']));
+assert.equal(calls,5,'one scoping call, then four researchers');assert.ok(p.sources.length>=4);
 assert.ok(p.sources.every((s:{status:string})=>s.status==='unreviewed'),'source review stays a human gate');
 await login('producer');await req('accounts',{accountId:customer.accountId});
 const full=await project();assert.ok(full.audit.some((x:{action:string;actor:string})=>x.action==='producer_step_auto_approved'&&x.actor==='port67-auto-approve'));
 // A second request does not run research again.
-await login('customer');await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,300));assert.equal(calls,4);
+await login('customer');await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,300));assert.equal(calls,5);
 const plan=await(await req(route+'/research-plan')).json();assert.equal(plan.plan.segments.length,4);assert.ok(plan.plan.checks.length>=8);
 const doss=await(await req(route+'/research-dossier')).json();assert.equal(doss.dossier.totals.unreviewed,0,'customer dossier hides unreviewed sources');assert.match(doss.markdown,/# Research dossier/);
 await login('producer');await req('accounts',{accountId:customer.accountId});const pd=await(await req(route+'/research-dossier')).json();assert.ok(pd.dossier.totals.unreviewed>=4,'producer dossier shows every source');

@@ -1,4 +1,5 @@
 import type { ApiCall, Pricing } from "./costs";
+import type { ResearchScope, ScopeEntry } from "./scope";
 export const segments = [
   "brand",
   "customer",
@@ -165,7 +166,7 @@ export type ResearchRun = {
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "research" | "insights" | "strategy" | "content";
+  stage?: "scope" | "research" | "insights" | "strategy" | "content";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -184,6 +185,8 @@ export type ResearchRun = {
   /** What the researcher looked for and could not find or confirm. */
   gaps?: string[];
   error?: string;
+  /** When a research call ran but returned nothing citable: the start of what the model wrote, for the producer only. Never used as evidence. */
+  note?: string;
 };
 export type Project = {
   accountId?: string;
@@ -214,6 +217,10 @@ export type Project = {
   researchProgress?: { segment: Segment; status: "idle" | "running" | "completed" | "failed"; sources: number; at?: string }[];
   /** Why a requested research has not started, computed for the response only. Operators see the reason; customers see a neutral line. */
   researchNote?: string;
+  /** The classification of the business and what each research agent should look for. Stored with the project so it can be read at any time. */
+  scope?: ResearchScope;
+  /** Earlier classifications, newest last, so a change of scope is traceable. */
+  scopeHistory?: ScopeEntry[];
   /** A customer's request for the producer to start research on the chosen channels. */
   researchRequest?: { at: string; by: string; channels: string[] };
   capabilities: Capability[];
