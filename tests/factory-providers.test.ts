@@ -19,6 +19,13 @@ const grounded=await invokeProvider(selection,{instructions:'cite',input:'data',
 globalThis.fetch=async()=>Response.json({output:[{type:'web_search_call'}]});
 const noTokens=await invokeProvider({provider:'openai',model:'test',key:'secret'},{instructions:'cite',input:'data',research:true});assert.deepEqual(noTokens.usage,{tool_calls:1});
 globalThis.fetch=async()=>{throw new Error('secret network details')};const failed=await invokeProvider(selection,{instructions:'cite',input:'data',research:true});assert.deepEqual(failed.usage,{});assert.equal(failed.error?.includes('secret'),false);
+// Failures keep the provider's own explanation (credentials removed) and say whether a call timed out.
+globalThis.fetch=async()=>Response.json({error:{message:'The model gpt-x does not exist or you do not have access. Key sk-abcdefghijklmnop leaked'}},{status:404});
+const why=await invokeProvider({provider:'openai',model:'gpt-x',key:'secret'},{instructions:'cite',input:'data',research:true});assert.match(why.error!,/returned 404: The model gpt-x does not exist/);assert.equal(why.error!.includes('sk-abcdefghijklmnop'),false);assert.match(why.error!,/\[redacted\]/);
+globalThis.fetch=async()=>{const e=new Error('boom');e.name='TimeoutError';throw e};
+const slow=await invokeProvider({provider:'gemini',model:'m',key:'secret'},{instructions:'cite',input:'data',research:true});assert.match(slow.error!,/timed out after 100 seconds/);
+globalThis.fetch=async()=>new Response('<html>Bad gateway</html>',{status:502});
+const html=await invokeProvider({provider:'openai',model:'m',key:'secret'},{instructions:'x',input:'y'});assert.match(html.error!,/returned 502; no output accepted/);
 globalThis.fetch=async()=>Response.json({usage:{input_tokens:100,output_tokens:5,cache_creation_input_tokens:20},content:[{type:'text',text:'{}'}]});
 const creation=await invokeProvider({provider:'anthropic',model:'test',key:'secret'},{instructions:'safe',input:'test'});assert.equal(creation.usage.input_tokens,120);
 globalThis.fetch=async()=>Response.json({usageMetadata:{promptTokenCount:10,candidatesTokenCount:2},candidates:[{content:{parts:[{text:'test'}]}}]});

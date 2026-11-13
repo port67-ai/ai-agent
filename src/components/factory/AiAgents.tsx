@@ -167,6 +167,7 @@ export default function AiAgents() {
                       <span className="f-small">
                         {a.stats!.calls} call{a.stats!.calls === 1 ? "" : "s"} ({a.stats!.completed} done, {a.stats!.failed + a.stats!.unknown} failed or unknown) · {a.stats!.inputTokens.toLocaleString()} in / {a.stats!.outputTokens.toLocaleString()} out tokens · {usd(a.stats!.estimatedMicroUsd)} · last {ago(a.stats!.lastAt)}
                       </span>
+                      {data.flow.errors?.[a.id] && <span className="f-team-error">Last error: {data.flow.errors[a.id].message}</span>}
                       <span className="f-small">Change this agent&apos;s model by clicking it on the map above.</span>
                     </>
                   ) : (

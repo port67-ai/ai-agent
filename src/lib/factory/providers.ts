@@ -19,6 +19,9 @@ type ProviderData = {
  candidates?: {content?:{parts?:{text?:string}[]};groundingMetadata?:{groundingChunks?:{web?:{uri?:string;title?:string}}[];webSearchQueries?:string[]}}[];
 };
 export type ProviderResult={text:string;usage:Record<string,number>;rawUsage?:unknown;providerRequestId?:string;data?:ProviderData;error?:string;provider:Provider;model:string}; // Provider JSON is inspected defensively at the boundary.
+// Provider error text is kept so a failure can be diagnosed, with anything that looks like a credential removed.
+const redact = (v: unknown) => String(v ?? '').replace(/(sk-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{20,}|Bearer\s+\S+|key=\S+)/g, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 220);
+const detail = (d: { error?: { message?: unknown; status?: unknown } | string; message?: unknown } | undefined) => redact(typeof d?.error === 'string' ? d.error : d?.error?.message ?? d?.error?.status ?? d?.message);
 export async function invokeProvider(s:ProviderSelection,request:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean}):Promise<ProviderResult>{
  const {provider,model,key}=s;const headers:Record<string,string>={'content-type':'application/json'};let url:string;let body:Record<string,unknown>;
  if(request.research && provider!=='openai' && provider!=='gemini') throw new Error('Research requires grounded web search');
@@ -28,8 +31,9 @@ export async function invokeProvider(s:ProviderSelection,request:{instructions:s
  else{url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;headers['x-goog-api-key']=key;body={systemInstruction:{parts:[{text:request.instructions}]},contents:[{role:'user',parts:[{text:request.input}]}],generationConfig:{maxOutputTokens:request.research?1800:3000,...(request.schema?{responseMimeType:'application/json',responseJsonSchema:request.schema}:{})},...(request.research?{tools:[{google_search:{}}]}:{})};}
  const result:ProviderResult={provider,model,text:'',usage:{}};
  try{
- const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(60000)});
- const data=await response.json();result.providerRequestId=typeof data.id==='string'?data.id:typeof data.responseId==='string'?data.responseId:response.headers.get('x-request-id') || undefined;
+ const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(request.research?100000:60000)});
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ let data:any={};try{data=await response.json();}catch{if(response.ok)throw new Error('the response was not JSON');}result.providerRequestId=typeof data.id==='string'?data.id:typeof data.responseId==='string'?data.responseId:response.headers.get('x-request-id') || undefined;
  const u=data.usage || data.usageMetadata;result.rawUsage=u;
  if(u && typeof u==='object'){
  const put=(k:string,v:unknown)=>{if(typeof v==='number' && Number.isFinite(v) && v>=0)result.usage[k]=v};
@@ -40,9 +44,9 @@ export async function invokeProvider(s:ProviderSelection,request:{instructions:s
  if(Array.isArray(data.output))result.usage.tool_calls=data.output.filter((x:{type?:string})=>x.type==='web_search_call').length;
  if(data.candidates?.[0]?.groundingMetadata?.webSearchQueries)result.usage.tool_calls=data.candidates[0].groundingMetadata.webSearchQueries.length;
  if(request.research && result.usage.tool_calls===undefined)result.usage.tool_usage_unknown=1;
- if(!response.ok){result.error=`AI provider returned ${response.status}; no output accepted`;return result;}
+ if(!response.ok){const why=detail(data);result.error=`AI provider returned ${response.status}${why?': '+why:''}; no output accepted`;return result;}
  result.data=data;
  result.text=provider==='openai'?(data.output || []).flatMap((x:{content?:unknown[]})=>x.content || []).filter((x:{type?:string})=>x.type==='output_text').map((x:{text?:string})=>x.text || '').join(''):provider==='anthropic'?(data.content || []).filter((x:{type?:string})=>x.type==='text').map((x:{text?:string})=>x.text || '').join(''):provider==='deepseek'?data.choices?.[0]?.message?.content || '':(data.candidates?.[0]?.content?.parts || []).map((x:{text?:string})=>x.text || '').join('');
- }catch{result.error='AI provider request failed; usage unknown unless reported';}
+ }catch(e){const timedOut=e instanceof Error&&(e.name==='TimeoutError'||e.name==='AbortError');result.error=timedOut?`AI provider timed out after ${request.research?100:60} seconds; usage unknown unless reported`:`AI provider request failed${/^[A-Z_]{3,30}$/.test(String((e as {cause?:{code?:unknown}})?.cause?.code))?' ('+(e as {cause:{code:string}}).cause.code+')':''}; usage unknown unless reported`;}
  return result;
 }

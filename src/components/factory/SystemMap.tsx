@@ -92,7 +92,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   };
   const tipFor = (id: string): Tip | null => {
     const a = byId.get(id);
-    return a ? edgeTip(a.name, a.model?.model ? { provider: String(a.model.provider), model: a.model.model } : undefined, flow.edges.filter((e) => e.agent === id)) : null;
+    return a ? edgeTip(a.name, a.model?.model ? { provider: String(a.model.provider), model: a.model.model } : undefined, flow.edges.filter((e) => e.agent === id), flow.errors?.[id]) : null;
   };
   const P = flow.pipeline;
   const edgesFor = (id: string) => flow.edges.filter((e) => e.agent === id);

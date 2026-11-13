@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { edgeStats, modelStats, pipelineStats, findBlockers } from '../src/lib/factory/observability';
+import { edgeStats, modelStats, pipelineStats, findBlockers, lastErrors } from '../src/lib/factory/observability';
 import { createProject } from '../src/lib/factory/engine';
 import type { ApiCall } from '../src/lib/factory/costs';
 
@@ -32,11 +32,16 @@ p.runs.push({ id: 'r1', at: '2026-11-12T10:01:00Z', status: 'completed', stage: 
 p.sources.push({ id: 's1', segment: 'brand', title: 't', url: 'https://example.com', excerpt: 'e', kind: 'public_source', status: 'unreviewed', collectedAt: '2026-11-12T10:02:00Z', method: 'm', findings: [{ claim: 'c' }] });
 s = pipelineStats([p]);
 assert.deepEqual([s.waiting.producerStart, s.waiting.sourceReview, s.sources.unreviewed, s.sources.findings, s.gaps], [0, 1, 1, 1, 1]);
+p.runs.push({ id: 'r2', at: '2026-11-12T10:05:00Z', finishedAt: '2026-11-12T10:05:09Z', status: 'failed', stage: 'research', segment: 'customer', provider: 'gemini', model: 'g1', error: 'AI provider returned 404: model not found; no output accepted' } as never, { id: 'r3', at: '2026-11-12T10:06:00Z', status: 'failed', stage: 'insights', provider: 'openai', model: 'm1', error: 'older' } as never, { id: 'r4', at: '2026-11-12T10:07:00Z', status: 'failed', stage: 'insights', provider: 'openai', model: 'm1', error: 'newer' } as never);
+const errs = lastErrors([p]);
+assert.match(errs['research:customer'].message, /404: model not found/);
+assert.equal(errs['synthesis:insights'].message, 'newer', 'most recent failure per agent');
 const agents = [{ id: 'research:brand', name: 'Brand', hasModel: true }, { id: 'research:customer', name: 'Customer', hasModel: true }, { id: 'synthesis:strategy', name: 'Direction', hasModel: false }, { id: 'research:creative', name: 'Creative', hasModel: true }];
-const blockers = findBlockers(s, edges, agents);
+const blockers = findBlockers(s, edges, agents, errs);
 const text = blockers.map((b) => b.level + ':' + b.where + ':' + b.text).join('\n');
 assert.match(text, /blocked:Gate 1/);
 assert.match(text, /failed:Customer/);
+assert.match(text, /Last error: AI provider returned 404/, 'the blocker says why');
 assert.match(text, /idle:Direction:No model chosen/);
 assert.match(text, /idle:Creative:Has not made an API call/);
 assert.doesNotMatch(text, /Brand:Has not made/, 'an agent that has called is not idle');

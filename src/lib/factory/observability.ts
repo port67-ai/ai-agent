@@ -148,7 +148,7 @@ export async function loadAllProjects(repo: Repository): Promise<{ projects: Pro
 }
 export type Blocker = { level: "blocked" | "failed" | "idle"; where: string; text: string };
 /** Plain statements about where data is blocked, failing or not flowing. Nothing here is guessed: each line comes from a count. */
-export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id: string; name: string; hasModel: boolean }[]): Blocker[] {
+export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id: string; name: string; hasModel: boolean }[], errors: Record<string, { message: string }> = {}): Blocker[] {
   const out: Blocker[] = [];
   const n = (x: number, one: string, many: string) => `${x} ${x === 1 ? one : many}`;
   if (p.waiting.producerStart) out.push({ level: "blocked", where: "Producer start", text: `${n(p.waiting.producerStart, "project is", "projects are")} waiting for a producer to start research.` });
@@ -158,7 +158,7 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
   if (p.waiting.assetApproval) out.push({ level: "blocked", where: "Gate 5", text: `${n(p.waiting.assetApproval, "project has", "projects have")} shared assets waiting for customer approval.` });
   for (const e of edges.filter((x) => x.failed || x.unknown)) {
     const name = aiAgents.find((a) => a.id === e.agent)?.name || e.agent;
-    out.push({ level: "failed", where: name, text: `${e.failed ? n(e.failed, "call failed", "calls failed") : ""}${e.failed && e.unknown ? " and " : ""}${e.unknown ? n(e.unknown, "call has", "calls have") + " unknown usage" : ""} on ${e.provider} ${e.model}.` });
+    out.push({ level: "failed", where: name, text: `${e.failed ? n(e.failed, "call failed", "calls failed") : ""}${e.failed && e.unknown ? " and " : ""}${e.unknown ? n(e.unknown, "call has", "calls have") + " unknown usage" : ""} on ${e.provider} ${e.model}.${errors[e.agent] ? " Last error: " + errors[e.agent].message : ""}` });
   }
   for (const a of aiAgents) {
     if (!a.hasModel) out.push({ level: "idle", where: a.name, text: "No model chosen, so this agent cannot run." });
@@ -166,10 +166,25 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
   }
   return out;
 }
+export type AgentError = { at: string; message: string; provider: string; model: string };
+const agentOfRun = (r: Project["runs"][number]) => ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : "content") : "");
+/** The most recent failure message per agent, read from run records. */
+export function lastErrors(projects: Project[]): Record<string, AgentError> {
+  const out: Record<string, AgentError> = {};
+  for (const p of projects)
+    for (const r of p.runs) {
+      const agent = agentOfRun(r);
+      if (!agent || r.status !== "failed" || !r.error) continue;
+      const at = r.finishedAt || r.at;
+      if (!out[agent] || out[agent].at < at) out[agent] = { at, message: r.error.slice(0, 300), provider: r.provider, model: r.model };
+    }
+  return out;
+}
 export async function flowObservability(repo: Repository, rows: ApiCall[], aiAgents: { id: string; name: string; hasModel: boolean }[], now = Date.now()) {
   const { projects, error } = await loadAllProjects(repo);
   const pipeline = pipelineStats(projects);
   const edges = edgeStats(rows, now);
-  return { pipeline, edges, models: modelStats(rows, now), blockers: findBlockers(pipeline, edges, aiAgents), projectsError: error };
+  const errors = lastErrors(projects);
+  return { pipeline, edges, errors, models: modelStats(rows, now), blockers: findBlockers(pipeline, edges, aiAgents, errors), projectsError: error };
 }
 export type FlowObservability = Awaited<ReturnType<typeof flowObservability>>;
