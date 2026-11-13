@@ -9,7 +9,7 @@ const customer=await login('customer');const created=(await(await req('projects'
 async function project(){return(await(await req(route)).json()).project;}
 async function command(data:Record<string,unknown>){return(await(await req(route,data)).json()).project;}
 const original=globalThis.fetch;let calls=0;process.env.PORT67_RESEARCH_PROVIDER='openai';
-globalThis.fetch=(async(url:unknown,init?:{body?:unknown})=>{calls++;const usage={input_tokens:40,output_tokens:20};
+globalThis.fetch=(async()=>{calls++;const usage={input_tokens:40,output_tokens:20};
 return Response.json({id:'auto-'+calls,usage,output:[{type:'web_search_call'},{content:[{type:'output_text',text:'FINDING | A synthetic claim | https://example.com/auto/'+calls+' | quote\nCONFIDENCE | limited',annotations:[{type:'url_citation',url:'https://example.com/auto/'+calls,title:'Fixture source'}]}]}]});}) as typeof fetch;
 try{
 await command({type:'setChannels',channels:['instagram']});

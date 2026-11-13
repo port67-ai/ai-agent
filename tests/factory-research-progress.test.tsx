@@ -6,7 +6,7 @@ import ResearchProgress from '../src/components/factory/ResearchProgress';
 
 const op = { role: 'operator' as const, workspaceId: 'w', subject: 'producer' };
 const cust = { role: 'customer' as const, workspaceId: 'w', subject: 'client', projectId: 'p1' };
-let p = createProject({ business: 'Brand', objective: 'Grow', contact: 'a@example.com' }, op, 'p1');
+const p = createProject({ business: 'Brand', objective: 'Grow', contact: 'a@example.com' }, op, 'p1');
 assert.ok(researchProgress(p).every(r => r.status === 'idle' && r.sources === 0), 'nothing started');
 
 const at = new Date().toISOString();
