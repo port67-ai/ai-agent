@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import SystemMap from '../src/components/factory/SystemMap';
 import FlowHealth from '../src/components/factory/FlowHealth';
+import { ScopePanel } from '../src/components/factory/ScopePanel';
+import { DiagnosticsPanel } from '../src/components/factory/DiagnosticsPanel';
+import { ResearchPrep } from '../src/components/factory/ResearchPrep';
 import { pipelineStats, edgeStats, modelStats, findBlockers } from '../src/lib/factory/observability';
 
 const stats = (calls: number, inFlight = 0, failed = 0) => ({ calls, completed: calls - failed - inFlight, failed, unknown: 0, inFlight, inputTokens: 10, outputTokens: 5, estimatedMicroUsd: calls * 1000, lastAt: undefined });
@@ -40,6 +43,11 @@ for (const t of ['2 · SCOPING', '3 · RESEARCH', '7 · MONITORING', 'Scoping ag
 assert.match(html, /data-node="scope:business"/);
 assert.match(html, /data-node="store-scope"/);
 assert.match(html, /data-edge="scope:business"/, 'the scoping agent has its own hoverable API line');
+// Panels never render blank while loading: each shows a visible placeholder until its data arrives.
+const proj = { id: 'p1', revision: 1 };
+assert.match(renderToStaticMarkup(React.createElement(ScopePanel, { p: proj, operator: true })), /Loading business scope/);
+assert.match(renderToStaticMarkup(React.createElement(DiagnosticsPanel, { p: proj })), /Loading diagnostics/);
+assert.match(renderToStaticMarkup(React.createElement(ResearchPrep, { p: proj, operator: true })), /Loading research preparation/);
 const health = renderToStaticMarkup(React.createElement(FlowHealth, { flow }));
 assert.match(health, /Business classifications/);
 assert.match(health, /Rosie Blooms/);

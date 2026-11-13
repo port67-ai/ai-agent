@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useProjectGet } from "./useProjectGet";
 import { Bug, Copy, Download } from "lucide-react";
 import type { DiagnosticsReport } from "@/lib/factory/diagnostics";
 
@@ -8,29 +9,12 @@ type Data = { report: DiagnosticsReport; markdown: string };
 
 /** Producer and admin only: every failure with timestamps, models, request IDs and the full text, ready to paste into a chat. */
 export function DiagnosticsPanel({ p }: { p: Project }) {
-  const [data, setData] = useState<Data | null>(null);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [tick, setTick] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    const t = setTimeout(() => {
-      fetch(`/api/factory/projects/${p.id}/diagnostics`, { cache: "no-store" })
-        .then(async (r) => {
-          const d = await r.json();
-          if (!r.ok) throw new Error(d.error || "Request failed");
-          return d as Data;
-        })
-        .then((d) => alive && (setData(d), setError("")))
-        .catch((e: Error) => alive && setError(e.message));
-    }, 0);
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [p.id, p.revision, tick]);
-  if (error) return <section className="f-panel"><p className="f-team-error" role="alert">Diagnostics unavailable: {error}</p></section>;
-  if (!data) return null;
+  const { data, error: loadError } = useProjectGet<Data>(`/api/factory/projects/${p.id}/diagnostics`, p.revision * 1000 + tick);
+  const error = actionError || loadError || "";
+  if (!data) return <section className="f-panel"><h2><Bug size={18} aria-hidden="true" /> Diagnostics</h2>{error ? <p className="f-team-error" role="alert">Diagnostics unavailable: {error}</p> : <p className="f-small" role="status">Loading diagnostics…</p>}</section>;
   const r = data.report;
   const copy = async () => {
     try {
@@ -38,7 +22,7 @@ export function DiagnosticsPanel({ p }: { p: Project }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError("Copy was blocked by the browser; use Download or select the text below.");
+      setActionError("Copy was blocked by the browser; use Download or select the text below.");
     }
   };
   const download = () => {
