@@ -238,3 +238,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-008 (reworked), FAC-HAR-010 and FAC-MKT-022 (new), FAC-HAR-009. PRD 1.16.0.
 - Evidence: tsc, factory lint, full npm test, next build and documentation governance in a sandbox copy; map layout checked in a static browser preview. No live provider calls were made. Counts are read across up to 100 accounts per request.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0032 - 2026-11-13 - Fix red Factory MVP check (lint) and record the CI diagnosis
+- Author/harness: Claude (Cowork); owner asked to progress the open items starting with the red Factory MVP check.
+- What/why: The GitHub run for commit ac7bc8f was read through the public Actions API. Every step passed (npm ci, audit, npm test, Firestore emulator test) except `npm run check:factory` (ESLint), which skipped tsc, build and browser acceptance after it. Reproduced locally: one error, `prefer-const` in tests/factory-research-progress.test.tsx (`let p` never reassigned). Fixed it, and removed two unused parameters in tests/factory-auto-approve.test.ts that produced warnings. No product behaviour changed.
+- Requirements: none (verification and hygiene only). No PRD change.
+- Evidence: `eslint` with the exact check:factory file list now reports 0 errors; tsc, npm test and next build pass in a sandbox copy. Not run here: the Firestore emulator test (sandbox Java is below 21; it passed in CI) and browser acceptance (Chromium cannot be downloaded in the sandbox); these were skipped or unchanged in the failing run, so their status on this commit is unknown until CI runs after the fix.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

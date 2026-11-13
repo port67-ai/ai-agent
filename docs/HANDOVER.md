@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0032. The red Factory MVP check was a lint failure only (check:factory, prefer-const in tests/factory-research-progress.test.tsx), fixed. Before every commit run, in this order: `npx eslint src/lib/factory src/components/factory src/app/portal src/app/api/factory 'tests/factory*.ts*'`, `npx tsc --noEmit`, `npm test`, `npm run build`, then `python3 scripts/check_docs_governance.py --base origin/main`. Browser acceptance (Playwright) and the Firestore emulator test only run in CI. Next for the owner: enable Firebase Storage, rotate PORT67_SESSION_SECRET, run docs/RESEARCH_RUNBOOK.md with jpell@me.com.
+
 2026-11-13; Claude; CHG-0031; PRD 1.16.0. The AI agents page now has ONE dark system map (replaces the journey and data-flow diagrams), a "where data is blocked or not flowing" list and a cost-by-model table, all from observability.ts. The Research room gained a Research preparation panel (readiness, assumptions, questions per agent) and a downloadable Research dossier; the questions are also sent to the research agents. To test with the jpell@me.com account follow docs/RESEARCH_RUNBOOK.md. Not verified live: the map and panels in a browser at real data volumes, the questions improving research quality, background research on the 512 MB instance. Readiness is advisory, not a block.
 
 2026-11-12; Claude; CHG-0030: set PORT67_AUTO_APPROVE_PRODUCER=true in Render to auto-approve the producer start step (consent plus the four researchers run in the background when a customer requests research); remove it to restore the producer. Gates 1 to 5 after research stay human. Not verified live.
