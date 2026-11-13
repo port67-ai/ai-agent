@@ -212,6 +212,8 @@ export type Project = {
   channels?: string[];
   /** Per research agent status, computed for the response only (never stored) so customers can follow progress without seeing run internals. */
   researchProgress?: { segment: Segment; status: "idle" | "running" | "completed" | "failed"; sources: number; at?: string }[];
+  /** Why a requested research has not started, computed for the response only. Operators see the reason; customers see a neutral line. */
+  researchNote?: string;
   /** A customer's request for the producer to start research on the chosen channels. */
   researchRequest?: { at: string; by: string; channels: string[] };
   capabilities: Capability[];

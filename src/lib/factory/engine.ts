@@ -12,6 +12,7 @@ import {
   type KeyMessage,
   type Strategy,
 } from "./model";
+import { autoApproveProducer } from "./auto-approve";
 export const digest = (s: string) =>
   createHash("sha256").update(s).digest("hex");
 const now = () => new Date().toISOString();
@@ -611,6 +612,11 @@ export function projectView(input: Project, a: Principal): Project {
   access(input, a);
   const p = linkProjectOwnership(input);
   p.researchProgress = researchProgress(p);
+  if (p.researchRequest && !p.runs.some((r) => (r.stage || "research") === "research")) {
+    const failure = [...p.audit].reverse().find((x) => x.action === "producer_step_auto_failed" || x.action === "producer_step_auto_approved");
+    if (failure?.action === "producer_step_auto_failed") p.researchNote = a.role === "operator" ? "Automatic start could not run: " + failure.detail : "Port67 is setting up your research.";
+    else if (autoApproveProducer()) p.researchNote = "Starting automatically.";
+  }
   if (a.role === "operator") {
     p.aiAuthorised = hasProviderConsent(p);
     return p;
