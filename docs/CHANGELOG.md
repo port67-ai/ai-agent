@@ -259,3 +259,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-007 (reworked), FAC-HAR-008. PRD 1.17.0.
 - Evidence: tsc, lint and the new tests (tooltip content, accessible names, click targets, dialog options, provider limits and prefill) in a sandbox copy. Hover and the overlay were not exercised in a live browser. Stage defaults can no longer be edited by hand, only through Apply suggested setup; an agent with no own model uses the stage default, then the Render settings.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0035 - 2026-11-13 - Show why an agent failed; longer research timeout
+- Author/harness: Claude (Cowork); the owner saw all four research agents FAILED ($0, one failed call each) on the map with no reason.
+- What/why: invokeProvider discarded the provider's error body and every network exception, so failures read only "AI provider returned 400" or "request failed". It now keeps the provider's own message (credential-like text redacted, 220 characters), reports timeouts explicitly, tolerates non-JSON error pages, and gives research calls 100 seconds instead of 60 (web search with a reasoning model can exceed 60 seconds; the run lease is 120 seconds). Network exception text is still not exposed beyond a safe error code. observability.ts now returns the most recent failure per agent from the run records; it appears on the agent card, in the blocker list and in the connector hover. Files: providers.ts, observability.ts, edge-tip.ts, SystemMap.tsx, AiAgents.tsx, tests/factory-providers.test.ts, tests/factory-observability.test.ts.
+- Requirements: FAC-HAR-010. PRD 1.18.0.
+- Evidence: tsc and the extended provider and observability tests with stubbed transport. The actual cause of the four live failures is unknown until the next run shows the message; a 60 second timeout is one candidate, an invalid key, quota or model access are others.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
