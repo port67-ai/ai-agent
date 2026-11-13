@@ -1652,3 +1652,59 @@
 .jf-box.agent.unset{stroke-dasharray:4 3}
 .jf-title{font-size:14px;font-weight:600;fill:#1f2937}
 .jf-sub{font-size:12px;fill:#475569}
+
+/* System map: dark, neon outlines */
+.f-systemmap{background:#0a0f1e;color:#e6edf7;border-color:#1e293b}
+.f-systemmap h2{color:#f1f5f9}
+.f-systemmap .f-small{color:#94a3b8}
+.sm-svg{width:100%;min-width:900px;height:auto;display:block;font-family:inherit}
+.sm-bg{fill:#0a0f1e}
+.sm-heading{font-size:22px;font-weight:700;fill:#f8fafc}
+.sm-band{font-size:11px;letter-spacing:.08em;fill:#64748b;font-weight:600}
+.sm-box{fill-opacity:.1;stroke-width:1.6}
+.sm-node.running .sm-box{stroke-width:2.6;fill-opacity:.2;animation:sm-pulse 1.6s ease-in-out infinite}
+.sm-node.blocked .sm-box{stroke-width:2.4;fill-opacity:.16;animation:sm-pulse 2.2s ease-in-out infinite}
+.sm-node.failed .sm-box{stroke-width:2.4;fill-opacity:.16}
+.sm-node.idle{opacity:.7}
+.sm-title{font-size:13px;font-weight:700;fill:#f1f5f9}
+.sm-sub{font-size:11px;fill:#94a3b8;text-anchor:middle}
+.sm-sub.left{text-anchor:start}
+.sm-pill{fill:#0f172a;stroke-width:1}
+.sm-pilltext{font-size:11px;font-weight:600}
+.sm-badge{fill:#1e293b;stroke-width:1}
+.sm-badge.blocked{stroke:#fbbf24;fill:#3b2a07}
+.sm-badge.running{stroke:#60a5fa;fill:#0c2a4d}
+.sm-badge.failed{stroke:#f87171;fill:#3b0d0d}
+.sm-badgetext{font-size:9px;font-weight:700;fill:#f8fafc;letter-spacing:.05em}
+.sm-link{opacity:.9}
+.sm-link.dim{opacity:.35}
+.sm-link.flow{animation:df-dash 1s linear infinite}
+.sm-edge{font-size:10px;fill:#cbd5e1}
+.sm-edge.warn{fill:#f87171}
+.sm-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.f-systemmap .f-legend{color:#cbd5e1}
+@keyframes sm-pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.45}}
+@media (prefers-reduced-motion:reduce){.sm-node.running .sm-box,.sm-node.blocked .sm-box,.sm-link.flow{animation:none}}
+
+/* Flow health and cost by model */
+.f-blockers .f-blocker{display:flex;gap:10px;align-items:flex-start}
+.f-blocker.blocked svg{color:#b45309}
+.f-blocker.failed svg{color:#b91c1c}
+.f-blocker.idle svg{color:#64748b}
+.f-blocker div{display:flex;flex-direction:column}
+.f-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:640px}
+.f-table th,.f-table td{padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
+.f-bar{display:inline-block;width:70px;height:8px;border-radius:4px;background:#e5e7eb;vertical-align:middle;overflow:hidden}
+.f-bar i{display:block;height:100%;background:#1072ba}
+
+/* Research preparation */
+.f-prep h3{font-size:.95rem;margin:16px 0 6px}
+.f-prep-checks{list-style:none;padding:0;margin:8px 0;display:grid;gap:8px}
+.f-prep-checks li{display:flex;gap:10px;align-items:flex-start}
+.f-prep-checks li div{display:flex;flex-direction:column}
+.f-prep-checks li span{font-size:.85rem;color:#475569}
+.f-prep-checks li.ok svg{color:#15803d}
+.f-prep-checks li.bad svg{color:#b91c1c}
+.f-prep-checks li.warn svg{color:#b45309}
+.f-prep-segments details{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin:6px 0}
+.f-prep-segments summary{cursor:pointer}
