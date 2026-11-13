@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useProjectGet } from "./useProjectGet";
 import { Compass, Loader2, Pencil } from "lucide-react";
 import { AUDIENCES, CATEGORIES, CATEGORY_LABEL, REACHES, SIZES, type ResearchScope, type ScopeEntry } from "@/lib/factory/scope";
 import { SEGMENT_LABEL } from "@/lib/factory/research-plan";
@@ -20,32 +21,24 @@ const fromDraft = (d: Draft) => ({ classification: d.c, competitorSet: lines(d.c
 
 /** What kind of business this is and what each researcher will ask, saved on the project. Producers can re-run or edit it. */
 export function ScopePanel({ p, operator }: { p: Project; operator: boolean }) {
-  const [view, setView] = useState<View | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let alive = true;
-    const t = setTimeout(() => {
-      call<View>(p.id).then((r) => alive && setView(r)).catch((e: Error) => alive && setError(e.message));
-    }, 0);
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [p.id, p.revision]);
-  if (!view) return error ? <section className="f-panel"><p className="f-team-error" role="alert">{error}</p></section> : null;
+  const [actionError, setActionError] = useState("");
+  const [tick, setTick] = useState(0);
+  const { data: view, error: loadError } = useProjectGet<View>(`/api/factory/projects/${p.id}/scope`, p.revision * 1000 + tick);
+  if (!view) return <section className="f-panel f-prep"><h2><Compass size={18} aria-hidden="true" /> Business scope</h2>{loadError ? <p className="f-team-error" role="alert">Could not load the business scope: {loadError}</p> : <p className="f-small" role="status">Loading business scope…</p>}</section>;
+  const error = actionError || loadError || "";
   const s = view.scope;
   const c = s.classification;
   const run = async (body: unknown) => {
     setBusy(true);
-    setError("");
+    setActionError("");
     try {
-      const r = await call<Omit<View, "history" | "scoping">>(p.id, body);
-      setView((v) => ({ ...(v as View), ...r }));
+      await call<unknown>(p.id, body);
       setDraft(null);
+      setTick((n) => n + 1);
     } catch (e) {
-      setError((e as Error).message);
+      setActionError((e as Error).message);
     } finally {
       setBusy(false);
     }

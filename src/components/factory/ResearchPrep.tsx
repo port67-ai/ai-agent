@@ -1,32 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useProjectGet } from "./useProjectGet";
 import { CheckCircle2, CircleAlert, ClipboardList, Download, FileSearch } from "lucide-react";
 import type { Dossier, ResearchPlan } from "@/lib/factory/research-plan";
 
-async function get<T>(path: string): Promise<T> {
-  const response = await fetch("/api/factory/projects/" + path, { cache: "no-store" });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Request failed");
-  return data;
-}
 type Project = { id: string; revision: number };
 
 /** Readiness and plan: shown before research runs, so everyone can see what will be asked and what is missing. */
 export function ResearchPrep({ p, operator }: { p: Project; operator: boolean }) {
-  const [plan, setPlan] = useState<ResearchPlan | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let alive = true;
-    const t = setTimeout(() => {
-      get<{ plan: ResearchPlan }>(p.id + "/research-plan").then((r) => alive && setPlan(r.plan)).catch((e: Error) => alive && setError(e.message));
-    }, 0);
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [p.id, p.revision]);
-  if (error) return <section className="f-panel"><p className="f-team-error" role="alert">{error}</p></section>;
-  if (!plan) return null;
+  const { data, error } = useProjectGet<{ plan: ResearchPlan }>(`/api/factory/projects/${p.id}/research-plan`, p.revision);
+  const plan = data?.plan;
+  if (error && !plan) return <section className="f-panel"><p className="f-team-error" role="alert">Could not load research preparation: {error}</p></section>;
+  if (!plan) return <section className="f-panel f-prep"><h2><ClipboardList size={18} aria-hidden="true" /> Research preparation</h2><p className="f-small" role="status">Loading research preparation…</p></section>;
   const missing = plan.checks.filter((c) => !c.ok);
   return (
     <section className="f-panel f-prep">
@@ -76,17 +60,7 @@ export function ResearchPrep({ p, operator }: { p: Project; operator: boolean })
 
 /** The research output before any drafting. Producers see every source; customers only accepted ones. */
 export function ResearchDossier({ p }: { p: Project }) {
-  const [data, setData] = useState<{ dossier: Dossier; markdown: string } | null>(null);
-  useEffect(() => {
-    let alive = true;
-    const t = setTimeout(() => {
-      get<{ dossier: Dossier; markdown: string }>(p.id + "/research-dossier").then((r) => alive && setData(r)).catch(() => undefined);
-    }, 0);
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [p.id, p.revision]);
+  const { data } = useProjectGet<{ dossier: Dossier; markdown: string }>(`/api/factory/projects/${p.id}/research-dossier`, p.revision);
   if (!data || data.dossier.totals.sources === 0) return null;
   const d = data.dossier;
   const download = () => {
