@@ -123,14 +123,16 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
     const es = edgesFor(id);
     const stat = a.stats!;
     const running = stat.inFlight > 0;
-    const failed = stat.failed + stat.unknown > 0;
+    const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : stat.failed + stat.unknown > 0;
+    const earlier = stat.failed + stat.unknown;
+    const unpriced = es.some((e) => e.unpriced > 0);
     const state = running ? "running" : failed ? "failed" : !a.model ? "idle" : stat.calls === 0 ? "idle" : "";
     const lat = es.map((e) => e.avgLatencyMs).filter((n): n is number => n !== undefined);
     const avg = lat.length ? Math.round(lat.reduce((x, y) => x + y, 0) / lat.length) : undefined;
     return (
       <Node key={id} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
-        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `${stat.failed + stat.unknown} failed or unknown` : stat.calls ? "Healthy" : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
+        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${unpriced ? "cost unknown" : usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `Last call failed (${earlier} in total)` : stat.calls ? (earlier ? `Healthy now · ${earlier} earlier failed` : "Healthy") : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
         state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
         onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(id, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
@@ -155,7 +157,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
     const tip = tipFor(id);
     return (
       <g key={"api-" + id} className={hover?.id === "edge:" + id ? "sm-hot" : ""}>
-        <Link d={d} color={provColor(prov)} live={stat.inFlight > 0} dim={stat.calls === 0} hot={hover?.id === "edge:" + id} label={stat.calls ? `${stat.calls} · ${usd(stat.estimatedMicroUsd)}` : ""} lx={x0 + 8} ly={ly - 3} warn={stat.failed + stat.unknown > 0} />
+        <Link d={d} color={provColor(prov)} live={stat.inFlight > 0} dim={stat.calls === 0} hot={hover?.id === "edge:" + id} label={stat.calls ? `${stat.calls} · ${edgesFor(id).some((e) => e.unpriced > 0) ? "cost ?" : usd(stat.estimatedMicroUsd)}` : ""} lx={x0 + 8} ly={ly - 3} warn={stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : stat.failed + stat.unknown > 0} />
         <path d={d} className="sm-hit" tabIndex={0} role="img" aria-label={tip?.summary} data-edge={id}
           onMouseMove={(e) => showAt("edge:" + id, e.clientX, e.clientY)} onMouseLeave={() => setHover(null)}
           onFocus={(e) => { const b = e.currentTarget.getBoundingClientRect(); showAt("edge:" + id, b.left + b.width / 2, b.top + b.height / 2); }} onBlur={() => setHover(null)} />

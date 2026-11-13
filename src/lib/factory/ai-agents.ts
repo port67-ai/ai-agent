@@ -16,7 +16,7 @@ const PURPOSE: Record<string, { capability: string; purpose: string }> = {
   "synthesis:strategy": { capability: "drafting.direction", purpose: "Drafts the campaign direction: positioning, key messages with proof, tone, channels and claims to avoid." },
   "synthesis:content": { capability: "drafting.content", purpose: "Writes channel copy from the approved direction and its evidence only; rejected if it invents a figure." },
 };
-export type AgentStats = { calls: number; completed: number; failed: number; unknown: number; inFlight: number; inputTokens: number; outputTokens: number; estimatedMicroUsd: number; lastAt?: string };
+export type AgentStats = { calls: number; completed: number; failed: number; unknown: number; inFlight: number; inputTokens: number; outputTokens: number; estimatedMicroUsd: number; lastAt?: string; lastStatus?: "completed" | "failed" | "unknown" | "reserved" };
 const IN_FLIGHT_MS = 120000;
 export function agentStats(rows: ApiCall[], agent: string, now = Date.now()): AgentStats {
   const own = rows.filter((r) => r.agent === agent);
@@ -30,7 +30,7 @@ export function agentStats(rows: ApiCall[], agent: string, now = Date.now()): Ag
     inputTokens: own.reduce((n, r) => n + (r.usage?.inputTokens || 0), 0),
     outputTokens: own.reduce((n, r) => n + (r.usage?.outputTokens || 0), 0),
     estimatedMicroUsd: own.reduce((n, r) => n + (r.reconciliation ? r.reconciliation.actualMicroUsd : r.estimatedMicroUsd || 0), 0),
-    ...(own.length ? { lastAt: own.map((r) => r.createdAt).sort().at(-1) } : {}),
+    ...(own.length ? { lastAt: own.map((r) => r.createdAt).sort().at(-1), lastStatus: ((l) => (l.status === "reserved" ? (flying(l) ? "reserved" : "unknown") : l.status))([...own].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1)!) } : {}),
   };
 }
 export async function agentsOverview(repo: Repository, env: Record<string, string | undefined> = process.env) {

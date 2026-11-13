@@ -61,9 +61,12 @@ assert.equal(scopeCurrent({ ...hashed, channels: ['facebook'] }), false, 'changi
 // Diagnostics windows: runs within ten minutes are one execution; the default report covers the latest only.
 import { buildDiagnostics, executions } from '../src/lib/factory/diagnostics';
 const hist = mk({ business: 'History Co', description: 'x' });
-const run = (id: string, at: string, status: 'failed' | 'completed', error?: string) => ({ id, at, finishedAt: new Date(Date.parse(at) + 5000).toISOString(), status, stage: 'research' as const, segment: 'brand' as const, provider: 'openai', model: 'm', ...(error ? { error } : {}) });
-hist.runs.push(run('a', '2026-11-13T11:00:00Z', 'failed', 'OLD ERROR'), run('b', '2026-11-13T11:02:00Z', 'failed', 'OLD ERROR TWO'), run('c', '2026-11-13T14:00:00Z', 'failed', 'NEW ERROR'));
-assert.equal(executions(hist).length, 2, 'a gap of more than ten minutes starts a new execution');
+const run = (id: string, at: string, status: 'failed' | 'completed', error?: string, segment: 'brand' | 'customer' = 'brand') => ({ id, at, finishedAt: new Date(Date.parse(at) + 5000).toISOString(), status, stage: 'research' as const, segment, provider: 'openai', model: 'm', ...(error ? { error } : {}) });
+hist.runs.push(run('a', '2026-11-13T11:00:00Z', 'failed', 'OLD ERROR'), run('b', '2026-11-13T11:02:00Z', 'failed', 'OLD ERROR TWO', 'customer'), run('c', '2026-11-13T14:00:00Z', 'failed', 'NEW ERROR'));
+assert.equal(executions(hist).length, 2, 'a gap of more than three minutes starts a new execution');
+hist.runs.push(run('d', '2026-11-13T14:00:30Z', 'completed'));
+assert.equal(executions(hist).length, 3, 'an agent running a second time starts a new execution even within minutes');
+hist.runs.pop();
 const ctx = { now: '2026-11-13T15:00:00Z', switches: {}, routes: [] };
 const latest = buildDiagnostics(hist, ctx);
 assert.match(latest.markdown, /NEW ERROR/);assert.ok(!/OLD ERROR/.test(latest.markdown), 'earlier executions do not leak into the latest report');assert.equal(latest.report.failures.length, 1);
