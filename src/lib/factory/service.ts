@@ -40,6 +40,8 @@ import { demoRepository, repository, type Repository } from "./repository";
 import { researchReady, researchSegment } from "./research";
 import { autoApproveProducer, AUTO_APPROVER } from "./auto-approve";
 import { prepareResearchPlan, researchDossier, renderDossierMarkdown } from "./research-plan";
+import { ensureScope, saveScope, scopeCurrent, scopingEnabled } from "./scope-run";
+import { scopeForCustomer, templateScope } from "./scope";
 import {
   segments,
   type Principal,
@@ -216,8 +218,10 @@ async function seed(a: Principal) {
   });
 }
 async function runResearchSegment(a: Principal, projectId: string, segment: Segment) {
+  requireProviderConsent(find((await repo(a).read(a.workspaceId)).projects, projectId, a));
+  // Classify the business once per brief so each researcher gets a narrow, business-specific ask. Never blocks research.
+  await ensureScope(repo(a), a, projectId);
   const p = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
-  requireProviderConsent(p);
     const selection = await resolveSelection(repo(a), researchSlot(segment));
     const run: ResearchRun = {
       id: id(),
@@ -286,8 +290,10 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
             : "");
         record.status = error ? "failed" : "completed";
         record.finishedAt = new Date().toISOString();
-        if (error) record.error = error;
-        else if (result.gaps?.length) record.gaps = result.gaps;
+        if (error) {
+          record.error = error;
+          if (result.note) record.note = result.note;
+        } else if (result.gaps?.length) record.gaps = result.gaps;
         if (!error)
           current.sources.push(
             ...result.sources.map((source) => ({
@@ -612,6 +618,18 @@ export async function handleFactory(
       }
       if (path[2] === "research-plan" && request.method === "GET")
         return json({ plan: prepareResearchPlan(p) });
+      if (path[2] === "scope" && request.method === "GET") {
+        // The stored classification for this project, read at any time. With none stored yet, a free template preview is returned.
+        const stored = !!p.scope;
+        const shown = p.scope || templateScope(p, { briefHash: digest(JSON.stringify(p.brief)), version: 0 });
+        return json({ scope: a.role === "operator" ? shown : scopeForCustomer(shown), stored, current: stored && scopeCurrent(p), history: a.role === "operator" ? p.scopeHistory || [] : [], scoping: { enabled: scopingEnabled() } });
+      }
+      if (path[2] === "scope" && request.method === "POST") {
+        operator(a);
+        if (data.action === "classify") return json({ scope: await ensureScope(repo(a), a, projectId, true), stored: true, current: true });
+        if (data.action === "save") return json({ scope: await saveScope(repo(a), a, projectId, data.scope), stored: true, current: true });
+        throw new Error("Unknown scope action");
+      }
       if (path[2] === "research-dossier" && request.method === "GET") {
         const dossier = researchDossier(p, a.role === "operator" ? "operator" : "customer");
         return json({ dossier, markdown: renderDossierMarkdown(dossier) });

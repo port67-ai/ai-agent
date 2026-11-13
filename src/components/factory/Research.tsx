@@ -15,6 +15,7 @@ import InsightEditor from "./InsightEditor";
 import ChannelPicker from "./ChannelPicker";
 import ResearchProgress from "./ResearchProgress";
 import { ResearchPrep, ResearchDossier } from "./ResearchPrep";
+import { ScopePanel } from "./ScopePanel";
 const gapsFor = (p: { runs: { segment?: string; status: string; gaps?: string[] }[] }, segment: string) =>
   [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
 export default function Research({
@@ -44,6 +45,7 @@ export default function Research({
   return (
     <>
       <ChannelPicker p={p} operator={operator} busy={busy} live={live} command={command} onRunAll={onRunAll} />
+      <ScopePanel p={p} operator={operator} />
       <ResearchPrep p={p} operator={operator} />
       <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />
       <ResearchDossier p={p} />
@@ -362,7 +364,7 @@ export default function Research({
             <button
               type="button"
               className="f-text-button"
-              onClick={() => void navigator.clipboard?.writeText(p.runs.map((r) => `${r.segment || r.stage} | ${r.status} | ${r.provider}/${r.model} | ${r.error || "ok"} | ${r.providerRequestId || ""}`).join("\n"))}
+              onClick={() => void navigator.clipboard?.writeText(p.runs.map((r) => `${r.segment || r.stage} | ${r.status} | ${r.provider}/${r.model} | ${r.error || "ok"} | ${r.providerRequestId || ""}${r.note ? " | note: " + r.note : ""}`).join("\n"))}
             >
               Copy run details
             </button>
@@ -377,6 +379,7 @@ export default function Research({
                 {r.error || JSON.stringify(r.usage || {})} · billed cost not
                 reconciled
               </p>
+              {r.note && <p className="f-small">What the model wrote instead of cited findings (not evidence): {r.note}</p>}
               <small>
                 Context {r.contextHash?.slice(0, 12) || "unrecorded"} · usage{" "}
                 {r.usageStatus || "unknown"} ·{" "}

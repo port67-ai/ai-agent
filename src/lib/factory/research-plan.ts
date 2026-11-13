@@ -1,17 +1,21 @@
 import { channelById, channelNames } from "./channels";
 import { segments, type Project, type Segment } from "./model";
+import { CATEGORY_LABEL, type Classification, type ResearchScope } from "./scope";
 
 // Research preparation: decide, before any paid call, whether the brief is good enough, what each research
 // agent will be asked, and what the research will produce. Pure functions, no AI cost, safe on the client.
 export const SEGMENT_LABEL: Record<Segment, string> = { brand: "Business and brand", customer: "Customer insight", competitor: "Competitor intelligence", creative: "Creative research" };
 export const SEGMENT_AGENT: Record<Segment, string> = { brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative" };
 export type Check = { id: string; label: string; ok: boolean; level: "required" | "recommended"; fix: string };
-export type SegmentPlan = { segment: Segment; label: string; agent: string; startFrom: string[]; questions: string[]; delivers: string };
+export type SegmentPlan = { segment: Segment; label: string; agent: string; startFrom: string[]; questions: string[]; delivers: string; /** From the stored scope: what this agent skips and how many pages it may open. */ avoid?: string[]; maxPages?: number };
+export type PlanScope = { source: ResearchScope["source"]; version: number; at: string; classification: Classification; competitorSet: string[]; note?: string };
 export type ResearchPlan = {
   ready: boolean;
   score: number;
   checks: Check[];
   segments: SegmentPlan[];
+  /** The stored classification the questions came from. Absent until the business has been classified. */
+  scope?: PlanScope;
   assumptions: string[];
   expectedOutputs: string[];
   estimate: { runs: number; inputTokensPerRun: number; note: string };
@@ -26,7 +30,7 @@ const host = (url: string) => {
     return "";
   }
 };
-export function prepareResearchPlan(p: Pick<Project, "brief" | "channels">): ResearchPlan {
+export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { scope?: ResearchScope }): ResearchPlan {
   const raw = (p.brief || {}) as Partial<Record<string, string>>;
   const b = { business: String(raw.business ?? ""), objective: String(raw.objective ?? ""), description: String(raw.description ?? ""), website: String(raw.website ?? ""), audience: String(raw.audience ?? ""), competitors: String(raw.competitors ?? ""), inspiration: String(raw.inspiration ?? "") };
   const site = host(b.website);
@@ -97,6 +101,17 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels">): Res
       delivers: "Channel-native formats and hooks backed by cited examples or published analysis.",
     },
   ];
+  // A stored scope replaces the generic questions with ones matched to this kind of business.
+  if (p.scope) {
+    for (const plan of plans) {
+      const sc = p.scope.segments[plan.segment];
+      if (!sc) continue;
+      plan.questions = sc.questions;
+      if (sc.sourceTypes.length) plan.startFrom = [...sc.sourceTypes, ...plan.startFrom.filter((x) => /^(Business website|Competitor:)/.test(x))].slice(0, 8);
+      plan.avoid = sc.avoid;
+      plan.maxPages = sc.maxPages;
+    }
+  }
   const assumptions = checks
     .filter((c) => !c.ok && c.level === "recommended")
     .map((c) => ({ website: "The brand researcher will search for the business by name; its facts are less certain without the website.", audience: "The customer researcher will infer the audience from the offer; confirm it at source review.", competitors: "The competitor researcher will choose competitors itself; confirm them at source review.", inspiration: "The creative researcher will work from channel playbooks only." }[c.id] || c.fix));
@@ -106,6 +121,7 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels">): Res
     score,
     checks,
     segments: plans,
+    ...(p.scope ? { scope: { source: p.scope.source, version: p.scope.version, at: p.scope.at, classification: p.scope.classification, competitorSet: p.scope.competitorSet, ...(p.scope.note ? { note: p.scope.note } : {}) } } : {}),
     assumptions,
     expectedOutputs: [
       "Per research agent: up to eight cited findings, each one claim with its own source URL and a short quote",
@@ -127,6 +143,8 @@ export type Dossier = {
   totals: { sources: number; supported: number; unreviewed: number; rejected: number; findings: number; gaps: number };
   readyForInsights: boolean;
   nextStep: string;
+  /** What kind of business the research was scoped for, when it has been classified. */
+  classification?: Classification;
 };
 /** The research output before any drafting: findings grouped by agent. Customers only see sources a producer has accepted. */
 export function researchDossier(p: Project, audience: "operator" | "customer", now = new Date().toISOString()): Dossier {
@@ -153,12 +171,14 @@ export function researchDossier(p: Project, audience: "operator" | "customer", n
     generatedAt: now,
     segments: segs,
     totals,
+    ...(p.scope ? { classification: p.scope.classification } : {}),
     readyForInsights: totals.supported > 0,
     nextStep: !all.length ? "No research yet. Request research, or add sources by hand." : totals.unreviewed > 0 ? "Review the unreviewed sources (Gate 1). Insights can only use sources marked supported." : totals.supported > 0 ? "Ready for AI insights: draft insights from the supported sources." : "Every source was rejected. Run research again or add sources by hand.",
   };
 }
 export function renderDossierMarkdown(d: Dossier): string {
   const out: string[] = [`# Research dossier: ${d.business}`, "", `Generated ${d.generatedAt.slice(0, 10)}${d.website ? ` · ${d.website}` : ""}${d.channels.length ? ` · Channels: ${d.channels.join(", ")}` : ""}`, "", `${d.totals.sources} sources (${d.totals.supported} supported, ${d.totals.unreviewed} unreviewed, ${d.totals.rejected} rejected), ${d.totals.findings} findings, ${d.totals.gaps} gaps.`, "", `Next step: ${d.nextStep}`, ""];
+  if (d.classification) out.push(`Scoped as: ${d.classification.businessType} (${CATEGORY_LABEL[d.classification.category]}; size ${d.classification.size}; reach ${d.classification.reach}; audience ${d.classification.audienceModel}${d.classification.regulated ? "; regulated sector" : ""}; confidence ${d.classification.confidence}).`, "");
   for (const s of d.segments) {
     out.push(`## ${s.label}`, "", "Questions asked:", ...s.questions.map((q) => `- ${q}`), "");
     if (!s.sources.length) out.push("_No sources yet._", "");

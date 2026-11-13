@@ -7,6 +7,7 @@ import { flowObservability } from "./observability";
 
 // Admin view of every agent: what it does, which model runs it, and what it has done and cost.
 const PURPOSE: Record<string, { capability: string; purpose: string }> = {
+  "scope:business": { capability: "scope.business", purpose: "Reads the brief (no web search) and classifies the business: type, size, reach, audience and regulation. Saves that classification and a narrow, business-specific question list for each research agent to Firestore, so every later step can read it." },
   "research:brand": { capability: "research.brand", purpose: "Reads the business website and independent coverage to establish the offer, brand voice and facts the business can stand behind." },
   "research:customer": { capability: "research.customer", purpose: "Finds real customer reviews and discussion: motivations, objections, the words customers use and the alternatives they weigh." },
   "research:competitor": { capability: "research.competitor", purpose: "Maps named competitors: positioning, who they target, what customers praise and complain about, and the gaps they leave." },
@@ -48,7 +49,7 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
     const eff = routing.effective.find((e) => e.slot === slot.id);
     return {
       id: slot.id as string,
-      group: slot.stage === "research" ? "research" : "drafting",
+      group: slot.id === "scope:business" ? "scoping" : slot.stage === "research" ? "research" : "drafting",
       name: cap?.name || slot.label,
       purpose: meta.purpose,
       kind: "ai" as const,

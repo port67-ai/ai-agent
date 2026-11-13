@@ -13,13 +13,13 @@ Purpose: run the real jpell@me.com account owner project through the four resear
 
 1. AI agents tab, click Apply suggested setup, or Change model on each research agent.
 2. For every chosen model use Fetch public price, add the search fee by hand, Save. Without prices a call holds $1 of the $25 cap.
-3. Confirm the system map shows a model on each research agent and no "No model chosen yet".
+3. Confirm the system map shows a model on each research agent and no "No model chosen yet". Also choose a model for the Scoping agent (optional: without one a free template scope is used).
 
 ## Prepare (account owner, jpell@me.com)
 
 1. Open the project and the Business brief. Fill: business name, objective, a description of at least two sentences, website, audience, named competitors, inspiration.
 2. Research room: choose launch channels (up to five).
-3. Read Research preparation. Required items must be green. Recommended items turn into stated assumptions if left empty. Check the questions each agent will be asked.
+3. Read Business scope: check the business type, size and reach it chose, and edit the questions if they are off. Then read Research preparation. Required items must be green. Recommended items turn into stated assumptions if left empty. Check the questions each agent will be asked.
 
 ## Run
 

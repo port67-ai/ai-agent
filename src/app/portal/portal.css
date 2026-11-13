@@ -1733,3 +1733,7 @@
 .f-pick span{padding-left:2px}
 .f-project-tools .f-pick select{text-transform:none;letter-spacing:0;font-weight:400;color:#1f2937}
 .f-detail,.f-detail *{user-select:text;-webkit-user-select:text}
+
+.f-prep-edit{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin:8px 0;display:grid;gap:8px}
+.f-prep-edit legend{font-weight:600;padding:0 6px}
+.f-prep-edit textarea{width:100%}

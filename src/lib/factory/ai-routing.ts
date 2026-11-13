@@ -19,6 +19,7 @@ export const PROVIDERS: { id: Provider; label: string; research: boolean }[] = [
   { id: "deepseek", label: "DeepSeek", research: false },
 ];
 export const SLOTS = [
+  { id: "scope:business", stage: "synthesis", label: "Scoping: classify the business", hint: "Reads the brief and decides what each research agent should ask and skip." },
   { id: "research:brand", stage: "research", label: "Research: business and brand", hint: "Product, offer and facts the business can stand behind." },
   { id: "research:customer", stage: "research", label: "Research: customer insight", hint: "Customer language, motivations, objections and reviews." },
   { id: "research:competitor", stage: "research", label: "Research: competitor intelligence", hint: "Competitor positioning and public customer reactions." },
@@ -140,7 +141,7 @@ export async function resolveSelection(repo: Repository, slotId: SlotId, env: En
 export async function stageReady(repo: Repository, stage: ProviderStage, env: Env = process.env) {
   if (env[stage === "research" ? "PORT67_RESEARCH_ENABLED" : "PORT67_SYNTHESIS_ENABLED"] !== "true") return false;
   if (providerConfigured(stage, env)) return true;
-  for (const slot of SLOTS.filter((s) => s.stage === stage)) {
+  for (const slot of SLOTS.filter((s) => s.stage === stage && s.id !== "scope:business")) {
     try {
       await resolveSelection(repo, slot.id, env);
       return true;

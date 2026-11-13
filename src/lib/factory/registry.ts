@@ -10,6 +10,16 @@ export interface CapabilityDefinition {
   approvalRequired: boolean;
 }
 export const capabilityRegistry: readonly CapabilityDefinition[] = [
+  {
+    id: "scope.business",
+    version: "1.0.0",
+    name: "Scoping agent",
+    kind: "synthesis",
+    inputContract: "Authorised PUBLIC ProjectBrief + launch channels; no tools, no web search",
+    outputContract: "ResearchScope/1.0: classification and per-agent questions, saved on the project",
+    permissions: ["model-call-public-data"],
+    approvalRequired: false,
+  },
   ...(["brand", "customer", "competitor", "creative"] as const).map(
     (segment) => ({
       id: `research.${segment}`,
