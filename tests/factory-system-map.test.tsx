@@ -15,7 +15,7 @@ const agents = [
   ai('research:brand', 'research', 'Business and brand researcher', 'gpt-a', 'openai', stats(2, 1)),
   ai('research:customer', 'research', 'Customer insight researcher', 'gem-b', 'gemini', stats(1, 0, 1)),
   ai('research:competitor', 'research', 'Competitor researcher', 'gpt-a'),
-  ai('research:creative', 'research', 'Creative researcher', 'gpt-a'),
+  ai('research:creative', 'research', 'Creative researcher', 'gpt-a', 'openai', { ...stats(3, 0, 1), lastStatus: 'completed' } as never),
   ai('synthesis:insights', 'drafting', 'Insights agent', 'claude-c', 'anthropic'),
   ai('synthesis:strategy', 'drafting', 'Direction agent', undefined),
   ai('synthesis:content', 'drafting', 'Copy pack agent', 'gpt-a'),
@@ -48,6 +48,9 @@ const proj = { id: 'p1', revision: 1 };
 assert.match(renderToStaticMarkup(React.createElement(ScopePanel, { p: proj, operator: true })), /Loading business scope/);
 assert.match(renderToStaticMarkup(React.createElement(DiagnosticsPanel, { p: proj })), /Loading diagnostics/);
 assert.match(renderToStaticMarkup(React.createElement(ResearchPrep, { p: proj, operator: true })), /Loading research preparation/);
+assert.match(html, /Healthy now · 1 earlier failed/, 'an old failure does not keep an agent red once the latest call succeeded');
+const okEdge = { agent: 'research:creative', provider: 'openai', model: 'gpt-a', calls: 3, completed: 2, failed: 1, unknown: 0, inFlight: 0, inputTokens: 1, outputTokens: 1, microUsd: 1, unpriced: 0, lastStatus: 'completed' as const };
+assert.equal(findBlockers(pipelineStats([]), [okEdge, { ...okEdge, agent: 'research:brand', lastStatus: 'failed' as const }], [{ id: 'research:creative', name: 'Creative', hasModel: true }, { id: 'research:brand', name: 'Brand', hasModel: true }]).filter((b) => b.level === 'failed').length, 1, 'only an agent whose latest call failed is listed as failing');
 const health = renderToStaticMarkup(React.createElement(FlowHealth, { flow }));
 assert.match(health, /Business classifications/);
 assert.match(health, /Rosie Blooms/);

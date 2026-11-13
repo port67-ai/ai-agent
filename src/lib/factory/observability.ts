@@ -24,6 +24,12 @@ export type EdgeStat = {
   unpriced: number;
   avgLatencyMs?: number;
   lastAt?: string;
+  /** Status of the most recent call: an old failure does not keep an agent red once a later call succeeds. */
+  lastStatus?: "completed" | "failed" | "unknown" | "reserved";
+};
+const latestStatus = (rows: ApiCall[], flying: (r: ApiCall) => boolean): "completed" | "failed" | "unknown" | "reserved" => {
+  const last = [...rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1)!;
+  return last.status === "reserved" ? (flying(last) ? "reserved" : "unknown") : last.status;
 };
 function fold(rows: ApiCall[], now: number): Omit<EdgeStat, "agent" | "provider" | "model"> {
   const flying = (r: ApiCall) => r.status === "reserved" && Date.parse(r.createdAt) + IN_FLIGHT_MS > now;
@@ -41,6 +47,7 @@ function fold(rows: ApiCall[], now: number): Omit<EdgeStat, "agent" | "provider"
     unpriced: rows.filter((r) => costOf(r) === undefined).length,
     ...(latency.length ? { avgLatencyMs: Math.round(latency.reduce((a, b) => a + b, 0) / latency.length) } : {}),
     ...(rows.length ? { lastAt: rows.map((r) => r.createdAt).sort().at(-1) } : {}),
+    ...(rows.length ? { lastStatus: latestStatus(rows, flying) } : {}),
   };
 }
 /** One edge per agent, provider and model: every edge is a metered API call path. */
@@ -176,7 +183,7 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
   if (p.waiting.insightReview) out.push({ level: "blocked", where: "Gate 2", text: `${n(p.waiting.insightReview, "project has", "projects have")} draft insights waiting for acceptance.` });
   if (p.waiting.directionApproval) out.push({ level: "blocked", where: "Gate 3", text: `${n(p.waiting.directionApproval, "direction is", "directions are")} shared and waiting for customer approval.` });
   if (p.waiting.assetApproval) out.push({ level: "blocked", where: "Gate 5", text: `${n(p.waiting.assetApproval, "project has", "projects have")} shared assets waiting for customer approval.` });
-  for (const e of edges.filter((x) => x.failed || x.unknown)) {
+  for (const e of edges.filter((x) => (x.lastStatus ? x.lastStatus === "failed" || x.lastStatus === "unknown" : x.failed || x.unknown))) {
     const name = aiAgents.find((a) => a.id === e.agent)?.name || e.agent;
     out.push({ level: "failed", where: name, text: `${e.failed ? n(e.failed, "call failed", "calls failed") : ""}${e.failed && e.unknown ? " and " : ""}${e.unknown ? n(e.unknown, "call has", "calls have") + " unknown usage" : ""} on ${e.provider} ${e.model}.${errors[e.agent] ? " Last error: " + errors[e.agent].message : ""}` });
   }

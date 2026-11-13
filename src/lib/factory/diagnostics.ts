@@ -14,20 +14,26 @@ export type DiagnosticsContext = {
 export type DiagEvent = { at: string; finishedAt?: string; seconds?: number; kind: "run" | "audit"; agent: string; status: string; provider?: string; model?: string; text: string; usage?: Record<string, number>; requestId?: string; note?: string };
 const agentOf = (r: Project["runs"][number]) => (r.stage === "scope" ? "scope:business" : (r.stage || "research") === "research" ? "research:" + (r.segment || "?") : "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "content" ? "content" : "strategy"));
 const secs = (a: string, b?: string) => (b && Number.isFinite(Date.parse(a)) && Number.isFinite(Date.parse(b)) ? Math.round((Date.parse(b) - Date.parse(a)) / 100) / 10 : undefined);
-const GAP_MS = 10 * 60 * 1000;
+const GAP_MS = 3 * 60 * 1000;
 export type Execution = { start: string; end: string; runs: number; failed: number };
-/** Runs that follow each other within ten minutes are one execution (a Start research, a re-run, a re-classification). */
+/** Runs that follow each other within three minutes are one execution, unless an agent runs a second time, which starts a new one (a Start research, a re-run, a re-classification). */
 export function executions(p: Project): Execution[] {
   const runs = [...p.runs].sort((a, b) => a.at.localeCompare(b.at));
   const out: Execution[] = [];
+  let seen = new Set<string>();
   for (const r of runs) {
     const end = r.finishedAt || r.at;
     const last = out.at(-1);
-    if (last && Date.parse(r.at) - Date.parse(last.end) <= GAP_MS) {
+    const key = agentOf(r);
+    if (last && Date.parse(r.at) - Date.parse(last.end) <= GAP_MS && !seen.has(key)) {
+      seen.add(key);
       last.runs++;
       if (r.status === "failed") last.failed++;
       if (end > last.end) last.end = end;
-    } else out.push({ start: r.at, end, runs: 1, failed: r.status === "failed" ? 1 : 0 });
+    } else {
+      seen = new Set([key]);
+      out.push({ start: r.at, end, runs: 1, failed: r.status === "failed" ? 1 : 0 });
+    }
   }
   return out;
 }
