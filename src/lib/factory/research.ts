@@ -30,7 +30,7 @@ const format =
   "Then zero to five lines of what you looked for and could not find or confirm:\n" +
   "GAP | <what is missing or unverified>\n" +
   "Then exactly one line: CONFIDENCE | limited, moderate or strong, reflecting how many independent sources support the findings.\n" +
-  "Every FINDING must cite a page you actually used. Never invent a quote, statistic, review or source.";
+  "Every FINDING must cite a page you actually used, using the exact URL of a page the web search returned or opened. Never invent a quote, statistic, review or source.";
 export type ParsedResearch = { findings: { claim: string; url: string; quote: string }[]; gaps: string[]; confidence?: "limited" | "moderate" | "strong" };
 /** Reads the FINDING/GAP/CONFIDENCE lines. Lines that do not parse are ignored; a finding only counts later if its URL was a real citation. */
 export function parseResearchText(text: string): ParsedResearch {
@@ -60,10 +60,21 @@ const channelFocus: Record<Segment, string> = {
   creative: "Concentrate on the native formats, hooks and conventions that work on the launch channels. Treat the supplied playbooks as a starting hypothesis to confirm or challenge with cited evidence.",
 };
 /** Why a reply had no usable citations, from counts only (no content): status, truncation, output items, text length and citations seen. */
-function diagnose(provider: string, data: unknown, text: string, citations: number) {
+function diagnose(provider: string, data: unknown, text: string, citations: number, consulted: number, findings: number) {
   const d = (data || {}) as { status?: string; incomplete_details?: { reason?: string }; output?: unknown[]; candidates?: { finishReason?: string }[] };
   const status = provider === "gemini" ? "finish " + (d.candidates?.[0]?.finishReason || "n/a") : "status " + (d.status || "n/a") + (d.incomplete_details?.reason ? ", " + d.incomplete_details.reason : "");
-  return `${status}; ${Array.isArray(d.output) ? d.output.length + " output items; " : ""}${text.length} characters of text; ${citations} citations`;
+  return `${status}; ${Array.isArray(d.output) ? d.output.length + " output items; " : ""}${text.length} characters of text; ${citations} citations; ${consulted} consulted pages; ${findings} findings parsed`;
+}
+/** Pages the OpenAI web search tool reports it searched or opened (needs include web_search_call.action.sources). */
+function consultedPages(output: unknown): { url: string; title?: string }[] {
+  const out: { url: string; title?: string }[] = [];
+  if (!Array.isArray(output)) return out;
+  for (const item of output as { type?: string; action?: { url?: unknown; sources?: { url?: unknown; title?: unknown }[] } }[]) {
+    if (item?.type !== "web_search_call" || !item.action) continue;
+    for (const src of Array.isArray(item.action.sources) ? item.action.sources : []) if (typeof src?.url === "string") out.push({ url: src.url, ...(typeof src.title === "string" ? { title: src.title } : {}) });
+    if (typeof item.action.url === "string") out.push({ url: item.action.url });
+  }
+  return out;
 }
 // Single bounded invocation; no sibling research outputs in the request.
 export async function researchSegment(
@@ -158,6 +169,35 @@ export async function researchSegment(
       }
     }
   }
+  // The model may write findings without inline citation markers. A finding still counts when its URL is a page the
+  // search tool itself reported consulting (web_search_call sources); a URL the tool never returned is never evidence.
+  const consulted = consultedPages(data.output);
+  for (const page of consulted) {
+    if (sources.length >= 8) break;
+    let url: string;
+    try {
+      url = publicUrl(page.url);
+    } catch {
+      continue;
+    }
+    if (seen.has(url)) continue;
+    const own = parsed.findings.filter((f) => sameUrl(f.url, url));
+    if (!own.length) continue;
+    seen.add(url);
+    sources.push({
+      id: id(),
+      segment,
+      title: page.title ? page.title.slice(0, 240) : new URL(url).hostname,
+      url,
+      excerpt: own.map((f) => `Claim: ${f.claim}${f.quote ? `\nEvidence: ${f.quote}` : ""}`).join("\n\n").slice(0, 6000),
+      findings: own.map((f) => ({ claim: f.claim, ...(f.quote ? { quote: f.quote } : {}) })),
+      ...(parsed.confidence ? { confidence: parsed.confidence } : {}),
+      kind: "public_source",
+      status: "unreviewed",
+      collectedAt: new Date().toISOString(),
+      method: `${selection.provider} web search: page consulted by the search tool, no inline citation marker; model synthesis, not verbatim source text`,
+    });
+  }
   return {
     ...metadata,
     sources: sources.slice(0, 8),
@@ -166,6 +206,6 @@ export async function researchSegment(
     ...(parsed.gaps.length ? { gaps: parsed.gaps } : {}),
     error: sources.length
       ? undefined
-      : `No usable cited sources returned (${diagnose(selection.provider, data, result.text, citationsSeen)}). Add sources manually; do not treat uncited synthesis as evidence.`,
+      : `No usable cited sources returned (${diagnose(selection.provider, data, result.text, citationsSeen, consulted.length, parsed.findings.length)}). Add sources manually; do not treat uncited synthesis as evidence.`,
   };
 }

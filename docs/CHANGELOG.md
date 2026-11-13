@@ -273,3 +273,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-010. PRD 1.19.0.
 - Evidence: tsc and the extended research test with stubbed transport (incomplete response, request body limit). Whether 5000 tokens fixes the OpenAI runs is unverified until a live re-run.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0037 - 2026-11-13 - Accept findings backed by pages the search tool consulted
+- Author/harness: Claude (Cowork); the owner's re-run returned "No usable cited sources returned (status completed; 3 output items; 3193 characters of text; 0 citations)": the model searched and wrote findings, but OpenAI attached no inline citation markers, probably because the answer was forced into plain FINDING lines.
+- What/why: Evidence was accepted only from url_citation annotations. The OpenAI research request now asks the search tool to report the pages it used (include web_search_call.action.sources). A finding is accepted when its URL matches either an inline citation or a page the tool reported consulting; a URL the tool never returned is still rejected, so invented sources cannot enter. Such sources are marked in their method as consulted by the search tool with no inline citation marker, and arrive unreviewed like any other. The prompt now asks for the exact URL of a page the search returned or opened. The no-citation error also reports pages consulted and findings parsed. Files: research.ts, providers.ts, tests/factory-research-findings.test.ts.
+- Requirements: FAC-HAR-010. PRD 1.20.0.
+- Evidence: tsc and the extended research test with stubbed transport (consulted page accepted, unconsulted URL rejected, request asks for sources). Whether OpenAI returns the sources field for this model is unverified until a live run; if it does not, the diagnostic line will show 0 consulted pages.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
