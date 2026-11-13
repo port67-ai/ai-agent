@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-13; Claude; CHG-0039: producer agent (rules only) runs the producer steps between approvals and stops at the account owner gates; see docs/CHANGELOG.md CHG-0039. Set PORT67_PRODUCER_AGENT=true in Render to run it automatically; the button works without it. Not yet verified live with the AI steps. Combined button on Production: Drafts, copy pack and share.
+
 2026-11-13; Claude; CHG-0038 follow-up: Draft direction with AI failed the evidence/insight contract with no reason shown. The error now names the validation reason; over-long fields are clipped and omitted insight evidence is added rather than rejecting the draft. If it fails again, the diagnostics line will say why; paste it.
 
 2026-11-13; Claude; CHG-0038 follow-up: Accept all draft insights (Research room), Approve all assets (Assets, account owner and test-mode producer) and an optional PORT67_PRODUCER_APPROVALS=true switch so a producer or admin can press the customer's Approve direction / Approve asset buttons while testing (recorded as on the customer's behalf; off by default; remove before real customers). The account owner already approves direction and assets.

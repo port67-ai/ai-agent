@@ -74,6 +74,16 @@ export const capabilityRegistry: readonly CapabilityDefinition[] = [
     approvalRequired: true,
   },
   {
+    id: "orchestration.producer",
+    version: "1.0.0",
+    name: "Producer agent",
+    kind: "template",
+    inputContract: "Project record: sources, insights, direction, production drafts, asset statuses",
+    outputContract: "Audited producer steps; stops at customer approval gates",
+    permissions: ["write-scoped-draft"],
+    approvalRequired: false,
+  },
+  {
     id: "production.visual",
     version: "1.0.0",
     name: "Visual designer",

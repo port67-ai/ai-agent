@@ -11,6 +11,7 @@ import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
 import { keyConfigured, resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
 import { runSynthesis } from "./synthesis-run";
+import { planNext, producerAgentAuto, runProducerAgent, STEP_LABEL } from "./producer-agent";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
 import { randomBytes } from "node:crypto";
@@ -339,6 +340,11 @@ async function noteAutoFailure(r: Repository, op: Principal, projectId: string, 
     if (current) current.audit.push({ id: id(), at: new Date().toISOString(), actor: AUTO_APPROVER, role: "operator", action: "producer_step_auto_failed", detail });
   });
 }
+/** Starts an automatic producer agent pass in the background when PORT67_PRODUCER_AGENT=true. Never throws and never blocks the response. */
+function kickProducerAgent(a: Principal, projectId: string, trigger: string) {
+  if (!producerAgentAuto() || a.demo) return;
+  void runProducerAgent(repo(a), a, projectId, { auto: true, trigger: "automatic after " + trigger }).catch(() => undefined);
+}
 async function autoStartResearch(a: Principal, projectId: string) {
   const key = a.workspaceId + "/" + projectId;
   if (autoRunning.has(key)) return;
@@ -370,6 +376,7 @@ async function autoStartResearch(a: Principal, projectId: string) {
         await noteAutoFailure(r, op, projectId, (segment + ": " + (error instanceof Error ? error.message : "failed")).slice(0, 240));
       }
     }
+    kickProducerAgent(op, projectId, "research");
   } catch (error) {
     await noteAutoFailure(repo({ ...a, role: "operator", subject: AUTO_APPROVER }), { ...a, role: "operator", subject: AUTO_APPROVER }, projectId, (error instanceof Error ? error.message : "unexpected error").slice(0, 240)).catch(() => undefined);
   } finally {
@@ -652,6 +659,18 @@ export async function handleFactory(
         if (data.action === "save") return json({ scope: await saveScope(repo(a), a, projectId, data.scope), stored: true, current: true });
         throw new Error("Unknown scope action");
       }
+      if (path[2] === "producer-agent" && request.method === "GET") {
+        // Producers and admins only: where the agent is, what it would do next, and its step log.
+        operator(a);
+        const aiReady = await stageReady(repo(a), "synthesis").catch(() => false);
+        const plan = planNext(p, aiReady);
+        return json({ state: p.producerAgent || null, next: "step" in plan ? { step: plan.step, label: STEP_LABEL[plan.step] } : null, stop: "stop" in plan ? plan.stop : null, automatic: producerAgentAuto(), aiReady });
+      }
+      if (path[2] === "producer-agent" && request.method === "POST") {
+        operator(a);
+        const project = await runProducerAgent(repo(a), a, projectId, { force: true });
+        return json({ project: projectView(project, a) });
+      }
       if (path[2] === "research-dossier" && request.method === "GET") {
         const dossier = researchDossier(p, a.role === "operator" ? "operator" : "customer");
         return json({ dossier, markdown: renderDossierMarkdown(dossier) });
@@ -855,6 +874,7 @@ export async function handleFactory(
         if (!segments.includes(data.segment as Segment))
           throw new Error("Invalid research segment");
         await runResearchSegment(a, projectId, data.segment as Segment);
+        kickProducerAgent(a, projectId, "after research");
         return json({
           project: projectView(
             find((await repo(a).read(a.workspaceId)).projects, projectId, a),
@@ -875,6 +895,8 @@ export async function handleFactory(
         });
         if (data.type === "requestResearch" && autoApproveProducer() && !a.demo)
           void autoStartResearch(a, projectId).catch(() => undefined);
+        if (["approveStrategy", "approveAsset", "approveAllAssets", "reviewAllSources", "reviewAllInsights"].includes(String(data.type)))
+          kickProducerAgent(a, projectId, String(data.type));
         return json({ project: result });
       }
     }

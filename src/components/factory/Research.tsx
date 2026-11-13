@@ -16,6 +16,7 @@ import ChannelPicker from "./ChannelPicker";
 import ResearchProgress from "./ResearchProgress";
 import { ResearchPrep, ResearchDossier } from "./ResearchPrep";
 import { ScopePanel } from "./ScopePanel";
+import { ProducerAgentPanel } from "./ProducerAgentPanel";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 const gapsFor = (p: { runs: { segment?: string; status: string; gaps?: string[] }[] }, segment: string) =>
   [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
@@ -46,6 +47,7 @@ export default function Research({
   return (
     <>
       <ChannelPicker p={p} operator={operator} busy={busy} live={live} command={command} onRunAll={onRunAll} />
+      {operator && <ProducerAgentPanel p={p} onChanged={onRefresh} />}
       {operator && <ScopePanel p={p} operator />}
       <ResearchPrep p={p} operator={operator} />
       <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />

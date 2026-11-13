@@ -26,6 +26,7 @@ const groups: { id: string; title: string; note: string }[] = [
   { id: "research", title: "Research agents", note: "Search the public web and cite every finding." },
   { id: "drafting", title: "Drafting agents", note: "Write only from reviewed evidence and the approved direction." },
   { id: "production", title: "Production agents", note: "Template builders: no AI model, no AI cost." },
+  { id: "producer", title: "Producer agent", note: "Acts as the human producer between the approval steps. Rules only: no model of its own and no cost; the drafting steps it triggers use the agents above. It never approves for the account owner." },
 ];
 
 export default function AiAgents() {
