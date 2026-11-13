@@ -1737,3 +1737,4 @@
 .f-prep-edit{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin:8px 0;display:grid;gap:8px}
 .f-prep-edit legend{font-weight:600;padding:0 6px}
 .f-prep-edit textarea{width:100%}
+.f-diag{white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text;max-height:480px;overflow:auto;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:.78rem;line-height:1.5}

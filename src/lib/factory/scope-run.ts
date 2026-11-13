@@ -78,7 +78,7 @@ async function store(repo: Repository, a: Principal, projectId: string, build: (
     current.scopeHistory = [...(current.scopeHistory || []), entry(scope)].slice(-MAX_HISTORY);
     current.revision++;
     current.updatedAt = new Date().toISOString();
-    current.audit.push({ id: id(), at: scope.at, actor: a.subject, role: a.role, action: "scope_saved", detail: `v${scope.version}: ${scope.classification.businessType} (${scope.classification.category}, ${scope.classification.size}) from ${scope.source}` });
+    current.audit.push({ id: id(), at: scope.at, actor: a.subject, role: a.role, action: "scope_saved", detail: `v${scope.version}: ${scope.classification.businessType} (${scope.classification.category}, ${scope.classification.size}) from ${scope.source}${scope.note ? "; " + scope.note : ""}` });
     return scope;
   });
 }
