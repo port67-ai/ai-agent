@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ArrowUpRight, Plus, Sparkles } from "lucide-react";
+import { ArrowUpRight, Check, Plus, Sparkles } from "lucide-react";
 import type { Segment } from "@/lib/factory/model";
 import {
   Tag,
@@ -50,6 +50,35 @@ export default function Research({
       <ResearchPrep p={p} operator={operator} />
       <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />
       <ResearchDossier p={p} />
+      {operator && p.sources.some((s) => s.kind === "public_source" && s.status === "unreviewed") && (
+        <section className="f-panel f-callout" role="status">
+          <strong>Gate 1: {p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").length} sources are waiting for your review.</strong>
+          <p className="f-small">Accept them all in one step while we test, or open each research area and choose Accept evidence or Reject per source (you can still reject any one afterwards). Insights can only use accepted sources. A producer does this; no AI reviews sources yet.</p>
+          <button
+            type="button"
+            className="f-button small"
+            disabled={busy}
+            onClick={() => {
+              const n = p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").length;
+              if (window.confirm(`Accept all ${n} unreviewed sources as evidence without reading each one? This is logged as a bulk acceptance under your name, and any existing direction will need a new approval.`))
+                void command({ type: "reviewAllSources", confirm: true }, `${n} sources accepted. You can still reject any of them individually.`);
+            }}
+          >
+            Accept all {p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").length} unreviewed sources
+          </button>{" "}
+          <button
+            type="button"
+            className="f-button secondary small"
+            onClick={() => {
+              const first = (Object.keys(researchLabels) as Segment[]).find((k) => p.sources.some((s) => s.segment === k && s.status === "unreviewed"));
+              if (first) setSegment(first);
+              setTimeout(() => document.getElementById("source-review")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+            }}
+          >
+            Go to source review
+          </button>
+        </section>
+      )}
       {operator && <DiagnosticsPanel p={p} />}
       {operator && (
         <section className="f-panel f-ai-consent">
@@ -89,7 +118,7 @@ export default function Research({
           </button>
         </section>
       )}
-      <div className="f-research-tabs">
+      <div className="f-research-tabs" id="source-review">
         {Object.entries(researchLabels).map(([id, label]) => (
           <button
             className={segment === id ? "active" : ""}
@@ -173,6 +202,7 @@ export default function Research({
                     <div>
                       {s.kind !== "client_assertion" && (
                         <button
+                          className="f-source-accept"
                           disabled={busy}
                           onClick={() =>
                             void command(
@@ -189,6 +219,7 @@ export default function Research({
                         </button>
                       )}
                       <button
+                        className="f-source-reject"
                         disabled={busy}
                         onClick={() =>
                           void command({
@@ -284,6 +315,20 @@ export default function Research({
       <section className="f-panel f-insights">
         <div className="f-section-heading">
           <h2>Research → insight</h2>
+          {operator && p.insights.some((i) => i.status === "draft") && (
+            <button
+              className="f-button small"
+              disabled={busy}
+              onClick={() => {
+                const n = p.insights.filter((i) => i.status === "draft").length;
+                if (window.confirm(`Accept all ${n} draft insights? Only insights whose sources are all accepted will be taken. This is logged under your name.`))
+                  void command({ type: "reviewAllInsights", confirm: true }, "Draft insights accepted and available to campaign strategy");
+              }}
+            >
+              <Check size={14} />
+              Accept all {p.insights.filter((i) => i.status === "draft").length} draft insights
+            </button>
+          )}
           {operator && (
             <button
               className="f-button secondary small"

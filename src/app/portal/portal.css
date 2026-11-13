@@ -1738,3 +1738,10 @@
 .f-prep-edit legend{font-weight:600;padding:0 6px}
 .f-prep-edit textarea{width:100%}
 .f-diag{white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text;max-height:480px;overflow:auto;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:.78rem;line-height:1.5}
+
+.f-source-footer button.f-source-accept,.f-source-footer button.f-source-reject{font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.f-source-footer button.f-source-accept{background:#15803d;color:#fff}
+.f-source-footer button.f-source-accept:hover:not(:disabled){background:#166534}
+.f-source-footer button.f-source-reject{background:#fff;color:#b91c1c;border-color:#fca5a5}
+.f-source-footer button.f-source-reject:hover:not(:disabled){background:#fef2f2}
+.f-source-footer button:disabled{opacity:.5;cursor:not-allowed}

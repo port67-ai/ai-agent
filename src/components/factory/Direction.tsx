@@ -294,6 +294,30 @@ export default function Direction({
             >
               Create new version
             </button>
+            {p.producerApprovals && s.status === "shared" && (
+              <div className="f-review">
+                <p className="f-small">Test mode: you can approve on the customer&apos;s behalf. It is recorded as given by you for the customer.</p>
+                <Field label="Feedback (required for changes)">
+                  <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} maxLength={2000} />
+                </Field>
+                <div className="f-actions">
+                  <button
+                    className="f-button"
+                    disabled={busy}
+                    onClick={() => void command({ type: "approveStrategy", hash: s.hash, feedback }, "Direction approved on the customer's behalf. Production can start.")}
+                  >
+                    Approve direction (on behalf) <Check size={16} />
+                  </button>
+                  <button
+                    className="f-button secondary"
+                    disabled={busy || !feedback.trim()}
+                    onClick={() => void command({ type: "requestStrategyChanges", hash: s.hash, feedback }, "Changes requested on the customer's behalf")}
+                  >
+                    Request changes
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : s.status === "shared" ? (
           <div className="f-review">

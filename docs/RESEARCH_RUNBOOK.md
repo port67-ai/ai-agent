@@ -43,3 +43,14 @@ Purpose: run the real jpell@me.com account owner project through the four resear
 - Each research agent returns cited findings with their own URLs, plus gaps and confidence.
 - No agent shows red (failed or unknown) on the map; if one does, check the call in Recent calls and the provider billing before retrying.
 - Total cost for four research calls is on the order of a few cents per call at mini-tier prices.
+
+## Rules for a future AI source-review agent (so it cannot loop)
+
+Gate 1 is a human step today (single Accept all, or per source). If an AI reviewer replaces or assists it, build it with these limits from the start:
+
+1. Triggered, never watching: it runs once when research for a brief completes, or when a producer clicks a button. It never polls, never subscribes to changes and never re-triggers itself or the researchers.
+2. One pass per brief and scope: record the fingerprint (brief, channels, scope version) it reviewed; if a pass already exists for that fingerprint, do nothing until a human asks again.
+3. Bounded re-runs: if it asks a researcher to run again with different parameters, allow at most one re-run per research area per pass and at most two passes per project, then stop and hand the remainder to a human. Count these against the per-project run cap (PORT67_MAX_RESEARCH_RUNS).
+4. Idempotent decisions: it only touches unreviewed sources; accepting or rejecting an already-decided source is a no-op. A second run with nothing waiting must do nothing and cost nothing.
+5. Backoff and a kill switch: after a failure wait before any retry (as the automatic start does), and provide a PORT67_ environment switch to turn it off. It must record every decision and its reason in the audit trail.
+6. Meter it: every call goes through the cost ledger as its own agent so the map shows its calls and cost.
