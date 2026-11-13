@@ -39,6 +39,7 @@ import {
 import { demoRepository, repository, type Repository } from "./repository";
 import { researchReady, researchSegment } from "./research";
 import { autoApproveProducer, AUTO_APPROVER } from "./auto-approve";
+import { prepareResearchPlan, researchDossier, renderDossierMarkdown } from "./research-plan";
 import {
   segments,
   type Principal,
@@ -585,6 +586,12 @@ export async function handleFactory(
       const p = find(db.projects, projectId, a);
       if (path.length === 2 && request.method === "GET")
         return json({ project: projectView(p, a) });
+      if (path[2] === "research-plan" && request.method === "GET")
+        return json({ plan: prepareResearchPlan(p) });
+      if (path[2] === "research-dossier" && request.method === "GET") {
+        const dossier = researchDossier(p, a.role === "operator" ? "operator" : "customer");
+        return json({ dossier, markdown: renderDossierMarkdown(dossier) });
+      }
       if (path[2] === "invite" && request.method === "POST") {
         operator(a);
         if (a.demo)

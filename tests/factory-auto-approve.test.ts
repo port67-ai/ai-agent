@@ -29,7 +29,10 @@ await login('producer');await req('accounts',{accountId:customer.accountId});
 const full=await project();assert.ok(full.audit.some((x:{action:string;actor:string})=>x.action==='producer_step_auto_approved'&&x.actor==='port67-auto-approve'));
 // A second request does not run research again.
 await login('customer');await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,300));assert.equal(calls,4);
-await login('owner');const overview=await(await req('admin/ai-agents')).json();assert.equal(overview.switches.autoApproveProducer,true);
+const plan=await(await req(route+'/research-plan')).json();assert.equal(plan.plan.segments.length,4);assert.ok(plan.plan.checks.length>=8);
+const doss=await(await req(route+'/research-dossier')).json();assert.equal(doss.dossier.totals.unreviewed,0,'customer dossier hides unreviewed sources');assert.match(doss.markdown,/# Research dossier/);
+await login('producer');await req('accounts',{accountId:customer.accountId});const pd=await(await req(route+'/research-dossier')).json();assert.ok(pd.dossier.totals.unreviewed>=4,'producer dossier shows every source');
+await login('owner');const overview=await(await req('admin/ai-agents')).json();assert.equal(overview.switches.autoApproveProducer,true);assert.ok(overview.flow.pipeline.sources.total>=4&&overview.flow.edges.some((e:{agent:string})=>e.agent==='research:brand'),'flow observability sees the ledger and the project');assert.equal(overview.flow.pipeline.waiting.sourceReview,1,'unreviewed sources show as blocked at gate 1');
 console.log('Auto-approved producer step: off by default, customer request runs four researchers, sources stay unreviewed, audited, not repeated');
 }finally{globalThis.fetch=original;delete process.env.PORT67_AUTO_APPROVE_PRODUCER;await rm(dir,{recursive:true,force:true});}
 }void main();

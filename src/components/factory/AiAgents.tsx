@@ -5,8 +5,8 @@ import type { agentsOverview } from "@/lib/factory/ai-agents";
 import type { AiRoute, AiRoutingConfig } from "@/lib/factory/model";
 import type { Pricing } from "@/lib/factory/costs";
 import AiModels from "./AiModels";
-import AgentDataFlow from "./AgentDataFlow";
-import JourneyFlow from "./JourneyFlow";
+import SystemMap from "./SystemMap";
+import FlowHealth from "./FlowHealth";
 
 type Routing = {
   config: AiRoutingConfig;
@@ -176,8 +176,8 @@ export default function AiAgents() {
         {notice && <p className="f-team-ok" role="status">{notice}</p>}
         {data.ledgerError && <p className="f-team-error" role="alert">{data.ledgerError}</p>}
       </section>
-      <JourneyFlow agents={data.agents} />
-      <AgentDataFlow agents={data.agents} />
+      <SystemMap agents={data.agents} flow={data.flow} />
+      <FlowHealth flow={data.flow} />
       {groups.map((g) => (
         <section className="f-panel" key={g.id}>
           <div className="f-section-heading">
