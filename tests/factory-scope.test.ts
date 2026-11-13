@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
-import { classifyByRules, templateScope, validateScope, scopeFromClassification, scopeForCustomer, CATEGORY_LABEL } from '../src/lib/factory/scope';
+import { classifyByRules, templateScope, validateScope, scopeFromClassification, CATEGORY_LABEL } from '../src/lib/factory/scope';
 import { prepareResearchPlan, researchDossier, renderDossierMarkdown } from '../src/lib/factory/research-plan';
 import { createProject, digest } from '../src/lib/factory/engine';
 import { scopeCurrent } from '../src/lib/factory/scope-run';
@@ -43,8 +43,6 @@ assert.throws(() => validateScope({ ...good, segments: { ...st.segments, brand: 
 assert.throws(() => validateScope({ ...good, segments: { ...st.segments, brand: { ...st.segments.brand, questions: ['see https://evil.example now', 'a'] } } }), /at least 2/);
 assert.equal(validateScope({ ...good, segments: { ...st.segments, brand: { ...st.segments.brand, maxPages: 99 } } }).segments.brand.maxPages, 20);
 assert.equal(validateScope({ ...good, segments: { ...st.segments, brand: { ...st.segments.brand, maxPages: 1 } } }).segments.brand.maxPages, 4);
-const cust = scopeForCustomer({ ...st, provider: 'openai', model: 'm', runId: 'r', by: 'producer', note: 'internal' });
-for (const k of ['provider', 'model', 'runId', 'by', 'note']) assert.ok(!(k in cust), 'customers never see ' + k);
 // The stored scope feeds the plan and the dossier, and goes stale when the brief changes.
 const planned = { ...florist, scope: sf };
 const plan = prepareResearchPlan(planned);
@@ -86,10 +84,12 @@ const research=researchInputs.filter((x)=>/pageBudget/.test(x.input));assert.equ
 const brand=JSON.parse(research[0].input);assert.equal(brand.businessProfile.type,'Independent florist');assert.deepEqual(brand.researchQuestions,aiScope.segments.brand.questions);assert.deepEqual(brand.outOfScope,['National chains']);assert.equal(brand.pageBudget,6);assert.deepEqual(brand.preferredSources,['Google reviews']);assert.match(research[0].instructions,/scoping step/);
 const full=(await(await req(route)).json()).project;
 assert.equal(full.scope.classification.category,'local_shop');assert.equal(full.scopeHistory.length,1);assert.ok(full.runs.some((r:{stage:string;status:string})=>r.stage==='scope'&&r.status==='completed'));assert.ok(full.audit.some((x:{action:string})=>x.action==='scope_saved'));
-// Customers can read the classification and the questions, never the model or the run.
-await login('customer');const cv=await(await req(route+'/scope')).json();assert.equal(cv.scope.classification.businessType,'Independent florist');assert.ok(!('model' in cv.scope)&&!('provider' in cv.scope)&&!('runId' in cv.scope));assert.deepEqual(cv.history,[]);
+// Customers never see the scoping output: not the scope route, not the plan, not the dossier, not the project view.
+await login('customer');assert.equal((await raw(route+'/scope')).status,403);assert.equal((await raw(route+'/diagnostics')).status,403);
+assert.equal((await(await req(route+'/research-plan')).json()).plan.scope,undefined,'customer plan carries no scope');
+assert.equal((await(await req(route+'/research-dossier')).json()).dossier.classification,undefined);
 assert.equal((await(await req(route)).json()).project.scope,undefined,'the project view for customers carries no scope record');
-const denied=await raw(route+'/scope',{action:'classify'});assert.equal(denied.status,403,'customers cannot re-run or edit the scope');
+assert.equal((await raw(route+'/scope',{action:'classify'})).status,403,'customers cannot re-run or edit the scope');
 // 2. The ledger and the admin map see the scoping agent and the stored classification.
 await login('owner');const ov=await(await req('admin/ai-agents')).json();
 assert.ok(ov.agents.some((a:{id:string;group:string})=>a.id==='scope:business'&&a.group==='scoping'));assert.ok(ov.flow.edges.some((e:{agent:string})=>e.agent==='scope:business'),'the scoping call is metered and attributed');
@@ -106,6 +106,12 @@ mode='bad';const before=scopeCalls;
 const route2=await createAndRun({business:'Northwave Telecom',description:'National mobile and broadband operator selling connectivity to enterprises and businesses.'});
 const v2=await(await req(route2+'/scope')).json();assert.equal(scopeCalls,before+1);assert.equal(v2.scope.source,'template');assert.equal(v2.scope.classification.category,'telecom');assert.match(v2.scope.note,/did not return a usable scope/);
 const p2=(await(await req(route2)).json()).project;assert.equal(p2.runs.filter((r:{stage:string;status:string})=>r.stage==='research'&&r.status==='completed').length,4,'research never waits on the scoping agent');assert.ok(p2.runs.some((r:{stage:string;status:string})=>r.stage==='scope'&&r.status==='failed'));
+// Diagnostics: timestamps, models, full error text and the ledger (admin only).
+const dg=await(await req(route2+'/diagnostics')).json();
+assert.ok(dg.report.failures.some((f:{agent:string;at:string;text:string})=>f.agent==='scope:business'&&/^\d{4}-\d\d-\d\dT/.test(f.at)&&f.text.length>10),'the failed scoping call is listed with a timestamp and its error');
+assert.match(dg.markdown,/## Failures \(1\)/);assert.match(dg.markdown,/## Timeline \(UTC\)/);assert.match(dg.markdown,/scope:business/);assert.match(dg.markdown,/PORT67_SCOPING_ENABLED: true/);assert.ok(!/test-only/.test(dg.markdown),'no key values');assert.equal(dg.report.ledger,undefined,'producers do not get the cost ledger');
+await login('owner');await req('accounts',{accountId:customer.accountId});const dga=await(await req(route2+'/diagnostics')).json();assert.ok(Array.isArray(dga.report.ledger)&&dga.report.ledger.some((c:{agent:string})=>c.agent==='scope:business'),'admin diagnostics include the call ledger');
+await login('producer');await req('accounts',{accountId:customer.accountId});
 // 5. Switched off: no scoping call, template scope with the reason.
 process.env.PORT67_SCOPING_ENABLED='false';mode='good';const before3=scopeCalls;
 const route3=await createAndRun({business:'The Harbour Hotel',description:'Boutique hotel and restaurant with 24 rooms in a small coastal town.'});

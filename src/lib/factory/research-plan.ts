@@ -171,7 +171,7 @@ export function researchDossier(p: Project, audience: "operator" | "customer", n
     generatedAt: now,
     segments: segs,
     totals,
-    ...(p.scope ? { classification: p.scope.classification } : {}),
+    ...(p.scope && audience === "operator" ? { classification: p.scope.classification } : {}),
     readyForInsights: totals.supported > 0,
     nextStep: !all.length ? "No research yet. Request research, or add sources by hand." : totals.unreviewed > 0 ? "Review the unreviewed sources (Gate 1). Insights can only use sources marked supported." : totals.supported > 0 ? "Ready for AI insights: draft insights from the supported sources." : "Every source was rejected. Run research again or add sources by hand.",
   };

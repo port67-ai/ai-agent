@@ -263,9 +263,3 @@ export function validateScope(raw: unknown): ScopeInput {
   const competitorSet = Array.isArray(o.competitorSet) ? [...new Set(o.competitorSet.map((x) => clean(x, 80)).filter((x) => x.length >= 2 && noLink(x)))].slice(0, 6) : [];
   return { classification, competitorSet, segments: out };
 }
-/** Fields customers may see: the classification and what will be asked, never which model or run produced it. */
-export function scopeForCustomer(s: ResearchScope): Omit<ResearchScope, "provider" | "model" | "runId" | "by" | "note"> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { provider, model, runId, by, note, ...rest } = s;
-  return rest;
-}

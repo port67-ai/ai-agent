@@ -9,7 +9,7 @@ import { agentsOverview } from "./ai-agents";
 import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
-import { resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
+import { keyConfigured, resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
 import { runSynthesis } from "./synthesis-run";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
@@ -41,7 +41,8 @@ import { researchReady, researchSegment } from "./research";
 import { autoApproveProducer, AUTO_APPROVER } from "./auto-approve";
 import { prepareResearchPlan, researchDossier, renderDossierMarkdown } from "./research-plan";
 import { ensureScope, saveScope, scopeCurrent, scopingEnabled } from "./scope-run";
-import { scopeForCustomer, templateScope } from "./scope";
+import { templateScope } from "./scope";
+import { buildDiagnostics } from "./diagnostics";
 import {
   segments,
   type Principal,
@@ -617,12 +618,31 @@ export async function handleFactory(
         return json({ project: projectView(p, a) });
       }
       if (path[2] === "research-plan" && request.method === "GET")
-        return json({ plan: prepareResearchPlan(p) });
+        return json({ plan: prepareResearchPlan(a.role === "operator" ? p : { ...p, scope: undefined }) });
       if (path[2] === "scope" && request.method === "GET") {
-        // The stored classification for this project, read at any time. With none stored yet, a free template preview is returned.
+        // Producers and admins only: customers never see the scoping output. With none stored yet, a free template preview is returned.
+        operator(a);
         const stored = !!p.scope;
         const shown = p.scope || templateScope(p, { briefHash: digest(JSON.stringify(p.brief)), version: 0 });
-        return json({ scope: a.role === "operator" ? shown : scopeForCustomer(shown), stored, current: stored && scopeCurrent(p), history: a.role === "operator" ? p.scopeHistory || [] : [], scoping: { enabled: scopingEnabled() } });
+        return json({ scope: shown, stored, current: stored && scopeCurrent(p), history: p.scopeHistory || [], scoping: { enabled: scopingEnabled() } });
+      }
+      if (path[2] === "diagnostics" && request.method === "GET") {
+        operator(a);
+        const routing = await routingOverview(repo(a));
+        let ledger;
+        if (a.admin) {
+          try {
+            ledger = (await exportApiCalls(repository)).filter((c) => c.projectId === p.id).sort((x, y) => x.createdAt.localeCompare(y.createdAt)).map((c) => ({ id: c.id, at: c.createdAt, finishedAt: c.finishedAt, agent: c.agent, provider: c.provider, model: c.model, status: c.status, inputTokens: c.usage?.inputTokens, outputTokens: c.usage?.outputTokens, providerRequestId: c.providerRequestId }));
+          } catch {
+            ledger = [];
+          }
+        }
+        return json(buildDiagnostics({ ...p, researchNote: projectView(p, a).researchNote }, {
+          now: new Date().toISOString(),
+          switches: { PORT67_RESEARCH_ENABLED: process.env.PORT67_RESEARCH_ENABLED === "true", PORT67_SYNTHESIS_ENABLED: process.env.PORT67_SYNTHESIS_ENABLED === "true", PORT67_SCOPING_ENABLED: process.env.PORT67_SCOPING_ENABLED !== "false", scopingAgentActive: scopingEnabled(), PORT67_AUTO_APPROVE_PRODUCER: autoApproveProducer(), openaiKeySet: keyConfigured("openai"), geminiKeySet: keyConfigured("gemini"), anthropicKeySet: keyConfigured("anthropic"), deepseekKeySet: keyConfigured("deepseek") },
+          routes: routing.effective.map((e) => ({ agent: e.slot, ...("error" in e ? { problem: String(e.error) } : { provider: e.provider, model: e.model, source: e.source }) })),
+          ledger,
+        }));
       }
       if (path[2] === "scope" && request.method === "POST") {
         operator(a);
