@@ -406,24 +406,28 @@ export default function Portal() {
               </p>
             </div>
             {!(tab in adminSubtitles) && <div className="f-project-tools">
-              {operator && principal.identity === "firebase" && <select aria-label="Select customer account" value={principal.workspaceId} onChange={e=>void run(async()=>{await api("accounts",{accountId:e.target.value});setSelected("");setInvite("");},"Account selected")}>
+              {operator && principal.identity === "firebase" && <label className="f-pick"><span>Customer account</span><select aria-label="Select customer account" value={principal.workspaceId} onChange={e=>void run(async()=>{await api("accounts",{accountId:e.target.value});setSelected("");setInvite("");},"Account selected")}>
                 {accounts.map(account=><option key={account.id} value={account.id}>{account.email || account.id}</option>)}
-              </select>}
+              </select></label>}
 
-              <select
-                aria-label="Select project"
-                value={p?.id || ""}
-                onChange={(e) => {
-                  setSelected(e.target.value);
-                  setInvite("");
-                }}
-              >
-                {projects.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.brief.business}
-                  </option>
-                ))}
-              </select>
+              <label className="f-pick">
+                <span>Project</span>
+                <select
+                  aria-label="Select project"
+                  value={p?.id || ""}
+                  onChange={(e) => {
+                    setSelected(e.target.value);
+                    setInvite("");
+                  }}
+                >
+                  {projects.length === 0 && <option value="">No projects in this account</option>}
+                  {projects.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.brief.business}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {(operator || principal.identity === "firebase") && (
                 <button
                   className="f-button small"

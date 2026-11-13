@@ -1727,3 +1727,9 @@
 .sm-clickable:hover .sm-box,.sm-clickable:focus .sm-box{fill-opacity:.24;stroke-width:2.6}
 .sm-clickable:focus{outline:none}
 .sm-link.hot{stroke-width:3.4;opacity:1}
+
+/* Labelled pickers */
+.f-pick{display:flex;flex-direction:column;gap:3px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#8c969c;font-weight:650}
+.f-pick span{padding-left:2px}
+.f-project-tools .f-pick select{text-transform:none;letter-spacing:0;font-weight:400;color:#1f2937}
+.f-detail,.f-detail *{user-select:text;-webkit-user-select:text}

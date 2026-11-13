@@ -59,6 +59,12 @@ const channelFocus: Record<Segment, string> = {
   competitor: "Check each named competitor's presence and best-performing content on the launch channels.",
   creative: "Concentrate on the native formats, hooks and conventions that work on the launch channels. Treat the supplied playbooks as a starting hypothesis to confirm or challenge with cited evidence.",
 };
+/** Why a reply had no usable citations, from counts only (no content): status, truncation, output items, text length and citations seen. */
+function diagnose(provider: string, data: unknown, text: string, citations: number) {
+  const d = (data || {}) as { status?: string; incomplete_details?: { reason?: string }; output?: unknown[]; candidates?: { finishReason?: string }[] };
+  const status = provider === "gemini" ? "finish " + (d.candidates?.[0]?.finishReason || "n/a") : "status " + (d.status || "n/a") + (d.incomplete_details?.reason ? ", " + d.incomplete_details.reason : "");
+  return `${status}; ${Array.isArray(d.output) ? d.output.length + " output items; " : ""}${text.length} characters of text; ${citations} citations`;
+}
 // Single bounded invocation; no sibling research outputs in the request.
 export async function researchSegment(
   p: Project,
@@ -93,6 +99,7 @@ export async function researchSegment(
   }
   const sources: Source[] = [];
   const seen = new Set<string>();
+  let citationsSeen = 0;
   const parsed = parseResearchText(result.text);
   if (!Array.isArray(data.output))
     return {
@@ -117,6 +124,7 @@ export async function researchSegment(
           typeof annotation.url !== "string"
         )
           continue;
+        citationsSeen++;
         let url: string;
         try {
           url = publicUrl(annotation.url);
@@ -158,6 +166,6 @@ export async function researchSegment(
     ...(parsed.gaps.length ? { gaps: parsed.gaps } : {}),
     error: sources.length
       ? undefined
-      : "No usable cited sources returned. Add sources manually; do not treat uncited synthesis as evidence.",
+      : `No usable cited sources returned (${diagnose(selection.provider, data, result.text, citationsSeen)}). Add sources manually; do not treat uncited synthesis as evidence.`,
   };
 }

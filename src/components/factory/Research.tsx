@@ -357,7 +357,16 @@ export default function Research({
       </section>
       {operator && p.runs.length > 0 && (
         <section className="f-panel">
-          <h2>Research & drafting activity</h2>
+          <div className="f-section-heading">
+            <h2>Research & drafting activity</h2>
+            <button
+              type="button"
+              className="f-text-button"
+              onClick={() => void navigator.clipboard?.writeText(p.runs.map((r) => `${r.segment || r.stage} | ${r.status} | ${r.provider}/${r.model} | ${r.error || "ok"} | ${r.providerRequestId || ""}`).join("\n"))}
+            >
+              Copy run details
+            </button>
+          </div>
           {p.runs.map((r) => (
             <div className="f-detail" key={r.id}>
               <span>
