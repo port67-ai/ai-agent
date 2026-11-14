@@ -22,7 +22,7 @@ assert.ok(comp.questions.some((q) => /Alpha Gear/.test(q)) && comp.questions.som
 assert.ok(plan.segments.find((s) => s.segment === 'brand')!.startFrom[0].includes('trailside.example'));
 assert.ok(plan.segments.every((s) => s.questions.length >= 2 && s.delivers));
 assert.ok(plan.segments.find((s) => s.segment === 'creative')!.questions[0].includes('Instagram'));
-assert.equal(plan.estimate.runs, 4);
+assert.equal(plan.estimate.runs, 7);
 assert.ok(plan.estimate.inputTokensPerRun > 500);
 
 // Dossier: findings by agent; customers only see accepted sources.

@@ -7,6 +7,9 @@ export const segments = [
   "customer",
   "competitor",
   "creative",
+  "adjacent",
+  "trends",
+  "video",
 ] as const;
 export type Segment = (typeof segments)[number];
 export type Principal = {
@@ -78,6 +81,7 @@ export type Source = {
   findings?: { claim: string; quote?: string }[];
   confidence?: "limited" | "moderate" | "strong";
   /** Admiralty and CRAAP grade, computed for producers when the project is viewed. Never stored. */
+  videoAnalysis?: import("./video-intelligence").VideoAnalysis;
   grade?: SourceGrade;
 };
 export type Insight = {
@@ -201,6 +205,8 @@ export type ResearchRun = {
   leaseExpiresAt?: string;
   contextHash?: string;
   contextSnapshot?: Brief;
+  /** Frozen public research context (brief fields, channels, scope and skill version). */
+  contextBundle?: Record<string, unknown>;
   providerRequestId?: string;
   usageStatus?: "recorded" | "unknown";
   id: string;
@@ -253,7 +259,7 @@ export type AdvertPlan = {
   version: number;
   strategyHash: string;
   status: "draft" | "shared" | "approved" | "changes_requested";
-  treatment: { title: string; logline: string; story: string; tone: string; durationSec: number; music: { atSec: number; cue: string }[] };
+  treatment: { creativeDirection?: string; title: string; logline: string; story: string; tone: string; durationSec: number; music: { atSec: number; cue: string }[] };
   shots: AdvertShot[];
   continuity: Continuity;
   createdAt: string;

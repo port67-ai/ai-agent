@@ -78,6 +78,7 @@ export function buildAdvert(p: Project, s: Strategy, version: number): Omit<Adve
   });
   const total = shots.reduce((n, x) => n + x.seconds, 0);
   const treatment = {
+    creativeDirection: s.design,
     title: clip(`${p.brief.business}: ${s.message}`, 120),
     logline: clip(s.positioning || s.message, 240),
     story: clip(`${s.rationale || s.message} Told in ${count} short shots for ${s.audience || "the audience"}, ending on: ${s.cta || "the call to action"}.`, 1200),
@@ -136,6 +137,7 @@ export function compileShot(plan: AdvertPlan, shot: AdvertShot, tier: Tier = "dr
     `Action: ${shot.action}${tags.length ? ` Feature ${tags.map((t) => t.tag).join(", ")}.` : ""}`,
     ...(shot.dialogue ? [`Spoken line: "${shot.dialogue}"`] : []),
     ...(shot.onScreen ? [`On-screen text: "${shot.onScreen}"`] : []),
+    ...(plan.treatment.creativeDirection ? [`Approved creative treatment: ${plan.treatment.creativeDirection}`, "The approved continuity and per-shot overrides below govern lighting, lens and format where the treatment differs."] : []),
     `Camera: ${c.cameraBody}, ${lens}`,
     `Lighting: ${lighting}`,
     `Palette: ${c.palette.join(", ")}`,

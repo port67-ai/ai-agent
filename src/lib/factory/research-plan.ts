@@ -1,11 +1,12 @@
+import { extendedResearchScope, RESEARCH_LABELS, researchDestinations } from "./research-catalog";
 import { channelById, channelNames } from "./channels";
 import { segments, type Project, type Segment } from "./model";
 import { CATEGORY_LABEL, type Classification, type ResearchScope } from "./scope";
 
 // Research preparation: decide, before any paid call, whether the brief is good enough, what each research
 // agent will be asked, and what the research will produce. Pure functions, no AI cost, safe on the client.
-export const SEGMENT_LABEL: Record<Segment, string> = { brand: "Business and brand", customer: "Customer insight", competitor: "Competitor intelligence", creative: "Creative research" };
-export const SEGMENT_AGENT: Record<Segment, string> = { brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative" };
+export const SEGMENT_LABEL: Record<Segment, string> = RESEARCH_LABELS;
+export const SEGMENT_AGENT: Record<Segment, string> = { brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative", adjacent: "research:adjacent", trends: "research:trends", video: "research:video" };
 export type Check = { id: string; label: string; ok: boolean; level: "required" | "recommended"; fix: string };
 export type SegmentPlan = { segment: Segment; label: string; agent: string; startFrom: string[]; questions: string[]; delivers: string; /** From the stored scope: what this agent skips and how many pages it may open. */ avoid?: string[]; maxPages?: number };
 export type PlanScope = { source: ResearchScope["source"]; version: number; at: string; classification: Classification; competitorSet: string[]; note?: string };
@@ -102,6 +103,10 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { s
     },
   ];
   // A stored scope replaces the generic questions with ones matched to this kind of business.
+  for (const segment of ["adjacent", "trends", "video"] as const) {
+    const scope = extendedResearchScope(segment, b.business, channelList)!;
+    plans.push({ segment, label: SEGMENT_LABEL[segment], agent: SEGMENT_AGENT[segment], startFrom: [...scope.sourceTypes, ...researchDestinations(segment, p.channels).map(d => d.name)], questions: scope.questions, delivers: segment === "video" ? "Cited video references and craft analysis; direct viewing requires the explicit Gemini action." : "Cited observations, applicability, counterexamples and gaps.", avoid: scope.avoid, maxPages: scope.maxPages });
+  }
   if (p.scope) {
     for (const plan of plans) {
       const sc = p.scope.segments[plan.segment];
@@ -133,7 +138,7 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { s
   };
 }
 
-export type DossierSource = { id: string; title: string; url: string; status: string; confidence?: string; collectedAt: string; findings: { claim: string; quote?: string }[] };
+export type DossierSource = { videoAnalysis?: import("./video-intelligence").VideoAnalysis; id: string; title: string; url: string; status: string; confidence?: string; collectedAt: string; findings: { claim: string; quote?: string }[] };
 export type Dossier = {
   business: string;
   website: string;
@@ -151,7 +156,7 @@ export function researchDossier(p: Project, audience: "operator" | "customer", n
   const plan = prepareResearchPlan(p);
   const visible = (s: Project["sources"][number]) => s.kind === "public_source" && (audience === "operator" || s.status === "supported");
   const segs = segments.map((segment) => {
-    const sources = p.sources.filter((s) => s.segment === segment && visible(s)).map((s) => ({ id: s.id, title: s.title, url: s.url, status: s.status, confidence: s.confidence, collectedAt: s.collectedAt, findings: s.findings || [] }));
+    const sources = p.sources.filter((s) => s.segment === segment && visible(s)).map((s) => ({ id: s.id, title: s.title, url: s.url, status: s.status, confidence: s.confidence, collectedAt: s.collectedAt, findings: s.findings || [], ...(s.videoAnalysis ? { videoAnalysis: s.videoAnalysis } : {}) }));
     const gaps = [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
     return { segment, label: SEGMENT_LABEL[segment], sources, gaps, questions: plan.segments.find((x) => x.segment === segment)!.questions };
   });
@@ -185,6 +190,7 @@ export function renderDossierMarkdown(d: Dossier): string {
     for (const src of s.sources) {
       out.push(`### ${src.title}`, "", `${src.url} · ${src.status}${src.confidence ? ` · confidence ${src.confidence}` : ""}`, "");
       for (const f of src.findings) out.push(`- ${f.claim}${f.quote ? `\n  - Evidence: "${f.quote}"` : ""}`);
+      if (src.videoAnalysis) out.push("Direct video model analysis (producer review required):", ...Object.entries(src.videoAnalysis).filter(([k]) => k !== "shots").map(([k,v]) => `- ${k}: ${v}`), ...src.videoAnalysis.shots.map(x => `- ${x.atSeconds}s: ${x.observation}`), "");
       if (src.findings.length) out.push("");
     }
     if (s.gaps.length) out.push("Could not confirm:", ...s.gaps.map((g) => `- ${g}`), "");

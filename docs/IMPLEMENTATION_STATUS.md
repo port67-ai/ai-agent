@@ -225,3 +225,15 @@ CHG-0059 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Search fee priced,
 | FAC-VID-009 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Rights, consent and claims checks. |
 | FAC-VID-010 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Vendor evaluation under section 23.1. |
 | FAC-VID-011 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Measure time and cost per advert. |
+
+
+## CHG-0062 — adjacent, social-trend and video research (2026-11-15)
+
+| Requirement | Intent | Delivery | Evidence / remaining verification |
+|---|---|---|---|
+| FAC-MKT-024 | Owner-authorised unattended implementation | IN_PROGRESS (implemented bounded subset) | Seven roles wired through scope, routing, research bus, progress, system map and metering. tests/factory-research-intelligence.test.ts, factory-auto-approve.test.ts, factory-scope.test.ts. Live source quality and authenticated platform access unverified. |
+| FAC-MKT-025 | Owner-authorised | IN_PROGRESS (implemented bounded subset) | Dated discovery/source routes, counterexample instructions, balanced reviewed synthesis, stronger producer views and video treatment carried into content and advert prompt packs. No continuous social feed or automated performance attribution. |
+| FAC-VID-012 | Owner-authorised | IN_PROGRESS (implemented; live adapter unverified) | Gemini public YouTube input with time and sampling bounds; strict analysis validation; producer-only explicit paid action; unreviewed output and usage retention tested in factory-video-intelligence-api.test.ts. Actual Gemini model/video compatibility requires a configured live run. |
+| FAC-CTX-009 | Owner-authorised | IN_PROGRESS (implemented bounded subset) | Full public research snapshot and hash, capability v2, changed channels/scope rejection and legacy continuation tests. This does not complete immutable master-client context or generic skill registry requirements. |
+
+Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. No deployment or live provider success is implied by fixture tests.
