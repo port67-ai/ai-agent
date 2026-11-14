@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { LocalRepository } from "../src/lib/factory/repository";
 import { createProject, projectView, transition } from "../src/lib/factory/engine";
+import { approvalMode, producerApprovalsOn, saveApprovalMode } from "../src/lib/factory/approval-mode";
 import { planNext, progressFingerprint, runProducerAgent, PRODUCER_AGENT } from "../src/lib/factory/producer-agent";
 import { directionRules, directionView, insightsView, parseReview, scopeView, sourceBatches, sourceRules, insightRules } from "../src/lib/factory/producer-reviews";
 import { templateScope } from "../src/lib/factory/scope";
@@ -113,11 +114,24 @@ async function main() {
     assert.equal(shared.producerAgent?.status, "waiting_customer");
     const stillShared = await runProducerAgent(repo, op, "agent", { force: true });
     assert.ok(!stillShared.audit.some((x) => x.action === "approveStrategy"), "the agent never approves for the customer");
-    await repo.mutate("w", (s) => {
-      const i = s.projects.findIndex((x) => x.id === "agent");
-      s.projects[i] = transition(s.projects[i], { type: "approveStrategy", hash: s.projects[i].strategies.at(-1)!.hash }, cust);
-    });
+    // The admin switch: the Render master switch must be on AND the mode must be AI. Default mode is AI.
+    assert.equal(approvalMode(), "ai", "AI producer approval is the default");
+    assert.ok(!producerApprovalsOn(), "master switch off: nobody but the customer approves");
+    process.env.PORT67_PRODUCER_APPROVALS = "true";
+    try {
+      await saveApprovalMode(repo, "manual", "owner");
+      assert.equal(planNext(shared, true).hasOwnProperty("stop"), true, "manual mode waits for the account owner");
+      const manual = await runProducerAgent(repo, op, "agent", { force: true });
+      assert.equal(manual.strategies.at(-1)!.status, "shared");
+      assert.equal(manual.producerAgent?.status, "waiting_customer");
+      await saveApprovalMode(repo, "ai", "owner");
+      assert.deepEqual(planNext(shared, true), { step: "approveDirection" });
+      await assert.rejects(() => saveApprovalMode(repo, "other", "owner"), /ai or manual/);
+    } catch (e) { delete process.env.PORT67_PRODUCER_APPROVALS; throw e; }
     const produced = await runProducerAgent(repo, op, "agent", { force: true });
+    delete process.env.PORT67_PRODUCER_APPROVALS;
+    assert.match(produced.strategies.at(-1)!.approvedBy!, /AI producer \(on behalf of the customer\)/);
+    assert.ok(produced.audit.some((x) => x.action === "approved_on_behalf"));
     assert.equal(produced.tasks.length, 3);
     assert.ok(produced.assets.every((x) => x.status === "shared"));
     assert.match(produced.producerAgent!.reason, /approve the storyboard and outline assets/);

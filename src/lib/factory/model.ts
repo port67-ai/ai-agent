@@ -295,6 +295,7 @@ export type AiRoutingConfig = {
 export type Database = {
   accounts?: Account[];
   aiRouting?: AiRoutingConfig;
+  approvalMode?: { mode: "ai" | "manual"; updatedAt: string; updatedBy: string };
   team?: TeamMember[];
   teamAudit?: TeamAuditEntry[];
   apiCalls?: ApiCall[];

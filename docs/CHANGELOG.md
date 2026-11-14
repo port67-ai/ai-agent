@@ -342,3 +342,17 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-008, FAC-HAR-012. PRD impact: none.
 - Evidence: tests/factory-system-map.test.tsx (now asserts the orchestrator, four reviewers and that Producer scope edit is gone), factory-map-interactive.test.tsx, factory-observability.test.ts pass; layout checked in a static render of the column only, not in the live app.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0044 - 2026-11-14 - Producer orchestrator resumes on project view
+- Author/harness: Claude (Cowork); owner reported Source review left as a manual WAITING step after the four researchers completed.
+- What/why: audit of the chain (scope, scope review, four researchers, source review, insights, insight review, direction, direction review, copy pack, production, assets shared) found the post-research kick is the only trigger, so a missed or restarted-instance kick left the chain stopped. Opening a project now also starts an automatic orchestrator pass when PORT67_PRODUCER_AGENT=true and research has run (skipped when nothing changed, bounded by the existing step and pass limits). Customer direction approval and final asset approval remain human gates.
+- Requirements: FAC-HAR-012. PRD impact: none.
+- Evidence: tsc clean; npm run test:factory passes.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0045 - 2026-11-14 - Admin switch: manual or AI producer approval of the direction
+- Author/harness: Claude (Cowork); owner asked for the producer to approve the direction on the customer's behalf when PORT67_PRODUCER_APPROVALS=true, with an admin switch between manual and AI producer approval, defaulting to AI.
+- What/why: new owner-only route admin/approval-mode and a switch on the AI agents page. Mode is stored with the admin settings (default ai). Effective only when the Render master switch PORT67_PRODUCER_APPROVALS=true is also on; otherwise only the account owner approves. In AI mode the orchestrator gets a new step, approveDirection, after the direction producer passes and shares the direction; the approval is recorded as "AI producer (on behalf of the customer)" with an approved_on_behalf audit entry, and the chain continues to production, copy pack and sharing. Manual mode stops at waiting for the account owner as before. Final asset approval is never taken by the agent. Producer approval buttons in the UI follow the effective setting.
+- Requirements: FAC-HAR-012. PRD impact: none.
+- Evidence: tsc, eslint and npm run test:factory pass (tests/factory-producer-agent.test.ts covers default, master switch off, manual wait, AI approval and invalid mode).
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
