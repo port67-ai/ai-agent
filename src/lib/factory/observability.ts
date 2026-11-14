@@ -1,3 +1,4 @@
+import { producerApprovalsOn } from "./approval-mode";
 import type { ApiCall } from "./costs";
 import { accountDirectory } from "./accounts";
 import type { Repository } from "./repository";
@@ -92,7 +93,7 @@ export type PipelineStats = {
   scopes: { classified: number; ai: number; template: number; manual: number; stale: number; byCategory: Record<string, number> };
   waiting: { producerStart: number; sourceReview: number; insightReview: number; directionApproval: number; assetApproval: number };
   /** The producer orchestrator and its four reviewers, counted over every project. */
-  producer?: { passes: number; reviews: number; byAi: number; byRules: number; holds: number; pending: number };
+  producer?: { passes: number; reviews: number; byAi: number; byRules: number; holds: number; pending: number; approvesDirection?: boolean };
 };
 export function pipelineStats(projects: Project[]): PipelineStats {
   const sum = (f: (p: Project) => number) => projects.reduce((n, p) => n + f(p), 0);
@@ -149,6 +150,8 @@ export function pipelineStats(projects: Project[]): PipelineStats {
       byRules: sum((p) => (p.reviews || []).filter((r) => r.by === "rules").length),
       holds: count((p) => !!p.producerAgent?.hold),
       pending: count((p) => !!p.producerAgent?.pending),
+      /** True when the AI producer gives the customer's direction approval (Render switch on and the admin switch set to AI). */
+      approvesDirection: producerApprovalsOn(),
     },
     waiting: {
       producerStart: count((p) => !!p.researchRequest && researchRun(p).length === 0),
@@ -191,7 +194,7 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
   if (p.waiting.producerStart) out.push({ level: "blocked", where: "Producer start", text: `${n(p.waiting.producerStart, "project is", "projects are")} waiting for a producer to start research.` });
   if (p.waiting.sourceReview) out.push({ level: "blocked", where: "Gate 1", text: `${n(p.sources.unreviewed, "source is", "sources are")} unreviewed across ${n(p.waiting.sourceReview, "project", "projects")}; insights cannot start.` });
   if (p.waiting.insightReview) out.push({ level: "blocked", where: "Gate 2", text: `${n(p.waiting.insightReview, "project has", "projects have")} draft insights waiting for acceptance.` });
-  if (p.waiting.directionApproval) out.push({ level: "blocked", where: "Gate 3", text: `${n(p.waiting.directionApproval, "direction is", "directions are")} shared and waiting for customer approval.` });
+  if (p.waiting.directionApproval) out.push({ level: "blocked", where: "Gate 3", text: p.producer?.approvesDirection ? `${n(p.waiting.directionApproval, "direction is", "directions are")} shared; the AI producer approves on its next pass (open the project or press Run producer agent).` : `${n(p.waiting.directionApproval, "direction is", "directions are")} shared and waiting for customer approval.` });
   if (p.waiting.assetApproval) out.push({ level: "blocked", where: "Gate 5", text: `${n(p.waiting.assetApproval, "project has", "projects have")} shared assets waiting for customer approval.` });
   for (const e of edges.filter((x) => (x.lastStatus ? x.lastStatus === "failed" || x.lastStatus === "unknown" : x.failed || x.unknown))) {
     const name = aiAgents.find((a) => a.id === e.agent)?.name || e.agent;

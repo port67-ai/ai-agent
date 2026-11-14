@@ -193,9 +193,8 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
   const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative"];
-  const columnIds = ["review:direction"];
-  const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Direction review" };
-  const PR = P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 };
+  const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
+  const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
   const ids = ["scope:business", ...researchIds, "synthesis:insights", "synthesis:strategy", "synthesis:content"];
   const S = P.scopes || { classified: 0, ai: 0, template: 0, manual: 0, stale: 0, byCategory: {} };
   const top = Object.entries(S.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(" · ");
@@ -263,7 +262,9 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
 
           <text x="30" y="816" className="sm-band">5 · APPROVAL</text>
           <Link d={`M${COLS[0] + NW / 2} 790 L${COLS[0] + NW / 2} 838`} color={waiting.directionApproval ? COLOR.gate : COLOR.store} dim={!P.directions.total} />
-          <Node id="gate-3" x={COLS[0]} y={840} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Approve direction" lines={["Gate 3 · customer", `${P.directions.approved} approved`]} state={gateState(waiting.directionApproval) as NodeProps["state"]} badge={gateBadge(waiting.directionApproval)} />
+          {/* Approve direction is an AI producer agent: it checks the direction against the brief, scope and insights, then approves for the customer or sends it back. */}
+          {reviewNode("review:direction", COLS[0], 840, NW, AH, waiting.directionApproval, `${P.directions.approved} approved`)}
+          <Link d={`M${COLS[0] + NW / 2 + 40} ${840 + AH} L${COLS[0] + NW / 2 + 40} 975 L1090 975 L1090 196 L${PX + PW} 196`} color={COLOR.producer} dim={!PR.reviews} />
           <Link d={`M${COLS[0] + NW} 892 L${COLS[1] - 2} 892`} color={COLOR.gate} dim={!P.directions.approved} />
           {agentNode("synthesis:content")}
           <Link d={`M${COLS[1] + NW} 892 L${COLS[2] - 2} 892`} color={COLOR.agent} dim={!P.copyPacks} />
@@ -288,16 +289,6 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.producer} icon={Bot} title="Orchestrator"
             lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "Stops at customer gates"]}
             state={PR.holds ? "blocked" : ""} badge={PR.holds ? `${PR.holds} HELD` : undefined} />
-          <Link d={`M${COLS[3] + NW - 20} 590 L${COLS[3] + NW - 20} 545 L${PX + PW / 2} 545 L${PX + PW / 2} 350`} color={COLOR.producer} dim={!P.directions.total} label="draft direction" lx={COLS[3] + NW - 12} ly={538} />
-          {columnIds.map((rid, i) => {
-            const y = 262 + i * 98;
-            return (
-              <g key={rid}>
-                <Link d={`M${PX + PW + 2} ${y + 43} L1090 ${y + 43} L1090 ${196} L${PX + PW} ${196}`} color={COLOR.producer} dim={!PR.reviews} />
-                {reviewNode(rid, PX, y, PW, 86, 0)}
-              </g>
-            );
-          })}
 
           {/* LLM providers: each connector from an agent is one API call path. */}
           <text x={PX} y={586} className="sm-band">LLM APIS (CALLS OUT)</text>

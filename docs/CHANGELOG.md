@@ -391,3 +391,59 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-CST-003. PRD impact: none.
 - Evidence: tests/factory-cost-series.test.ts extended; tsc, eslint, test:factory and build pass.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0051 - 2026-11-14 - Activation buttons use the orange button style
+- Author/harness: Claude (Cowork); owner asked that activation buttons such as Save limits be orange or otherwise high-contrast, as a rule for future design.
+- What/why: the Save limits, approval switch and cost chart period buttons used class names that had no styling. They now use the existing orange f-button (secondary variant for the unselected periods); the approval switch is a single orange "Switch to ..." button. Added a disabled style for f-button and a design rule to AGENTS.md.
+- Requirements: FAC-CST-003, FAC-HAR-012. PRD impact: none.
+- Evidence: tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0052 - 2026-11-14 - Map shows who approves the direction
+- Author/harness: Claude (Cowork); owner saw the Approve direction node waiting as "Gate 3 · customer" and asked why it looked manual.
+- What/why: the node was always labelled as a customer gate, even with AI producer approval on. It now turns orange and reads "AI producer · for the customer" when the Render switch PORT67_PRODUCER_APPROVALS=true and the admin switch are both on, and the blocker text says the AI producer approves on its next pass. With manual mode or the Render switch off it stays the customer gate. A shared direction still waits until a producer agent pass runs (project view, Run producer agent, or the automatic kick).
+- Requirements: FAC-HAR-008, FAC-HAR-012. PRD impact: none.
+- Evidence: tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0053 - 2026-11-14 - Approve direction is the AI direction reviewer on the map
+- Author/harness: Claude (Cowork); owner asked for Approve direction to be an AI agent that reviews the direction output for alignment.
+- What/why: the Approve direction gate node on the map is now the Direction producer (the existing walled-garden reviewer, with its model, calls and cost, click to choose a model), orange like the other producer nodes, with its verdict line into the orchestrator. The separate Direction review node in the orchestrator column and its draft-direction link were removed so the reviewer appears once, in the approval step. Behaviour is unchanged: the Direction producer reviews the direction against the brief, scope and accepted insights, sends it back once for a redraft or passes it; with AI producer approval on, it is then approved for the customer. The customer gate remains when manual approval is chosen. Final asset review stays human.
+- Requirements: FAC-HAR-008, FAC-HAR-012. PRD impact: none.
+- Evidence: tests/factory-system-map.test.tsx updated; tsc, eslint, test:factory pass. Layout not checked in a visual render.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0054 - 2026-11-14 - Static storyboard grid beside the motion storyboard
+- Author/harness: Claude (Cowork); owner asked for a static, side-by-side grid storyboard with detailed descriptions below each frame.
+- What/why: producing drafts now also creates a fourth asset, "Storyboard grid (static)" (kind grid), from the same approved direction and the same production task as the motion storyboard (no new AI cost). It is a printable HTML page with one card per frame in a grid: opening hook, the idea (objective), up to four key messages, call to action. Under each frame: purpose, on-screen text, voice-over or caption, visual direction, and the evidence (proof and cited source titles). Built only from the approved direction; nothing invented. No scripts. It appears in the Asset library, is shared and approved like the other assets, and downloads as HTML. The MP4 render still uses the motion storyboard only.
+- Requirements: FAC-HAR-008. PRD impact: none.
+- Evidence: tests/factory-campaign.test.ts now expects four assets and checks the grid content; tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0055 - 2026-11-14 - Producer reviewers score relevance and check evidence
+- Author/harness: Claude (Cowork); owner asked to confirm the producer agents truly review the content against the evidence, are not hallucinating, and give a score.
+- What/why: audit found the reviewers did judge only evidence they were given, but gave no score, the direction reviewer could not see the sources its key messages cite, and with no model (for example the spend cap reached) the scope reviewer passed unscored. Now: (1) every model verdict carries a relevance score 0 to 100, per item for sources and insights and overall for scope and direction; an item scored under 50 is rejected and a pass scored under 60 is sent back whatever the model said. (2) Reviewers list "unsupported" claims they cannot trace to the evidence; a pass is never kept while any remain. (3) The direction reviewer now receives the evidence its key messages cite, so proof is checked against the source. (4) Free rule checks catch invented statistics: any figure (a percentage, decimal or number of two or more digits) in a key message, its proof or an insight must appear in the evidence it cites, or the work is sent back or rejected. (5) Scores and unsupported claims are stored on the review, shown in the Research room reviewer list (green 80 and over, amber 60 to 79, red below) and in the audit trail. Free-check-only reviews show "Not scored". An unscored model verdict is not trusted and falls back to the free checks. Limit: a score is a model judgement, not proof; the figure check is lexical.
+- Requirements: FAC-HAR-012. PRD impact: none.
+- Evidence: tests/factory-producer-agent.test.ts extended (strict parse, overruling, figure checks, evidence in the direction view, scores recorded); tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0056 - 2026-11-14 - Evidence quality and scoring plan recorded (docs only)
+- Author/harness: Claude (Cowork); owner asked that scoring follow industry best practice at every layer, to be done next time.
+- What/why: docs/EVIDENCE_QUALITY_PLAN.md captures the request as a plan: Admiralty source grading, CRAAP source tests, triangulation, intelligence-standard fact/assumption/judgement separation and a GRADE-style evidence rating, applied layer by layer from scope to first-pass production, with an evidence-strength index carried forward and open questions. No code changed.
+- Requirements: FAC-HAR-012. PRD impact: none yet.
+- Evidence: docs governance check passes.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0057 - 2026-11-14 - Evidence quality plan: owner decisions recorded (docs only)
+- Author/harness: Claude (Cowork); owner answered the open questions and asked to deploy the current work.
+- What/why: Admiralty, CRAAP and a GRADE-style rating are the named standard; customer data upload later; weak evidence warns and the AI producer re-triggers the associated agent with clearer guidance and rules, then holds for a person. The plan notes what exists (insights and direction redraft once with the producer's notes) and what is still to build (scope, research and source re-runs, grades, evidence index). No code changed.
+- Requirements: FAC-HAR-012. PRD impact: none yet.
+- Evidence: docs governance check passes.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0058 - 2026-11-14 - Evidence quality: Admiralty, CRAAP and GRADE-style grading, weak evidence re-run and warnings
+- Author/harness: Claude (Cowork); owner chose Admiralty, CRAAP and a GRADE-style rating as the named standard, with weak evidence warning people and the AI producer re-triggering the associated agent with clearer guidance.
+- What/why: new src/lib/factory/evidence.ts (pure, free, no model call). (1) Each public source is graded with the Admiralty code (reliability A to F from its origin: official, publisher, own site, review platform, social, unknown; credibility 1 to 6 from independent corroboration, quote and figures, promotional wording and thinness) and a CRAAP check (currency, relevance to the segment's questions, authority, accuracy, purpose), combined into a 0 to 100 score with plain-English notes. (2) Each research segment and each insight gets a GRADE-style rating (high, moderate, low, very low), downgraded for single-organisation evidence, too few sources, few measurable facts, old or low-reliability sources, and for an insight that strays from what its sources say. (3) Producers see source grades and segment ratings in the Research room; customers never do (computed at view time, never stored). (4) The source reviewer sees each source's Admiralty grade and score; the free checks reject sources scoring under 20 and insights rated very low. The direction reviewer sees the weakest insight rating. (5) Orchestrator: when a research segment is rated low or very low after source review, the producer re-runs that researcher once with guidance built from what was weak (organisations, measurable facts, recency, no promotion); the attempt is counted before it runs so it cannot loop and a failure only warns. Insight redrafts triggered by evidence ratings get explicit rules. (6) Weak evidence that remains produces warnings (research, insights, direction weakest link), recomputed each pass, shown in the Research room and never blocking the chain. The hold for fewer than two accepted sources per segment is unchanged. Limits: heuristics, not proof; the host lists are small and conservative; scope and direction drafter re-triggers beyond the existing single redraft are not changed; no portal controls for thresholds yet; map not updated.
+- Requirements: FAC-HAR-012. PRD impact: none.
+- Evidence: tests/factory-evidence.test.ts (grading, ratings, producer-only grades, one re-run then warn, no loop); tests/factory-producer-agent.test.ts updated; tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

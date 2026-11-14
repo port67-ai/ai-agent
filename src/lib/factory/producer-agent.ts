@@ -6,7 +6,8 @@ import { ensureScope } from "./scope-run";
 import { reviewGate, saveReview } from "./producer-review-run";
 import { GATE_LABEL, MIN_ACCEPTED_PER_SEGMENT, PRODUCER_AGENT } from "./producer-reviews";
 import { stageReady } from "./ai-routing";
-import { segments, type Principal, type Project, type ReviewGate } from "./model";
+import { segments, type Principal, type Project, type ReviewGate, type Segment } from "./model";
+import { insightEvidence, researchGuidance, segmentEvidence } from "./evidence";
 import type { Repository } from "./repository";
 
 export { PRODUCER_AGENT };
@@ -20,12 +21,29 @@ export { PRODUCER_AGENT };
 // changed since the last pass; a project is limited to MAX_PASSES passes; reviewer calls are capped per project; one pass at a
 // time runs per project.
 export const producerAgentAuto = () => process.env.PORT67_PRODUCER_AGENT === "true";
+const INSIGHT_RULES = "Rules for the redraft: every insight must cite at least two independent organisations, stay within what the quoted sources say, and state its confidence as limited when only one organisation supports it.";
+/** Evidence the producer is unhappy with. Recomputed on every pass so it never goes stale. Warnings inform people; they never block. */
+export function evidenceWarnings(p: Project, at: string): { at: string; gate: string; text: string }[] {
+  const out: { at: string; gate: string; text: string }[] = [];
+  for (const e of segments.map((k) => segmentEvidence(p, k))) {
+    if (e.weak && p.sources.some((s) => s.segment === e.segment)) out.push({ at, gate: "research", text: `${e.segment} research evidence is ${e.rating} (${e.score}/100)${p.producerAgent?.researchRetries?.[e.segment] ? ", after one re-run" : ""}: ${e.reasons.join(" ")}` });
+  }
+  const live = p.insights.filter((i) => (i.status || "reviewed") === "reviewed");
+  const weakInsights = live.map((i) => ({ i, e: insightEvidence(p, i) })).filter((x) => x.e.weak);
+  if (weakInsights.length) out.push({ at, gate: "insights", text: `${weakInsights.length} of ${live.length} accepted insight${live.length === 1 ? "" : "s"} rest on ${weakInsights.some((x) => x.e.rating === "very low") ? "very low" : "low"} evidence: ${weakInsights[0].e.reasons[0] || "weak sources"}` });
+  const d = p.strategies.at(-1);
+  if (d) {
+    const weakest = p.insights.filter((i) => d.insightIds.includes(i.id)).map((i) => insightEvidence(p, i)).sort((a, b) => a.score - b.score)[0];
+    if (weakest?.weak) out.push({ at, gate: "direction", text: `The direction's weakest link is rated ${weakest.rating} (${weakest.score}/100): ${weakest.reasons[0] || "weak sources"}` });
+  }
+  return out.slice(0, 12);
+}
 const MAX_STEPS = 14;
 const MAX_PASSES = 30;
 const MAX_LOG = 40;
 const MAX_REWORKS = 1;
 
-export type StepId = "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
+export type StepId = "reResearch" | "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
 export const STEP_LABEL: Record<StepId, string> = {
   reviewScope: "Scope producer reviews the classification",
   reviewSources: "Source producer reviews the sources",
@@ -33,6 +51,7 @@ export const STEP_LABEL: Record<StepId, string> = {
   reviewInsights: "Insight producer reviews the draft insights",
   draftDirection: "Draft direction with AI",
   reviewDirection: "Direction producer reviews the direction",
+  reResearch: "Researcher re-run with the producer's guidance",
   approveDirection: "AI producer approves the direction on the customer's behalf",
   produce: "Create production drafts",
   draftCopyPack: "Draft AI copy pack",
@@ -59,6 +78,10 @@ export function progressFingerprint(p: Project): string {
     hold: p.producerAgent?.hold ? p.producerAgent.hold.gate + p.producerAgent.hold.subject : "",
   }));
 }
+let researchRunner: ((a: Principal, projectId: string, segment: Segment, guidance: string) => Promise<void>) | undefined;
+/** The service registers how to run one researcher; the orchestrator never imports the research path directly. */
+export const registerResearchRunner = (fn: typeof researchRunner) => { researchRunner = fn; };
+const weakSegment = (p: Project, st: Project["producerAgent"]) => segments.map((k) => segmentEvidence(p, k)).find((e) => e.weak && (st?.researchRetries?.[e.segment] || 0) < 1);
 const wait = (kind: Stop["kind"], reason: string): Plan => ({ stop: { kind, reason } });
 const unreviewedIds = (p: Project) => p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").map((s) => s.id);
 const draftsReady = (p: Project) => p.insights.filter((i) => (i.status || "reviewed") === "draft" && i.sourceIds.every((e) => p.sources.some((s) => s.id === e && s.status === "supported")));
@@ -76,6 +99,8 @@ export function planNext(p: Project, aiReady: boolean): Plan {
     if (run.status !== "completed") return wait("waiting_human", `The ${seg} research ${run.status === "failed" ? "failed: re-run it" : "is not finished"}.`);
   }
   const waiting = unreviewedIds(p);
+  // Weak evidence in a segment: the producer sends that researcher back once with clear rules, then carries on and warns.
+  if (!waiting.length && researchRunner && weakSegment(p, st)) return { step: "reResearch" };
   if (st?.hold?.gate === "sources" && st.hold.subject === holdSubject(waiting)) return wait("waiting_human", st.hold.notes);
   if (waiting.length) return { step: "reviewSources" };
   if (!p.sources.some((s) => s.status === "supported")) return wait("waiting_human", "Every source was rejected by the source producer, so there is nothing to build insights from.");
@@ -175,6 +200,7 @@ export async function runProducerAgent(repo: Repository, a: Principal, projectId
       const p = find(s.projects, projectId, op);
       const prev = p.producerAgent;
       p.producerAgent = { ...(prev || blank()), passes: (prev?.passes || 0) + 1, status: stop.kind, reason: stop.reason, at: new Date().toISOString(), lastFingerprint: "", log: [...(prev?.log || []), ...log].slice(-MAX_LOG) };
+      p.producerAgent.warnings = evidenceWarnings(p, p.producerAgent.at);
       p.producerAgent.lastFingerprint = progressFingerprint(p);
       p.audit.push({ id: id(), at: p.producerAgent.at, actor: PRODUCER_AGENT, role: "operator", action: "producer_agent_pass", detail: `${opts.trigger || (opts.auto ? "automatic" : "manual by " + a.subject)}: ${log.map((l) => l.step + " " + l.outcome).join(", ") || "no step"}; stopped: ${stop.kind}, ${stop.reason}`.slice(0, 480) });
       p.revision++;
@@ -220,6 +246,19 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
     }
     return `${first.verdict} (${first.by})`;
   }
+  if (step === "reResearch") {
+    const now = await current();
+    const weak = weakSegment(now, now.producerAgent);
+    if (!weak || !researchRunner) return "nothing to re-run";
+    // Count the attempt first so a failure can never loop.
+    await patchAgent(repo, op, projectId, (s) => { s.researchRetries = { ...s.researchRetries, [weak.segment]: 1 }; });
+    try {
+      await researchRunner(op, projectId, weak.segment, researchGuidance(weak));
+    } catch (e) {
+      return `${weak.segment} re-run could not start (${e instanceof Error ? e.message.slice(0, 100) : "failed"}); continuing with a warning`;
+    }
+    return `${weak.segment} rated ${weak.rating} (${weak.score}/100); re-run once with clearer rules`;
+  }
   if (step === "reviewSources") {
     const rec = await reviewGate(repo, op, projectId, "sources");
     const before = await current();
@@ -246,6 +285,7 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
       const notes = rec.notes || rec.summary;
       if (accepted === 0) await sendBack("insights", notes, holdSubject([]));
       else if ((await reworked("insights")) < MAX_REWORKS && aiReady) await sendBack("insights", notes, holdSubject([]));
+      if (rec.items.some((x) => /evidence rating/i.test(x.reason))) await patchAgent(repo, op, projectId, (s) => { if (s.pending?.gate === "insights") s.pending.notes = (s.pending.notes + " " + INSIGHT_RULES).slice(0, 900); });
     }
     return `${rec.summary} (${rec.by})`;
   }

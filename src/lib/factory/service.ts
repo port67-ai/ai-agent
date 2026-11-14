@@ -1,3 +1,4 @@
+import { allSegmentEvidence } from "./evidence";
 import { costSeries, type SeriesRange } from "./cost-series";
 import { approvalOverview, loadApprovalMode, saveApprovalMode } from "./approval-mode";
 import { meteredModelCall } from "./metering";
@@ -13,7 +14,7 @@ import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
 import { keyConfigured, resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
 import { runSynthesis } from "./synthesis-run";
-import { planNext, producerAgentAuto, reviewScopeBeforeResearch, runProducerAgent, STEP_LABEL } from "./producer-agent";
+import { planNext, producerAgentAuto, registerResearchRunner, evidenceWarnings, reviewScopeBeforeResearch, runProducerAgent, STEP_LABEL } from "./producer-agent";
 import { synthesisReady } from "./synthesis";
 import { configurationStatus } from "./config";
 import { randomBytes } from "node:crypto";
@@ -222,7 +223,7 @@ async function seed(a: Principal) {
     return p;
   });
 }
-async function runResearchSegment(a: Principal, projectId: string, segment: Segment) {
+async function runResearchSegment(a: Principal, projectId: string, segment: Segment, guidance?: string) {
   requireProviderConsent(find((await repo(a).read(a.workspaceId)).projects, projectId, a));
   // Classify the business once per brief so each researcher gets a narrow, business-specific ask. Never blocks research.
   await ensureScope(repo(a), a, projectId);
@@ -271,7 +272,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
     });
     let acceptedError = "";
     try {
-      const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection));
+      const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection, guidance));
       acceptedError = await repo(a).mutate(a.workspaceId, (state) => {
         const current = find(state.projects, projectId, a);
         const record = current.runs.find((r) => r.id === run.id)!;
@@ -348,6 +349,7 @@ function kickProducerAgent(a: Principal, projectId: string, trigger: string) {
   if (!producerAgentAuto() || a.demo) return;
   void runProducerAgent(repo(a), a, projectId, { auto: true, trigger: "automatic after " + trigger }).catch(() => undefined);
 }
+registerResearchRunner(async (op, projectId, segment, guidance) => { await runResearchSegment(op, projectId, segment, guidance); });
 async function autoStartResearch(a: Principal, projectId: string) {
   const key = a.workspaceId + "/" + projectId;
   if (autoRunning.has(key)) return;
@@ -682,7 +684,7 @@ export async function handleFactory(
         operator(a);
         const aiReady = await stageReady(repo(a), "synthesis").catch(() => false);
         const plan = planNext(p, aiReady);
-        return json({ state: p.producerAgent || null, reviews: (p.reviews || []).slice(-20), next: "step" in plan ? { step: plan.step, label: STEP_LABEL[plan.step] } : null, stop: "stop" in plan ? plan.stop : null, automatic: producerAgentAuto(), aiReady });
+        return json({ state: p.producerAgent || null, evidence: allSegmentEvidence(p), warnings: evidenceWarnings(p, new Date().toISOString()), reviews: (p.reviews || []).slice(-20), next: "step" in plan ? { step: plan.step, label: STEP_LABEL[plan.step] } : null, stop: "stop" in plan ? plan.stop : null, automatic: producerAgentAuto(), aiReady });
       }
       if (path[2] === "producer-agent" && request.method === "POST") {
         operator(a);
@@ -770,13 +772,13 @@ export async function handleFactory(
         const contentType =
           asset.kind === "svg"
             ? "image/svg+xml"
-            : asset.kind === "motion"
+            : asset.kind === "motion" || asset.kind === "grid"
               ? "text/html"
               : "text/markdown";
         return new Response(asset.content, {
           headers: {
             "content-type": contentType + "; charset=utf-8",
-            "content-disposition": `attachment; filename="port67-${asset.id}.${asset.kind === "svg" ? "svg" : asset.kind === "motion" ? "html" : "md"}"`,
+            "content-disposition": `attachment; filename="port67-${asset.id}.${asset.kind === "svg" ? "svg" : asset.kind === "motion" || asset.kind === "grid" ? "html" : "md"}"`,
             "cache-control": "no-store",
             "x-content-type-options": "nosniff",
             "content-security-policy":

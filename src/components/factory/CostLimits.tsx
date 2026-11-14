@@ -53,7 +53,7 @@ export default function CostLimits({ limits, known, onSaved }: { limits: Limits;
         <button type="button" className="f-text-button" onClick={() => setModels((all) => [...all, { key: "", usd: "" }])}>Add a model limit</button>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="f-primary" disabled={busy} onClick={() => void save()}>Save limits</button>
+        <button type="button" className="f-button" disabled={busy} onClick={() => void save()}>Save limits</button>
         {s.updatedAt && <span className="f-small">Last saved {s.updatedAt.slice(0, 16).replace("T", " ")} UTC by {s.updatedBy}</span>}
       </div>
       {error && <p role="alert">{error}</p>}
