@@ -333,3 +333,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-012, FAC-TEN-006. PRD impact: none (operator tooling).
 - Evidence: tests/factory-source-review.test.ts (producer and customer refused, confirmation needed, brief kept, journey cleared, audited, channels can be chosen again); eslint, tsc, test:factory, build.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0043 - 2026-11-14 - Producer orchestrator and its four reviewers on the system map
+- Author/harness: Claude (Cowork); owner asked for the producer orchestrator and its sub producers on the map, the orchestrator sitting above the LLM column and looking like an LLM but being a rules-only agent linked to its reviewers.
+- What/why: top of the right-hand column now holds an Orchestrator node (same size and style as the provider nodes, robot icon, rules only, no model) with passes, verdict count, and a held-for-a-person badge. Beneath it are the four reviewer nodes (scope, source, insight, direction), each showing its chosen model or free checks only, its calls and cost, running and failed states, with click to choose a model and the hover tooltip. A bus line links the orchestrator to each reviewer. The LLM provider column moved down to make room. New pipeline.producer counters (passes, verdicts by AI and by rules, holds, pending redrafts) are computed from the projects. Reviewer calls are counted in the provider totals; separate lines from reviewers to providers are not drawn.
+- Requirements: FAC-HAR-008, FAC-HAR-012. PRD impact: none.
+- Evidence: tests/factory-system-map.test.tsx, factory-map-interactive.test.tsx, factory-observability.test.ts still pass; layout checked in a static render of the column only, not in the live app.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

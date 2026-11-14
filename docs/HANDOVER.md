@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-14; Claude; CHG-0043: system map now shows the producer Orchestrator (top right, styled like an LLM, rules only) with its four reviewers beneath it and the LLM column below. Click a reviewer to choose its model. Layout checked in a static render only.
+
 2026-11-14; Claude; CHG-0042: admin-only Restart from the brief (Research room) keeps the brief, logo and account and clears channels, request, authorisation, scope, sources, insights, directions, drafts, assets, videos, runs and reviews so the full journey can be rerun. Audit trail and cost ledger are kept. Then as the account owner choose launch channels and request research.
 
 2026-11-13; Claude; CHG-0041: documentation-only triage of the imported requirement list. 30 rows moved from NOT_VERIFIED to IN_PROGRESS (partial) with their evidence and gaps. The remaining untouched rows are genuinely unbuilt (workflow engine, skills/tool registry, claim library, rights, finance reporting, warehouse data, Synapse audit, separate environments). Next: one live end-to-end run of the foymore project, then promote what passes.
