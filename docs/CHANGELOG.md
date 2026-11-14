@@ -319,3 +319,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-012 (reworked). PRD 1.23.0. PRD impact: FAC-HAR-012 rewritten for the orchestrator and four reviewers.
 - Evidence: tests/factory-producer-agent.test.ts (planning, walled-garden inputs including through a mocked provider call, free checks, strict parsing, metered reviewer runs, source rejection applied, insight rework with notes to the drafter, no repeat, hold, direction hold then share, customer gates, caps, role and demo checks); eslint, tsc, test:factory, build.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status. Reviewer quality with real models, the panel and the automatic triggers are unverified live.
+
+## CHG-0041 - 2026-11-13 - Requirement status triage (documentation only)
+- Author/harness: Claude (Cowork); owner asked for the remaining requirements to be progressed unattended. No code was changed: the status of 30 requirements that were still marked NOT_VERIFIED from the imported baseline was checked against the repository and moved to IN_PROGRESS (partial) with the evidence that exists and what is missing (cost ledger, audit, evidence records, approvals, roles, registry, CI and governance, ADRs).
+- Not changed: requirements with no implementation stay NOT_VERIFIED (workflow engine and Cloud Tasks, skills and tool registry, claim library, rights metadata, finance and margin reporting, warehouse data, avatar ads, Synapse audit, separate environments).
+- Requirements: FAC-CST-001 to 004, FAC-OBS-002 to 004, FAC-EVD-001, 002, FAC-ART-001, 002, FAC-WFL-007, 008, FAC-AGT-001, 003, 004, FAC-HAR-001, 002, FAC-D-006, 008, 009, FAC-TEN-001, 003, FAC-CTX-002, FAC-DEV-001 to 006. PRD impact: none (status only).
+- Evidence: each row cites the test file or code that backs it; nothing is marked verified. Governance script passes.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

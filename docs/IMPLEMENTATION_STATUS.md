@@ -6,27 +6,27 @@ The repository contains an existing appointment-booking Next.js application. Fac
 
 | Requirement | Intent | Delivery | Evidence / next verification |
 |---|---|---|---|
-| FAC-AGT-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-AGT-001 | Imported proposed baseline | IN_PROGRESS (partial) | Versioned capability registry; runs record capability and version (tests/factory.test.ts); enable/disable status not built |
 | FAC-AGT-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-AGT-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-AGT-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-AGT-003 | Imported proposed baseline | IN_PROGRESS (partial) | Every agent runs on demand and run state is stored with a lease; no permanent loops; no durable task queue |
+| FAC-AGT-004 | Imported proposed baseline | IN_PROGRESS (partial) | Each researcher payload holds the brief and its own scope only, so siblings cannot see each other's results by construction; no explicit test |
 | FAC-AGT-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-AGT-006 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-ART-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-ART-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-ART-001 | Imported proposed baseline | IN_PROGRESS (partial) | Assets are versioned with a content hash and superseded versions are kept; addressing every old version is not separately tested |
+| FAC-ART-002 | Imported proposed baseline | IN_PROGRESS (partial) | Assets carry direction hash, task, evidence IDs and, for AI drafts, the generating run; model and skill versions are on the run record but not linked on every asset |
 | FAC-ART-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-ART-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-ART-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-CST-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-CST-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-CST-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-CST-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-CST-001 | Imported proposed baseline | IN_PROGRESS (partial) | Each paid call is reserved in the admin ledger with project, run, account, agent, provider, model, usage and a pricing snapshot (tests/factory-metering.test.ts, factory-costs.test.ts); task-level links and invoice reconciliation not built |
+| FAC-CST-002 | Imported proposed baseline | IN_PROGRESS (partial) | Price is stored on each call at reservation, so history does not change when prices do; provider request IDs recorded; a versioned price-table object is not built (prices are an owner overlay) |
+| FAC-CST-003 | Imported proposed baseline | IN_PROGRESS (partial) | Monthly workspace USD cap and per-project call caps tested (tests/factory-budget.test.ts); per-task and per-workflow budgets not built |
+| FAC-CST-004 | Imported proposed baseline | IN_PROGRESS (partial) | Estimate and reconciled actual are separate fields on each ledger row (tests/factory-costs.test.ts); no real invoice comparison yet |
 | FAC-CST-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-CST-006 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-CST-007 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-CST-008 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-CTX-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-CTX-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-CTX-002 | Imported proposed baseline | IN_PROGRESS (partial) | Each run stores a brief snapshot and its hash; formal immutable context bundles not built |
 | FAC-CTX-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-CTX-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-CTX-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
@@ -38,36 +38,36 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-D-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-D-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-D-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-D-006 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-D-006 | Imported proposed baseline | IN_PROGRESS (partial) | Four providers supported (see FAC-HAR-002); xAI/Grok is a gap |
 | FAC-D-007 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-D-008 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-D-009 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-D-008 | Imported proposed baseline | IN_PROGRESS (partial) | docs/CHANGELOG.md, IMPLEMENTATION_STATUS.md and HANDOVER.md are checked on every change by scripts/check_docs_governance.py and a CI workflow |
+| FAC-D-009 | Imported proposed baseline | IN_PROGRESS (partial) | Role and ownership checks run server-side in the engine and routes (customer approvals refused to producers unless the test-mode switch is on); external publishing does not exist |
 | FAC-D-010 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-DEV-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-DEV-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-DEV-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-DEV-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-DEV-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-DEV-006 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-DEV-001 | Imported proposed baseline | IN_PROGRESS (partial) | PRD.md is the canonical requirements document and is versioned with every change; owner review of the whole document not recorded |
+| FAC-DEV-002 | Imported proposed baseline | IN_PROGRESS (partial) | AGENTS.md is the shared policy; CLAUDE.md and GEMINI.md point to it; the governance script checks they do |
+| FAC-DEV-003 | Imported proposed baseline | IN_PROGRESS (partial) | Governance script fails a change that does not touch the changelog, status and handover; runs in CI (.github/workflows/docs-governance.yml) |
+| FAC-DEV-004 | Imported proposed baseline | IN_PROGRESS (partial) | This file separates planned, in-progress and not-verified; nothing is marked verified without evidence |
+| FAC-DEV-005 | Imported proposed baseline | IN_PROGRESS (partial) | Three ADRs exist under docs/adr and docs/DECISIONS.md indexes decisions; owner review of each not recorded |
+| FAC-DEV-006 | Imported proposed baseline | IN_PROGRESS (partial) | Factory CI and docs governance workflows run on pull requests and a PR template exists; branch protection and release tags are GitHub settings, unverified |
 | FAC-DEV-007 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-EVD-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-EVD-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-EVD-001 | Imported proposed baseline | IN_PROGRESS (partial) | Source records carry URL, title, collection time, method, kind and review status; research findings cite the source URL (tests/factory-research-findings.test.ts); object-pointer sources and classification not built |
+| FAC-EVD-002 | Imported proposed baseline | IN_PROGRESS (partial) | Sources are public, client assertion or synthetic, and a client assertion cannot be marked supported (tests/factory-source-review.test.ts); a full claim record (fact, inference, creative proposition) is not built |
 | FAC-EVD-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-EVD-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-HAR-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-HAR-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-HAR-001 | Imported proposed baseline | IN_PROGRESS (partial) | AgentExecutionRequest contract exists in the registry; the live agents call providers through one adapter function (tests/factory-providers.test.ts); not every agent uses the typed contract |
+| FAC-HAR-002 | Imported proposed baseline | IN_PROGRESS (partial) | OpenAI, Gemini, Anthropic and DeepSeek adapters tested with stubbed transport (see FAC-HAR-004); xAI/Grok not supported; no live compatibility smoke test |
 | FAC-HAR-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-OBS-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-OBS-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-OBS-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-OBS-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-OBS-002 | Imported proposed baseline | IN_PROGRESS (partial) | Run records hold timing, usage, model and error; the Diagnostics timeline shows them (tests/factory-observability.test.ts, factory-scope.test.ts); attempts and error classification are basic |
+| FAC-OBS-003 | Imported proposed baseline | IN_PROGRESS (partial) | Project audit trail separate from technical logs: actor, role, action, time, including producer reviewer verdicts and approvals made on a customer's behalf in test mode; authorisation-decision detail partial |
+| FAC-OBS-004 | Imported proposed baseline | IN_PROGRESS (partial) | Prompts and raw model replies are not stored; the ledger keeps usage counters only; no automated log-redaction test |
 | FAC-OBS-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-SKL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-SKL-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-SKL-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-TEN-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-TEN-001 | Imported proposed baseline | IN_PROGRESS (partial) | Account-scoped workspaces with verified identity; two-account isolation tested (tests/factory-accounts.test.ts, factory-identity.test.ts); storage-rule and emulator checks partial |
 | FAC-TEN-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-TEN-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-TEN-003 | Imported proposed baseline | IN_PROGRESS (partial) | Server-enforced customer, producer and admin roles with 403s and audit (tests/factory-team.test.ts); Reviewer, Contractor and Finance roles not built |
 | FAC-TEN-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-006 | Owner-confirmed portal scope, CHG-0003 | IN_PROGRESS — bounded MVP subset, see CHG-0004 | Customer intake/direction/asset approval; acceptance tests pending |
@@ -79,8 +79,8 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-WFL-004 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-006 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-WFL-007 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-WFL-008 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-WFL-007 | Imported proposed baseline | IN_PROGRESS (partial) | Direction and asset approvals are hash-checked and record approver and time; production, copy and video are blocked until approved (tests/factory.test.ts, factory-campaign.test.ts); reason capture partial; state machine is code, not a durable workflow engine |
+| FAC-WFL-008 | Imported proposed baseline | IN_PROGRESS (partial) | Changes requested keep the rejected version and a redraft creates a new linked version; targeted asset rework is manual |
 | FAC-WFL-009 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-010 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-WFL-011 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
