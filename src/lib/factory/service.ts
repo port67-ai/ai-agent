@@ -5,9 +5,10 @@ import { meteredModelCall } from "./metering";
 import { registerAccount, listAccounts, canCreateProject } from "./accounts";
 import { addTeamMember, listTeam, removeTeamMember, withTeamRole } from "./team";
 import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVerifier, type FactoryUserLookup } from "./identity";
-import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls, saveBudgetSettings } from "./costs";
+import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls, saveBudgetSettings, repriceUnknownCalls, setCostBaseline } from "./costs";
 import { safeProviderConfiguration } from "./providers";
 import { runContent } from "./content-run";
+import { promptPack } from "./advert";
 import { agentsOverview } from "./ai-agents";
 import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
@@ -553,15 +554,18 @@ export async function handleFactory(
       return json(costSeries(await exportApiCalls(repository),{range:(q.get("range")||undefined) as SeriesRange|undefined,harness:q.get("harness")||undefined}));
     }
     if (route === "admin/costs" || route === "admin/costs/export") {
+      let repriceResult: { repriced: number; stillUnknown: number } | undefined;
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       if(route === "admin/costs/export" && request.method==="GET") return new Response(JSON.stringify({exportedAt:new Date().toISOString(),calls:await exportApiCalls(repository)}),{headers:{"content-type":"application/json","content-disposition":"attachment; filename=port67-api-costs.json","cache-control":"no-store","x-content-type-options":"nosniff"}});
       if(request.method==="POST" && data.action==="limits") await saveBudgetSettings(repository,data.limits,a.subject);
+      else if(request.method==="POST" && data.action==="reprice") repriceResult=await repriceUnknownCalls(repository,a.subject);
+      else if(request.method==="POST" && data.action==="baseline") await setCostBaseline(repository,data.on===true,a.subject);
       else if(request.method==="POST" && data.action==="archive") await archiveApiCalls(repository,a.subject);
       else if(request.method==="POST") {
         await reconcileApiCall(repository,text(data.id,"call",100,true),{actualMicroUsd:Number(data.actualMicroUsd),reference:text(data.reference,"reference",100,true),actor:a.subject});
       }
       const q=new URL(request.url).searchParams;
-      return json(await adminCostReport(repository,{accountId:q.get("accountId")||undefined,projectId:q.get("projectId")||undefined,provider:q.get("provider")||undefined,model:q.get("model")||undefined,offset:q.has("offset")?Number(q.get("offset")):undefined,limit:q.has("limit")?Number(q.get("limit")):undefined}));
+      return json({...(await adminCostReport(repository,{accountId:q.get("accountId")||undefined,projectId:q.get("projectId")||undefined,provider:q.get("provider")||undefined,model:q.get("model")||undefined,offset:q.has("offset")?Number(q.get("offset")):undefined,limit:q.has("limit")?Number(q.get("limit")):undefined})),...(repriceResult?{repriceResult}:{})});
     }
     if (route === "admin/team") {
       // Owner only. Producers are added here by verified email; admins come only from PORT67_ADMIN_UIDS.
@@ -755,6 +759,15 @@ export async function handleFactory(
           })),
           limitations:
             "Approved template-created concepts; not a performance report. No third-party media included.",
+        });
+      }
+      if (path[2] === "advert-pack" && request.method === "GET") {
+        operator(a);
+        if (!p.advert) throw new Error("Plan the advert first");
+        const tier = new URL(request.url).searchParams.get("tier") === "final" ? "final" : "draft";
+        const md = promptPack(p, p.advert, tier);
+        return new Response(md, {
+          headers: { "content-type": "text/markdown; charset=utf-8", "content-disposition": `attachment; filename="port67-advert-prompts-v${p.advert.version}.md"`, "cache-control": "no-store", "x-content-type-options": "nosniff" },
         });
       }
       if (path[2] === "asset" && path[3] && request.method === "GET") {

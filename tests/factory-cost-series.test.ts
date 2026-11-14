@@ -3,7 +3,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LocalRepository } from '../src/lib/factory/repository';
-import { reserveApiCall, saveBudgetSettings, adminCostReport } from '../src/lib/factory/costs';
+import { reserveApiCall, saveBudgetSettings, adminCostReport, estimateMicroUsd, repriceUnknownCalls, setCostBaseline, finishApiCall } from '../src/lib/factory/costs';
 import { assertWithinBudget, budgetConfig, validateBudgetSettings } from '../src/lib/factory/budget';
 import { costSeries } from '../src/lib/factory/cost-series';
 import type { ApiCall } from '../src/lib/factory/costs';
@@ -96,8 +96,8 @@ assert.equal(pricingFor('gemini', 'gemini-3.1-pro-preview')?.inputPerMillion, 4,
 assert.equal(pricingFor('gemini', 'gemini-3.1-pro-preview')?.outputPerMillion, 18);
 assert.equal(pricingFor('gemini', 'gemini-2.5-flash')?.toolPerCall, 0.035, 'older models bill grounded prompts at $35 per 1,000');
 assert.equal(pricingFor('gemini', 'gemini-4-carbon'), undefined, 'models not on the official list stay unpriced');
-assert.deepEqual(pricingFor('openai', 'gpt-5.4-mini'), { updatedAt: '2026-11-14', inputPerMillion: 0.75, outputPerMillion: 4.5, cachedInputPerMillion: 0.075 });
-assert.deepEqual(pricingFor('openai', 'gpt-6-luna'), { updatedAt: '2026-11-14', inputPerMillion: 0.1, outputPerMillion: 0.5, cachedInputPerMillion: 0.01, cacheCreationPerMillion: 0.25 });
+assert.deepEqual(pricingFor('openai', 'gpt-5.4-mini'), { updatedAt: '2026-11-14', inputPerMillion: 0.75, outputPerMillion: 4.5, toolPerCall: 0.01, cachedInputPerMillion: 0.075 });
+assert.deepEqual(pricingFor('openai', 'gpt-6-luna'), { updatedAt: '2026-11-14', inputPerMillion: 0.1, outputPerMillion: 0.5, toolPerCall: 0.01, cachedInputPerMillion: 0.01, cacheCreationPerMillion: 0.25 });
 assert.equal(pricingFor('openai', 'gpt-5.5-pro')?.cachedInputPerMillion, undefined, 'pro models list no cached price');
 assert.equal(pricingFor('openai', 'gpt-5.5-pro')?.outputPerMillion, 180);
 assert.equal(pricingFor('openai', 'o3')?.outputPerMillion, 8);
@@ -122,6 +122,39 @@ async function main() {
   await assert.rejects(reserveApiCall(repo, input), /Per-run AI spend cap reached/, 'two held calls already use the run cap');
   await reserveApiCall(repo, { ...input, runId: 'fresh' });
   await assert.rejects(saveBudgetSettings(repo, { monthlyUsd: 'lots' }, 'owner'), /plain USD amount/);
+  // ---- estimating cost: web searches are priced, missing numbers stay unknown, and old unknown calls can be recalculated
+  const openaiMini = pricingFor('openai', 'gpt-5.4-mini')!;
+  assert.equal(estimateMicroUsd({ inputTokens: 455_071, outputTokens: 43_300, toolCalls: 50 }, openaiMini), Math.ceil(455_071 * 0.75 + 43_300 * 4.5 + 50 * 0.01 * 1e6), "tokens plus web searches");
+  assert.ok(Math.abs(estimateMicroUsd({ inputTokens: 455_071, outputTokens: 43_300, toolCalls: 50 }, openaiMini)! / 1e6 - 1.04) < 0.05, "about $1, in line with the provider's own usage page");
+  assert.equal(estimateMicroUsd({ inputTokens: 10, outputTokens: 10, toolCalls: 2 }, { updatedAt: '2026-11-14', inputPerMillion: 1, outputPerMillion: 1 }), undefined, "searches with no search price stay unknown, never free");
+  assert.equal(estimateMicroUsd({ inputTokens: 10, outputTokens: 10, toolUsageUnknown: true }, openaiMini), undefined);
+  const repo2 = new LocalRepository(join(await mkdtemp(join(tmpdir(), 'port67-reprice-')), 'db.json'));
+  const base = { accountId: 'a', workspaceId: 'w', projectId: 'p', runId: 'r', stage: 'research', provider: 'openai', model: 'gpt-5.4-mini', actor: 'owner' };
+  delete process.env.PORT67_MONTHLY_BUDGET_USD;
+  const id1 = await reserveApiCall(repo2, base);
+  // Simulate a call recorded before any price was known: no pricing on the row, usage counted.
+  await repo2.mutate('factory-admin-ledger', (db) => { const row = db.apiCalls!.find((x) => x.id === id1)!; delete row.pricing; });
+  await finishApiCall(repo2, id1, { status: 'completed', usage: { inputTokens: 100_000, outputTokens: 10_000, toolCalls: 5 } });
+  const before = await adminCostReport(repo2);
+  assert.equal(before.summary.unknownCount, 1);
+  const fixed = await repriceUnknownCalls(repo2, 'owner');
+  assert.deepEqual(fixed, { repriced: 1, stillUnknown: 0 });
+  const after = await adminCostReport(repo2);
+  assert.equal(after.summary.unknownCount, 0);
+  assert.equal(after.summary.estimatedMicroUsd, Math.ceil(100_000 * 0.75 + 10_000 * 4.5 + 5 * 0.01 * 1e6));
+  // ---- fresh measurement: earlier spend stays in the ledger but stops counting towards the caps
+  await saveBudgetSettings(repo2, { monthlyUsd: 1.5 }, 'owner');
+  await reserveApiCall(repo2, { ...base, runId: 'r2' });
+  await assert.rejects(reserveApiCall(repo2, { ...base, runId: 'r3' }), /Monthly AI spend cap reached/, 'the cap is reached before the reset');
+  await new Promise((r) => setTimeout(r, 15));
+  await setCostBaseline(repo2, true, 'owner');
+  await reserveApiCall(repo2, { ...base, runId: 'r4' });
+  const measured = await adminCostReport(repo2);
+  assert.ok(measured.baseline && measured.baseline.by === 'owner');
+  assert.equal(measured.baseline!.summary.callCount, 1, 'only calls since the reset are measured');
+  assert.ok(measured.summary.callCount >= 3, 'earlier calls are still in the ledger');
+  await setCostBaseline(repo2, false, 'owner');
+  assert.equal((await adminCostReport(repo2)).baseline, null);
   console.log('Cost history and spend limits: cumulative series for day, month, 3, 6 and 12 months, harness isolation, model lists, portal limits per total, project, run and model');
 }
 void main().catch((e) => { console.error(e); process.exit(1); });

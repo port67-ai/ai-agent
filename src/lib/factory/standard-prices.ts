@@ -14,15 +14,15 @@ import type { Pricing } from "./costs";
  * per-query count are not tracked, so search cost can only be overstated per call, and a call that runs several queries can be understated.
  *
  * OpenAI, from the owner's copy of OpenAI's pricing page (Standard tier, short context, 2026-11-14). Where a model has cache-write
- * prices the higher 12h write rate is stored. No web search fee was supplied, so OpenAI search calls are priced on tokens only until a
- * per-call search price is entered on the model dialog.
+ * prices the higher 12h write rate is stored. The web search tool is $10 per 1,000 calls ($0.01 each), stored as a per-call fee; the
+ * owner's OpenAI usage page for 2026-11-08 to 11-14 (50 searches, 455k input and 43k output tokens on gpt-5.4-mini, $0.98) agrees.
  */
 const AS_OF = "2026-11-14";
 const FLASH: Pricing = { updatedAt: AS_OF, inputPerMillion: 0.3, outputPerMillion: 1.2, cachedInputPerMillion: 0.006, toolPerCall: 0.00075 };
 const PRO: Pricing = { updatedAt: AS_OF, inputPerMillion: 1.32, outputPerMillion: 3.96, cachedInputPerMillion: 0.044, toolPerCall: 0.00075 };
 const gemini = (inputPerMillion: number, outputPerMillion: number, cachedInputPerMillion: number, toolPerCall: number): Pricing => ({ updatedAt: AS_OF, inputPerMillion, outputPerMillion, cachedInputPerMillion, toolPerCall });
 const openai = (inputPerMillion: number, outputPerMillion: number, cachedInputPerMillion?: number, cacheCreationPerMillion?: number): Pricing => ({
-  updatedAt: AS_OF, inputPerMillion, outputPerMillion,
+  updatedAt: AS_OF, inputPerMillion, outputPerMillion, toolPerCall: 0.01,
   ...(cachedInputPerMillion === undefined ? {} : { cachedInputPerMillion }),
   ...(cacheCreationPerMillion === undefined ? {} : { cacheCreationPerMillion }),
 });

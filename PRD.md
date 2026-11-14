@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.23.0  
+**Version:** 1.24.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1052,7 +1052,7 @@ Design for a small internal team: compact information hierarchy, status clarity,
 
 ### Milestone 6 — Storyboard, asset rights and media adapters
 
-**Implement:** structured storyboard, visual direction, selected image/voice/media adapters, rights manifest and render-job tracking. Test output and real art direction remain human-supervised.
+**Implement:** structured storyboard, visual direction, selected image/voice/media adapters, rights manifest and render-job tracking. Test output and real art direction remain human-supervised. The cinematic video advert track (section 25.5, FAC-VID-001 to FAC-VID-011) extends this milestone and is phased: treatment, continuity profile and prompt compiler first, then approved image and video adapters, then timeline export.
 
 **Acceptance:** all release assets licensed/authorised, render sources/version manifest complete, final technical/legal/human QA gate.
 
@@ -1408,9 +1408,47 @@ Adopted 2026-11-12 on the owner's instruction, from a summary of a creator's tal
 
 Provenance: the principles come from a summary pasted by the owner, not from a primary source the team has verified. Treat figures as unverified until tested in this product.
 
+## 25.5 Video advert production (cinematic commercial) - owner-requested next stage
+
+Added 2026-11-15 on the owner's instruction. This is a **separate product track from the animated explainer** (section 10, the EXP catalogue, and the template motion storyboard and MP4 of FAC-ART-006). A video advert is a short cinematic commercial (typically 15 to 60 seconds) made of generated shots with characters, locations, dialogue and music, held together by visual continuity. The owner supplied a template named "AI Commercial Production OS" (a Creative Director agent, a Cinematographer agent, an Art Department agent and a Technical Prompt Engineer agent, using a mood board, a reference-frame library, an image tool, a video model and a timeline export). Port67 adopts its **structure and principles, vendor-neutrally**. Every vendor and figure in it (Milanote, Shot Deck, Higgsfield, Seedance 2.5, Adobe Premiere, "a five-hour workflow", "4K") is a claim and an evaluation candidate only, not adopted or verified. The template's named core model ("Claude 3.5 Sonnet") is superseded: all agents use the admin model routing and metering already built. Everything below runs inside the existing evidence, authorisation, spend-cap and human-approval gates; none permits autonomous publishing or autonomous spend.
+
+**How the template maps onto Port67**
+
+| Template element | Port67 equivalent |
+|---|---|
+| Orchestrator delegating to four sub-agents | The producer orchestrator gains a video advert branch, with the same walled-garden AI reviewers, relevance scores, evidence checks, one rework per gate and holds for a person (CHG-0045, CHG-0055, CHG-0058). |
+| Creative Director agent (story, characters, dialogue, music cue timestamps, board layout) | Advert Treatment drafter. Starts from the approved campaign direction, its key messages and reviewed evidence, so the story expresses researched messages and adds no unsupported claims. Produces treatment, character sheets, dialogue, music cues with timestamps and a shot list. |
+| Cinematographer agent (Continuity Engine) | Continuity Profile: one typed, versioned JSON contract (colour palette as hex codes, lighting, camera body, lens, aspect ratio, grade, per-shot overrides) built from reference images the customer supplies or a library Port67 is licensed to use. Extracted values are model estimates shown with confidence and are editable by a producer, never presented as measured fact. |
+| Art Department agent | Reference asset generator through an approved image tool in the capability registry: locations, props and character sheets matched to the Continuity Profile, each with rights metadata and a synthetic label. |
+| Technical Prompt Engineer agent | Shot prompt compiler. **Deterministic code, not a model**: it orders reference tags exactly as the chosen video provider requires, injects the Continuity Profile, applies the maximum shot length and the resolution tier, and rejects anything outside the rules. It is covered by golden tests per provider. |
+| Mood board (Milanote) | In-app Advert board first: character sheets, music references and scene-by-scene breakdown, reusing the static storyboard grid (CHG-0054). An external board adapter is optional and later, behind the approved tool layer. |
+| Seedance and Higgsfield | A provider-neutral video generation adapter and an image adapter. One provider is wired first behind that interface and every other is swappable. |
+| Premiere timeline script | Timeline export (EDL or editor XML) that places approved clips against the music timestamps, plus the clips themselves. Scene-cut detection is optional. |
+
+**Phasing**
+1. **No external vendor needed:** treatment, shot list, Continuity Profile, deterministic prompt compiler, in-app Advert board and a downloadable prompt pack a producer can run in any video tool. Clips made outside can be uploaded and attached to shots.
+2. **Approved image and video adapters:** reference asset generation and clip generation with cost estimate, caps and rights gates.
+3. **Assembly:** timeline export, optional scene-cut detection and, if justified, an external board adapter.
+
+| ID | Requirement |
+|---|---|
+| FAC-VID-001 | Video advert is its own track with its own artifact kinds (treatment, continuity profile, reference asset, shot prompt, clip, timeline). The animated explainer track and the existing template storyboard and MP4 render are unchanged by it. |
+| FAC-VID-002 | Advert treatment and shot list. Built from the current approved direction, its key messages and reviewed evidence. Each shot names the key message and evidence it expresses; spoken and on-screen claims come only from approved key messages. Includes story, characters, dialogue and music cues with timestamps. The customer approves the treatment before any generation spend. |
+| FAC-VID-003 | Continuity Profile as a typed, versioned, hashed contract applied to every shot: colour palette as hex codes, lighting, camera body, lens, aspect ratio and grade, with per-shot overrides. Inputs are reference images supplied by the customer or from a licensed library only; scraping a library against its terms is refused. Extracted values are labelled as estimates with a confidence and are editable. A shot cannot be compiled without an approved profile. |
+| FAC-VID-004 | Reference asset generation through an approved image tool only, matched to the Continuity Profile, each asset carrying rights metadata and a synthetic label, staying draft until a producer approves it. A character or voice that resembles a real person needs recorded consent; impersonation is refused. |
+| FAC-VID-005 | Shot prompt compiler is deterministic. It orders reference tags exactly as the selected provider's rules require, injects the Continuity Profile, applies the shot length limit and resolution tier, validates that every referenced asset exists and is approved, and rejects a shot that breaks a rule. Provider rule sets are versioned and covered by golden tests. |
+| FAC-VID-006 | Cost control. A maximum generation length per shot (default 10 seconds) and per advert; two resolution tiers, a low-cost draft tier used by default for testing and a final tier used only when a producer asks after the draft is approved. A cost estimate is shown before every generation and counts against the monthly, project, per-run and per-model limits; calls are metered in the ledger with run lineage; one generation runs at a time with a retry limit; no spend happens without a producer action. Real unit costs are measured and recorded, not assumed. |
+| FAC-VID-007 | Gates. Customer approves the treatment; a producer approves the Continuity Profile and reference assets; a producer then the customer review draft clips; the customer approves the final render. Rework makes a new version linked to the rejected one. AI producer reviewers (treatment, continuity, prompts and rights) score relevance, list unsupported claims and send work back once, as for the other gates, and never approve the final advert on the customer's behalf. |
+| FAC-VID-008 | Assembly and export. Approved clips are placed on a timeline against the music timestamps and exported as an editor-friendly package (EDL or editor XML) with the clips, a manifest and the prompt pack. Scene-cut detection of multi-cut generations is optional. All steps are audited. |
+| FAC-VID-009 | Rights and claims. Music, voices, likeness, logos, fonts and third-party reference imagery each need recorded rights; missing rights block final release (FAC-ART-004). Output is labelled as synthetic where required. A claims check confirms spoken and on-screen claims trace to approved key messages and evidence. |
+| FAC-VID-010 | Tool adoption gate. The template's vendors are evaluation candidates only. Each adopted tool needs an entry under section 23.1, a licence and terms review, a data-class decision, a cost model, a capability registry entry and owner approval. Model Context Protocol may be used as an implementation detail of a tool adapter but is not a requirement. |
+| FAC-VID-011 | Measure the claim. Time and cost per advert (treatment to approved final) are measured per project so the template's "five hour" figure and any unit cost are tested rather than assumed. |
+
+Provenance: the structure comes from a template pasted by the owner, not a primary source the team has verified. Implementation status: phase 1 (planning, Continuity Profile, prompt compiler, no vendor) is built under CHG-0061; later phases are planned. See docs/IMPLEMENTATION_STATUS.md.
+
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, CHG-0029 for 1.14.0, CHG-0030 for 1.15.0, CHG-0031 for 1.16.0, CHG-0034 for 1.17.0, CHG-0035 for 1.18.0, CHG-0036 for 1.19.0, CHG-0037 for 1.20.0, CHG-0038 for 1.21.0, CHG-0039 for 1.22.0, and CHG-0040 for 1.23.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, CHG-0029 for 1.14.0, CHG-0030 for 1.15.0, CHG-0031 for 1.16.0, CHG-0034 for 1.17.0, CHG-0035 for 1.18.0, CHG-0036 for 1.19.0, CHG-0037 for 1.20.0, CHG-0038 for 1.21.0, CHG-0039 for 1.22.0, CHG-0040 for 1.23.0, and CHG-0060 for 1.24.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

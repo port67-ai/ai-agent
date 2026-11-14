@@ -35,6 +35,7 @@ import Team from "./Team";
 import AiAgents from "./AiAgents";
 import Direction from "./Direction";
 import Assets from "./Assets";
+import Advert from "./Advert";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
 import { LogoField } from "./BriefEditor";
@@ -53,6 +54,7 @@ type Tab =
   | "research"
   | "direction"
   | "production"
+  | "advert"
   | "assets"
   | "learning"
   | "capabilities"
@@ -66,6 +68,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "research", label: "Research room", icon: Search },
   { id: "direction", label: "Campaign direction", icon: Compass },
   { id: "production", label: "Production", icon: Clapperboard },
+  { id: "advert", label: "Video advert", icon: Clapperboard },
   { id: "assets", label: "Asset library", icon: FolderOpen },
   { id: "learning", label: "Performance learning", icon: ChartNoAxesCombined },
   { id: "capabilities", label: "Capabilities", icon: Settings2 },
@@ -954,6 +957,7 @@ export default function Portal() {
                   )}
                 </>
               )}
+              {tab === "advert" && <Advert p={p} operator={operator} busy={busy} command={command} />}
               {tab === "assets" && (
                 <Assets
                   p={p}
