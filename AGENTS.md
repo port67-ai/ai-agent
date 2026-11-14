@@ -13,6 +13,7 @@ Applies to Codex, Claude, Gemini, other harnesses and human contributors.
 - The supplied Factory baseline remains PROPOSED. Do not silently approve its stack, business guardrails or Synapse reuse.
 - Existing appointment-booking code is not evidence of Factory completion. See docs/EXISTING_APP_GUIDE.md for preserved prior guidance; verify its claims against source.
 - Record material decisions and discrepancies. Preserve historical entries; supersede decisions explicitly.
+- Design rule: any button that activates or saves something (Save, Switch, Run, Approve) uses the orange `f-button` style so it is easy to see; use `f-button secondary` only for less important or cancel actions. Do not invent unstyled button classes.
 - Never commit secrets, client data or credentials. Do not deploy, provision paid resources or change production as part of documentation work.
 
 - All new paid model/tool API calls must use the Factory metering gateway; preserve unknown costs, account/project/run lineage and owner-only ledger access. Customer data ownership is server-derived. Never accept client-posted roles/account IDs or expose admin costs in customer/producer views. See docs/ACCOUNTS_PROVIDERS_COSTS.md.

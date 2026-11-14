@@ -89,7 +89,7 @@ export async function reviewGate(repo: Repository, a: Principal, projectId: stri
     subject = "v" + p.scope.version;
     const r = await ask(repo, a, projectId, gate, scopeView(p), []);
     asked = [r];
-    outcome = "result" in r ? r.result : { verdict: "pass", summary: "Accepted without a model review.", items: [] };
+    outcome = "result" in r ? r.result : { verdict: "pass", summary: "Accepted by the free checks only; no model reviewed or scored it.", items: [] };
   } else if (gate === "direction") {
     const d = p.strategies.at(-1);
     if (!d) throw new Error("No direction to review");
@@ -140,7 +140,7 @@ export async function reviewGate(repo: Repository, a: Principal, projectId: stri
   const skipped = asked.filter((x): x is { skipped: string } => "skipped" in x).map((x) => x.skipped)[0];
   const record: ReviewRecord = {
     ...base, by: used.length ? "ai" : "rules", ...(used[0] ? { provider: used[0].provider, model: used[0].model, runId: used[0].runId } : {}),
-    subject, verdict: outcome.verdict, summary: outcome.summary.slice(0, 300), ...(outcome.notes ? { notes: outcome.notes.slice(0, 600) } : {}), items: outcome.items.slice(0, 100), ...(skipped ? { skipped } : {}),
+    subject, verdict: outcome.verdict, summary: outcome.summary.slice(0, 300), ...(outcome.score === undefined ? {} : { score: outcome.score }), ...(outcome.unsupported?.length ? { unsupported: outcome.unsupported } : {}), ...(outcome.notes ? { notes: outcome.notes.slice(0, 600) } : {}), items: outcome.items.slice(0, 100), ...(skipped ? { skipped } : {}),
   };
   return record;
 }
@@ -151,6 +151,6 @@ export async function saveReview(repo: Repository, a: Principal, projectId: stri
     const p = find(state.projects, projectId, a);
     p.reviews = [...(p.reviews || []), record].slice(-MAX_REVIEWS);
     p.revision++;
-    p.audit.push({ id: id(), at: record.at, actor: PRODUCER_AGENT, role: "operator", action: "producer_review", detail: `${record.gate} ${record.verdict} (${record.by}${record.model ? " " + record.model : ""}): ${record.summary}${record.notes ? " Notes: " + record.notes : ""}`.slice(0, 480) });
+    p.audit.push({ id: id(), at: record.at, actor: PRODUCER_AGENT, role: "operator", action: "producer_review", detail: `${record.gate} ${record.verdict} (${record.by}${record.model ? " " + record.model : ""}${record.score === undefined ? ", not scored" : ", " + record.score + "/100"}): ${record.summary}${record.notes ? " Notes: " + record.notes : ""}`.slice(0, 480) });
   });
 }

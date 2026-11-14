@@ -99,7 +99,9 @@ export default function Assets({ p, operator, busy, command, renderVideo }: Acti
                 <p className="f-small">
                   {a.kind === "motion"
                     ? "15s HTML motion concept — not MP4"
-                    : a.kind === "svg"
+                    : a.kind === "grid"
+                      ? "Static grid: every frame side by side with its description"
+                      : a.kind === "svg"
                       ? "1080 × 1080 · original SVG template"
                       : "Editable Markdown copy & script"}{" "}
                   · v{a.version}

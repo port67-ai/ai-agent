@@ -1,5 +1,6 @@
 import type { ApiCall, Pricing } from "./costs";
 import type { BudgetSettings } from "./budget";
+import type { SegmentEvidence, SourceGrade } from "./evidence";
 import type { ResearchScope, ScopeEntry } from "./scope";
 export const segments = [
   "brand",
@@ -51,7 +52,11 @@ export type ReviewRecord = {
   summary: string;
   /** Guidance for the redraft when the verdict is rework. */
   notes?: string;
-  items: { id: string; verdict: "accept" | "reject"; reason: string }[];
+  items: { id: string; verdict: "accept" | "reject"; reason: string; score?: number }[];
+  /** 0 to 100: how well the reviewed work fits its own evidence and the brief. Only set when a model judged it; the free checks do not score. */
+  score?: number;
+  /** Claims, figures or messages the reviewer could not trace to the evidence it was given. A pass is never given while any remain. */
+  unsupported?: string[];
   /** Why the model was not used, when by is rules. */
   skipped?: string;
 };
@@ -72,6 +77,8 @@ export type Source = {
   /** Claim-level findings from grounded research, each tied to this source's URL. */
   findings?: { claim: string; quote?: string }[];
   confidence?: "limited" | "moderate" | "strong";
+  /** Admiralty and CRAAP grade, computed for producers when the project is viewed. Never stored. */
+  grade?: SourceGrade;
 };
 export type Insight = {
   accountId?: string;
@@ -135,7 +142,7 @@ export type Asset = {
   projectId?: string;
   id: string;
   version: number;
-  kind: "svg" | "motion" | "copy";
+  kind: "svg" | "motion" | "copy" | "grid";
   title: string;
   strategyId: string;
   strategyHash: string;
@@ -259,7 +266,13 @@ export type Project = {
     pending?: { gate: "insights" | "direction"; notes: string };
     /** A reviewer's final word when the rework budget is spent: a human decides. */
     hold?: { gate: ReviewGate; subject: string; notes: string };
+    /** Weak research segments the producer already sent back to its researcher once, with guidance. */
+    researchRetries?: Partial<Record<Segment, number>>;
+    /** Weak evidence the producer found: warnings for people, never a block. Newest last. */
+    warnings?: { at: string; gate: string; text: string }[];
   };
+  /** GRADE-style evidence rating per research segment, computed for producers when the project is viewed. Never stored. */
+  evidence?: { segments: SegmentEvidence[] };
   /** Every producer reviewer verdict with its reasons, newest last. Producers and admins only. */
   reviews?: ReviewRecord[];
   /** A customer's request for the producer to start research on the chosen channels. */

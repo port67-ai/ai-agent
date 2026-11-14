@@ -1,3 +1,4 @@
+import { allSegmentEvidence, gradeContext, gradeSource } from "./evidence";
 import { producerApprovalsOn } from "./approval-mode";
 import { accountScope, canCreateProject, linkProjectOwnership } from "./accounts";
 import { productionCapabilities } from "./registry";
@@ -210,6 +211,26 @@ function svg(p: Project, s: Strategy) {
 }
 function motion(p: Project, s: Strategy) {
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeXml(p.brief.business)} — motion concept</title><style>body{margin:0;background:#111827;color:white;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh}.frame{width:min(90vw,700px);aspect-ratio:1;position:relative;overflow:hidden;background:#161d27;border-radius:24px}.scene{position:absolute;inset:10%;display:flex;flex-direction:column;justify-content:center;opacity:0;animation:scene 15s infinite}.scene:nth-child(2){animation-delay:5s}.scene:nth-child(3){animation-delay:10s}small{color:${p.brief.brandColor};font-size:20px}h1{font-size:clamp(28px,6vw,55px);line-height:1.12}p{font-size:22px}.note{position:absolute;bottom:22px;left:10%;font-size:12px;color:#b7bec8}@keyframes scene{0%,30%{opacity:1;transform:translateY(0)}33%,100%{opacity:0;transform:translateY(15px)}}@media(prefers-reduced-motion:reduce){.scene{animation:none;position:static;opacity:1;padding:10%}.frame{aspect-ratio:auto}.note{position:static;padding:10%}}</style><main class="frame"><section class="scene"><small>${escapeXml(p.brief.business)}</small><h1>${escapeXml(s.message)}</h1></section><section class="scene"><small>THE IDEA</small><h1>${escapeXml(p.brief.objective)}</h1></section><section class="scene"><small>YOUR NEXT STEP</small><h1>${escapeXml(s.cta)}</h1></section><div class="note">15-second looping motion storyboard · creative concept · not a rendered video</div></main></html>`;
+}
+/**
+ * Static storyboard: every frame side by side in a grid, with its detailed description underneath. Built only from the approved
+ * direction (hook, objective, key messages with their proof and sources, call to action); nothing is invented. Prints cleanly.
+ */
+export function storyboardGrid(p: Project, s: Strategy) {
+  const e = escapeXml;
+  const title = (id: string) => p.sources.find((x) => x.id === id)?.title || id;
+  const messages = (s.keyMessages || []).slice(0, 4);
+  type Frame = { name: string; text: string; voice: string; proof: string; sources: string[]; purpose: string };
+  const frames: Frame[] = [
+    { name: "Opening hook", text: s.message, voice: s.message, proof: "The approved campaign message.", sources: [], purpose: "Stop the scroll and state the single idea in the brand's voice." },
+    { name: "The idea", text: p.brief.objective, voice: p.brief.objective, proof: "The objective from the customer's brief.", sources: [], purpose: "Connect the hook to what the business wants to achieve." },
+    ...messages.map((k, i): Frame => ({ name: `Key message ${i + 1}`, text: k.message, voice: k.message, proof: k.proof, sources: k.sourceIds.map(title), purpose: "Make one claim and show the evidence that supports it." })),
+    { name: "Call to action", text: s.cta, voice: s.cta, proof: "The approved call to action.", sources: [], purpose: "Give the viewer one clear next step." },
+  ];
+  const per = 15 / frames.length;
+  const t = (n: number) => `${Math.round(n * per * 10) / 10}s`;
+  const cards = frames.map((f, i) => `<article class="card"><div class="panel"><small>${e(f.name.toUpperCase())}</small><h2>${e(f.text)}</h2><span class="n">${i + 1}</span></div><div class="desc"><h3>Frame ${i + 1} of ${frames.length} · ${e(f.name)} · ${t(i)} to ${t(i + 1)}</h3><dl><dt>Purpose</dt><dd>${e(f.purpose)}</dd><dt>On-screen text</dt><dd>${e(f.text)}</dd><dt>Voice-over / caption</dt><dd>${e(f.voice)}</dd><dt>Visual direction</dt><dd>${e(s.design)} Brand colour ${e(p.brief.brandColor)}. Original artwork only; imagery to be confirmed with the customer.</dd><dt>Evidence</dt><dd>${e(f.proof)}${f.sources.length ? `<br>Sources: ${f.sources.map(e).join("; ")}` : ""}</dd></dl></div></article>`).join("");
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(p.brief.business)} — storyboard grid</title><style>body{margin:0;background:#f4f5f2;color:#1f2933;font-family:Arial,sans-serif;padding:24px}header{margin-bottom:18px}header h1{margin:0 0 4px;font-size:24px}header p{margin:0;color:#52606d;font-size:13px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}.card{background:#fff;border:1px solid #d9dde1;border-radius:10px;overflow:hidden;break-inside:avoid;display:flex;flex-direction:column}.panel{position:relative;aspect-ratio:1;background:#161d27;color:#fff;padding:9%;display:flex;flex-direction:column;justify-content:center;border-bottom:6px solid ${e(p.brief.brandColor)}}.panel small{color:${e(p.brief.brandColor)};font-size:12px;letter-spacing:.08em;margin-bottom:10px}.panel h2{margin:0;font-size:clamp(18px,2.4vw,26px);line-height:1.2}.n{position:absolute;top:10px;right:12px;font-size:12px;color:#b7bec8}.desc{padding:12px 14px}.desc h3{margin:0 0 8px;font-size:13px}dl{margin:0;font-size:12px;line-height:1.45}dt{font-weight:700;margin-top:7px;color:#323f4b}dd{margin:2px 0 0;color:#3e4c59}footer{margin-top:16px;font-size:11px;color:#52606d}@media print{body{background:#fff;padding:0}.grid{grid-template-columns:repeat(3,1fr)}}</style><header><h1>${e(p.brief.business)} — storyboard</h1><p>${frames.length} frames · 15-second concept · static grid, one frame per card with its description underneath</p></header><main class="grid">${cards}</main><footer>Built from the approved direction only. Frame timings are even splits of a 15-second concept. Creative concept, not a rendered video.</footer></html>`;
 }
 export function makeAsset(_p: Project, a: Asset) {
   return a.content;
@@ -587,6 +608,7 @@ export function transition(
         "Drafts already exist for this direction; create a new direction version for rework",
       );
     const kinds = ["svg", "motion", "copy"] as const;
+    let motionTaskId = "";
     kinds.forEach((kind, i) => {
       const task = {
         id: id(),
@@ -607,6 +629,7 @@ export function transition(
           productionCapabilities[i].version,
       };
       p.tasks.push(task);
+      if (kind === "motion") motionTaskId = task.id;
       const content =
         kind === "svg"
           ? svg(p, s)
@@ -627,6 +650,22 @@ export function transition(
         hash: digest(content),
         createdAt: now(),
       });
+    });
+    // The static, side-by-side storyboard grid sits beside the motion storyboard and is produced by the same task.
+    const grid = storyboardGrid(p, s);
+    p.assets.push({
+      id: id(),
+      version: p.assets.filter((x) => x.kind === "grid").length + 1,
+      kind: "grid",
+      title: "Storyboard grid (static)",
+      strategyId: s.id,
+      strategyHash: s.hash,
+      taskId: motionTaskId,
+      evidenceIds: [...s.evidenceIds],
+      status: "draft",
+      content: grid,
+      hash: digest(grid),
+      createdAt: now(),
     });
   } else if (
     type === "shareAsset" ||
@@ -706,6 +745,8 @@ export function projectView(input: Project, a: Principal): Project {
     else if (autoApproveProducer()) p.researchNote = "Starting automatically.";
   }
   if (a.role === "operator") {
+    p.sources = p.sources.map((s) => (s.kind === "public_source" ? { ...s, grade: gradeSource(s, gradeContext(p, s.segment)) } : s));
+    p.evidence = { segments: allSegmentEvidence(p) };
     p.producerApprovals = producerApprovalsOn();
     p.aiAuthorised = hasProviderConsent(p);
     return p;

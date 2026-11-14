@@ -55,10 +55,22 @@ async function main() {
   w.insights[0].status = "reviewed";
   w.strategies.push({ id: "st", version: 1, status: "draft", audience: "a", message: "m", rationale: "r", design: "d", channels: "c", format: "f", cta: "Book now", evidenceIds: ["brand0"], insightIds: ["i1"], positioning: "pos", doNotClaim: "none", keyMessages: [{ message: "k", proof: "pr", sourceIds: ["brand0"] }], hypothesis: "h", uncertainties: "u", createdAt: at, hash: "H" } as never);
   const dirJson = JSON.stringify(directionView(w));
-  assert.ok(dirJson.includes("SENTINEL-INSIGHT") && !dirJson.includes("Detailed excerpt") && !dirJson.includes("SENTINEL-DESCRIPTION"), "direction producer sees the direction and its insights, no raw sources");
+  assert.ok(dirJson.includes("SENTINEL-INSIGHT") && !dirJson.includes("SENTINEL-DESCRIPTION"), "direction producer sees the direction and its insights, not the brief description");
+  assert.equal((dirJson.match(/Detailed excerpt/g) || []).length, 1, "it sees only the evidence its key messages cite, so proof can be checked against the source");
   assert.equal(directionRules(w).verdict, "pass");
+  // Invented statistics are caught by the free checks: a figure must appear in the evidence it cites.
+  const real = w.strategies[0].keyMessages!;
+  w.strategies[0].keyMessages = [{ message: "Customers save 73% on bills", proof: "Detailed excerpt shows savings", sourceIds: ["brand0"] }];
+  assert.equal(directionRules(w).verdict, "rework");
+  assert.match(directionRules(w).summary, /Key message 1 states 73%, which is not in its cited evidence/);
+  w.strategies[0].keyMessages = real;
   w.strategies[0].keyMessages = [];
   assert.equal(directionRules(w).verdict, "rework");
+  w.strategies[0].keyMessages = real;
+  w.insights[0].interpretation = "Customers rate the business 4.9 out of 5 across 812 reviews, which shows strong trust and loyalty.";
+  assert.equal(insightRules(w, ["i1"])[0].verdict, "reject", "an insight with figures not in its evidence is rejected for free");
+  assert.match(insightRules(w, ["i1"])[0].reason, /not in its cited evidence/);
+  w.insights[0].interpretation = "Detailed excerpt shows a clear local preference for the business and its approach to service.";
 
   // ---- free rule checks and strict parsing
   const dup = base("dup");
@@ -66,12 +78,34 @@ async function main() {
   dup.sources[2].excerpt = "short";
   const rules = sourceRules(dup, dup.sources.map((s) => s.id));
   assert.deepEqual(rules.filter((x) => x.verdict === "reject").map((x) => x.id), ["brand1", "brand2"], "duplicate and thin sources are rejected by the free checks");
+  // Weak evidence is rejected for free; independent, official, quantified evidence passes.
+  assert.equal(insightRules(w, ["i1"])[0].verdict, "reject", "an insight resting on one unrecognised site is rated very low");
+  assert.match(insightRules(w, ["i1"])[0].reason, /Very low evidence rating/);
+  w.sources.find((x) => x.id === "brand0")!.url = "https://www.ons.gov.uk/local-customers";
+  w.sources.find((x) => x.id === "brand0")!.findings = [{ claim: "62% of local customers prefer local service providers in the 2025 survey", quote: "Sixty two percent of local customers said they prefer local service providers 2025" }];
+  w.sources.find((x) => x.id === "customer0")!.url = "https://www.ofcom.org.uk/local-service";
+  w.sources.find((x) => x.id === "customer0")!.findings = [{ claim: "Customers rate local service providers highly in 2025 research", quote: "Customers rate local service providers highly in 2025 independent research" }];
+  w.insights[0].sourceIds = ["brand0", "customer0"];
   assert.equal(insightRules(w, ["i1"])[0].verdict, "accept");
-  assert.throws(() => parseReview("sources", JSON.stringify({ items: [{ id: "nope", verdict: "accept", reason: "x" }] }), ["a"]), /no usable verdicts/, "unknown ids are ignored, never trusted");
+  assert.throws(() => parseReview("sources", JSON.stringify({ items: [{ id: "nope", verdict: "accept", reason: "x", score: 90 }] }), ["a"]), /no usable verdicts/, "unknown ids are ignored, never trusted");
+  assert.throws(() => parseReview("sources", JSON.stringify({ items: [{ id: "a", verdict: "accept", reason: "x" }] }), ["a"]), /no usable verdicts/, "an unscored verdict is not trusted");
   assert.throws(() => parseReview("direction", JSON.stringify({ verdict: "maybe" }), []), /pass or rework/);
-  const parsed = parseReview("sources", JSON.stringify({ items: [{ id: "a", verdict: "accept", reason: "ok" }, { id: "a", verdict: "reject", reason: "dup" }, { id: "b", verdict: "reject", reason: "thin" }] }), ["a", "b", "c"]);
+  assert.throws(() => parseReview("direction", JSON.stringify({ verdict: "pass", summary: "ok" }), []), /score must be 0 to 100/);
+  const parsed = parseReview("sources", JSON.stringify({ items: [{ id: "a", verdict: "accept", reason: "ok", score: 90 }, { id: "a", verdict: "reject", reason: "dup", score: 10 }, { id: "b", verdict: "reject", reason: "thin", score: 20 }] }), ["a", "b", "c"]);
   assert.equal(parsed.items.length, 2, "a repeated id counts once");
-  assert.match(parsed.summary, /1 of 3 sources accepted, 1 rejected, 1 left undecided/);
+  assert.match(parsed.summary, /1 of 3 sources accepted, 1 rejected, 1 left undecided\. Relevance 55\/100/);
+  assert.equal(parsed.score, 55);
+  const weak = parseReview("insights", JSON.stringify({ items: [{ id: "a", verdict: "accept", reason: "ok", score: 30 }, { id: "b", verdict: "accept", reason: "ok", score: 80 }], notes: "" }), ["a", "b"]);
+  assert.equal(weak.items[0].verdict, "reject", "an accept that the model itself scored below 50 is overruled");
+  assert.match(weak.items[0].reason, /Scored 30\/100/);
+  const good = parseReview("direction", JSON.stringify({ verdict: "pass", summary: "Fits the evidence.", notes: "", score: 88, unsupported: [] }), []);
+  assert.deepEqual([good.verdict, good.score], ["pass", 88]);
+  const lowPass = parseReview("direction", JSON.stringify({ verdict: "pass", summary: "Fine.", notes: "", score: 45, unsupported: [] }), []);
+  assert.equal(lowPass.verdict, "rework", "a pass scored below 60 is overruled");
+  const halluc = parseReview("scope", JSON.stringify({ verdict: "pass", summary: "Fine.", notes: "", score: 95, unsupported: ["Claims 12 branches"] }), []);
+  assert.equal(halluc.verdict, "rework", "a pass is never kept while anything is unsupported");
+  assert.match(halluc.notes!, /Unsupported: Claims 12 branches/);
+  assert.deepEqual(halluc.unsupported, ["Claims 12 branches"]);
 
   const dir = await mkdtemp(join(tmpdir(), "port67-producer-agent-"));
   const original = globalThis.fetch;
@@ -162,22 +196,30 @@ async function main() {
       const reply = (text: string) => Response.json({ id: "x" + n, usage: { input_tokens: 50, output_tokens: 20 }, output: [{ content: [{ type: "output_text", text }] }] });
       if (name === "port67_review_sources") {
         const ids = (JSON.parse(String(b.input)).sources as { id: string; title: string }[]);
-        return reply(JSON.stringify({ items: ids.map((s) => ({ id: s.id, verdict: s.title.includes("brand source 1") ? "reject" : "accept", reason: s.title.includes("brand source 1") ? "Off topic for this business." : "Specific and on topic." })) }));
+        return reply(JSON.stringify({ items: ids.map((s) => ({ id: s.id, verdict: s.title.includes("brand source 1") ? "reject" : "accept", reason: s.title.includes("brand source 1") ? "Off topic for this business." : "Specific and on topic.", score: s.title.includes("brand source 1") ? 15 : 85 })) }));
       }
       if (name === "port67_review_insights") {
         const ids = (JSON.parse(String(b.input)).insights as { id: string }[]);
-        return reply(JSON.stringify({ items: ids.map((i) => ({ id: i.id, verdict: "reject", reason: "Overstates what the evidence shows." })), notes: "Tie each insight to a quoted claim." }));
+        return reply(JSON.stringify({ items: ids.map((i) => ({ id: i.id, verdict: "reject", reason: "Overstates what the evidence shows.", score: 25 })), notes: "Tie each insight to a quoted claim." }));
       }
       return reply("not json"); // the drafting agents answer badly: the pass must stop, not loop
     }) as typeof fetch;
     let r = base("ai");
     r = transition(r, { type: "authoriseAI", confirm: true }, op);
     r.sources.find((s) => s.id === "customer0")!.status = "supported";
-    r.insights.push(insight("i1", ["customer0"]) as never, insight("i2", ["customer0"]) as never);
+    // Evidence strong enough that the free checks pass the insights through to the model.
+    r.sources.find((x) => x.id === "customer0")!.url = "https://www.ons.gov.uk/customers";
+    r.sources.find((x) => x.id === "customer0")!.findings = [{ claim: "62% of local customers prefer local providers in 2025 research", quote: "Sixty two percent of local customers prefer local providers 2025" }];
+    r.sources.find((x) => x.id === "competitor0")!.url = "https://www.ofcom.org.uk/providers";
+    r.sources.find((x) => x.id === "competitor0")!.findings = [{ claim: "Local providers rated highly by customers in 2025 research", quote: "Local providers were rated highly by customers in 2025 independent research" }];
+    r.sources.find((x) => x.id === "competitor0")!.status = "supported";
+    r.insights.push(insight("i1", ["customer0", "competitor0"]) as never, insight("i2", ["customer0", "competitor0"]) as never);
     await repo.mutate("w", (s) => void s.projects.push(r));
     const ai = await runProducerAgent(repo, op, "ai", { force: true });
     const srcReview = ai.reviews!.find((x) => x.gate === "sources")!;
     assert.equal(srcReview.by, "ai");
+    assert.ok(typeof srcReview.score === "number" && srcReview.score > 0 && srcReview.score <= 100, "AI reviews are scored out of 100");
+    assert.ok(srcReview.items.every((x) => typeof x.score === "number"), "every source verdict carries its own score");
     assert.equal(ai.sources.find((s) => s.id === "brand1")!.status, "rejected", "the source producer's rejection was applied");
     assert.match(srcReview.items.find((x) => x.id === "brand1")!.reason, /Off topic/);
     const sourceCall = calls.find((c) => c.name === "port67_review_sources")!;

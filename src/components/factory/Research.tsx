@@ -207,6 +207,12 @@ export default function Research({
                 </div>
                 <h3>{s.title}</h3>
                 <p className="f-prewrap">{s.excerpt}</p>
+                {operator && s.grade && (
+                  <p className="f-small" title={s.grade.notes.join(" ")}>
+                    <strong style={{ color: s.grade.score >= 75 ? "#34d399" : s.grade.score >= 60 ? "#fbbf24" : "#f87171" }}>Evidence grade {s.grade.reliability}{s.grade.credibility} · {s.grade.score}/100</strong>
+                    {" "}(Admiralty reliability {s.grade.reliability}, credibility {s.grade.credibility}; CRAAP {s.grade.craap.currency + s.grade.craap.relevance + s.grade.craap.authority + s.grade.craap.accuracy + s.grade.craap.purpose}/10). {s.grade.notes.slice(0, 2).join(" ")}
+                  </p>
+                )}
                 {s.url && (
                   <a href={s.url} target="_blank" rel="noreferrer">
                     Open original source <ArrowUpRight size={14} />

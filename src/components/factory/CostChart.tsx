@@ -53,7 +53,7 @@ export default function CostChart() {
         <h3 className="text-xl font-semibold">Cost history</h3>
         <div role="group" aria-label="Period" className="flex flex-wrap gap-1">
           {(Object.keys(RANGE_LABEL) as SeriesRange[]).map((r) => (
-            <button key={r} type="button" className={range === r ? "f-primary" : "f-secondary"} aria-pressed={range === r} onClick={() => { setRange(r); setHover(null); }}>{RANGE_LABEL[r]}</button>
+            <button key={r} type="button" className={range === r ? "f-button small" : "f-button small secondary"} aria-pressed={range === r} onClick={() => { setRange(r); setHover(null); }}>{RANGE_LABEL[r]}</button>
           ))}
         </div>
         <label className="flex items-center gap-2">Harness

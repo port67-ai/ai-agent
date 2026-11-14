@@ -128,3 +128,10 @@ Queue agreed with the owner: spend caps (done), team access (done), live researc
 2026-11-14; Claude; CHG-0048: standard Gemini prices added to standard-prices.ts from Google's page (high tier for Pro; grounded search as a per-call fee). Counting real search queries from the response is a follow-up.
 2026-11-14; Claude; CHG-0049: standard OpenAI prices (27 models) in standard-prices.ts; no web search fee yet.
 2026-11-14; Claude; CHG-0050: standard Claude prices (Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5) in standard-prices.ts, checked against Anthropic's pricing page.
+2026-11-14; Claude; CHG-0051: activation buttons use orange f-button; rule added to AGENTS.md.
+2026-11-14; Claude; CHG-0052: map Approve direction node is orange and AI-labelled when AI producer approval is effective; otherwise customer gate.
+2026-11-14; Claude; CHG-0053: map Approve direction node is now the Direction producer AI reviewer; right-column Direction review removed. Check the layout visually after deploy.
+2026-11-14; Claude; CHG-0054: static storyboard grid asset (kind grid) produced with the motion storyboard. CHG-0055: producer reviewers give a 0-100 relevance score, list unsupported claims, direction reviewer sees cited evidence, free invented-figure check; scores shown in the Research room.
+2026-11-14; Claude; CHG-0056: next session, start from docs/EVIDENCE_QUALITY_PLAN.md (layered evidence scoring using Admiralty, CRAAP, triangulation and GRADE-style ratings). Planned only; confirm the open questions with the owner first.
+2026-11-14; Claude; CHG-0057: evidence plan decisions recorded (Admiralty, CRAAP, GRADE-style; warn and re-trigger the agent with clearer guidance). Build is the next piece of work.
+2026-11-14; Claude; CHG-0058: evidence.ts grades sources (Admiralty, CRAAP) and rates segments and insights (GRADE-style); weak research segment re-run once with guidance then warned; shown in the Research room. Next: portal thresholds, structured facts from researchers, evidence index into copy and production, map display.

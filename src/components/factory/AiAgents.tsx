@@ -129,12 +129,10 @@ export default function AiAgents() {
               {!approval.masterSwitch && " The Render switch PORT67_PRODUCER_APPROVALS=true is off, so only the account owner can approve until it is set."}
             </p>
             <div className="f-actions">
-              {(["ai", "manual"] as const).map((m) => (
-                <button key={m} type="button" className={approval.mode === m ? "f-primary" : "f-secondary"} aria-pressed={approval.mode === m} disabled={busy || approval.mode === m}
-                  onClick={async () => { setBusy(true); try { setApproval(await post("approval-mode", { mode: m })); setError(""); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>
-                  {m === "ai" ? "AI producer approval" : "Manual approval"}
-                </button>
-              ))}
+              <button type="button" className="f-button" disabled={busy}
+                onClick={async () => { setBusy(true); try { setApproval(await post("approval-mode", { mode: approval.mode === "ai" ? "manual" : "ai" })); setError(""); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>
+                {approval.mode === "ai" ? "Switch to manual approval" : "Switch to AI producer approval"}
+              </button>
             </div>
           </div>
         )}

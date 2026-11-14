@@ -197,3 +197,17 @@ CHG-0048 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard 
 CHG-0049 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard OpenAI prices (Standard short-context tier; no search fee).
 
 CHG-0050 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard Claude prices plus $10 per 1,000 web search.
+
+CHG-0051 / FAC-CST-003, FAC-HAR-012: UI polish only; no status change. Activation buttons use the orange f-button style.
+
+CHG-0052 / FAC-HAR-008, FAC-HAR-012: map node reflects AI or customer direction approval; no status change.
+
+CHG-0053 / FAC-HAR-008, FAC-HAR-012: map change only; no status change.
+
+CHG-0054 / FAC-HAR-008: static storyboard grid added to production output. CHG-0055 / FAC-HAR-012: IN_PROGRESS (partial). Reviewer relevance scores, unsupported-claim listing and invented-figure checks added; scores are model judgements, not proof.
+
+CHG-0056 / FAC-HAR-012: PLANNED. Layered evidence-quality scoring recorded in docs/EVIDENCE_QUALITY_PLAN.md; not implemented.
+
+CHG-0057 / FAC-HAR-012: PLANNED, owner decisions recorded; build not started.
+
+CHG-0058 / FAC-HAR-012: IN_PROGRESS (partial). Source grading, segment and insight ratings, research re-run with guidance and warnings built; structured facts, portal thresholds and copy-pack trace not yet.

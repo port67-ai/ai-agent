@@ -6,11 +6,13 @@ import { useProjectGet } from "./useProjectGet";
 type Project = { id: string; revision: number };
 type View = {
   state: { passes: number; status: string; reason: string; at: string; log: { at: string; step: string; outcome: string; detail: string }[]; pending?: { gate: string; notes: string }; hold?: { gate: string; notes: string } } | null;
-  reviews: { id: string; at: string; gate: string; by: string; model?: string; subject: string; verdict: string; summary: string; notes?: string; skipped?: string; items: { id: string; verdict: string; reason: string }[] }[];
+  reviews: { id: string; at: string; gate: string; by: string; model?: string; subject: string; verdict: string; summary: string; notes?: string; skipped?: string; score?: number; unsupported?: string[]; items: { id: string; verdict: string; reason: string; score?: number }[] }[];
   next: { step: string; label: string } | null;
   stop: { kind: string; reason: string } | null;
   automatic: boolean;
   aiReady: boolean;
+  evidence?: { segment: string; score: number; rating: string; weak: boolean; sources: number; independentSites: number; reasons: string[] }[];
+  warnings?: { gate: string; text: string }[];
 };
 const GATE: Record<string, string> = { scope: "Scope producer", sources: "Source producer", insights: "Insight producer", direction: "Direction producer" };
 const WHO: Record<string, string> = { waiting_customer: "Waiting for the account owner", waiting_human: "Needs a producer", blocked: "Stopped", done: "Done" };
@@ -53,6 +55,21 @@ export function ProducerAgentPanel({ p, onChanged }: { p: Project; onChanged?: (
       </div>
       {error && <p className="f-team-error" role="alert">{error}</p>}
       {data.state?.hold && <p className="f-team-error" role="alert">Held for a person ({GATE[data.state.hold.gate] || data.state.hold.gate}): {data.state.hold.notes}</p>}
+      {data.warnings && data.warnings.length > 0 && (
+        <div className="f-callout" role="status">
+          <strong>Weak evidence warnings</strong>
+          <ul>{data.warnings.map((w, i) => <li key={i} className="f-small"><strong>{w.gate}</strong>: {w.text}</li>)}</ul>
+          <p className="f-small">The producer re-runs a weak researcher once with clearer rules. These warnings inform you; they do not block the chain.</p>
+        </div>
+      )}
+      {data.evidence && data.evidence.some((e) => e.sources > 0) && (
+        <details>
+          <summary><strong>Evidence strength by research area</strong> <small>GRADE-style rating from Admiralty source grades and CRAAP checks</small></summary>
+          <ul>{data.evidence.map((e) => (
+            <li key={e.segment} className="f-small"><strong>{e.segment}</strong>: <strong style={{ color: e.score >= 75 ? "#34d399" : e.score >= 60 ? "#fbbf24" : "#f87171" }}>{e.rating} ({e.score}/100)</strong> · {e.sources} source{e.sources === 1 ? "" : "s"} from {e.independentSites} organisation{e.independentSites === 1 ? "" : "s"}{e.reasons.length ? ` · ${e.reasons.join(" ")}` : ""}</li>
+          ))}</ul>
+        </details>
+      )}
       {data.reviews.length > 0 && (
         <details open>
           <summary><strong>Reviewer verdicts</strong> <small>newest last; each reviewer saw only its own inputs</small></summary>
@@ -60,6 +77,8 @@ export function ProducerAgentPanel({ p, onChanged }: { p: Project; onChanged?: (
             <li key={r.id}>
               <strong>{GATE[r.gate] || r.gate}</strong> {r.verdict} <small>({r.by === "ai" ? `AI${r.model ? " " + r.model : ""}` : "free checks only"} · {r.at.slice(11, 19)} UTC · {r.subject.slice(0, 40)})</small>: {r.summary}
               {r.notes ? <> Notes: {r.notes}</> : null}
+              <strong style={{ marginLeft: 6, color: r.score === undefined ? undefined : r.score >= 80 ? "#34d399" : r.score >= 60 ? "#fbbf24" : "#f87171" }}>{r.score === undefined ? "Not scored" : `Relevance ${r.score}/100`}</strong>
+              {r.unsupported?.length ? <div className="f-small">Could not trace to the evidence: {r.unsupported.join("; ")}</div> : null}
               {r.skipped ? <small> Model not used: {r.skipped}</small> : null}
               {r.items.filter((x) => x.verdict === "reject").slice(0, 6).map((x) => <div key={x.id} className="f-small">Rejected {x.id.slice(0, 8)}: {x.reason}</div>)}
             </li>
