@@ -326,3 +326,10 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-CST-001 to 004, FAC-OBS-002 to 004, FAC-EVD-001, 002, FAC-ART-001, 002, FAC-WFL-007, 008, FAC-AGT-001, 003, 004, FAC-HAR-001, 002, FAC-D-006, 008, 009, FAC-TEN-001, 003, FAC-CTX-002, FAC-DEV-001 to 006. PRD impact: none (status only).
 - Evidence: each row cites the test file or code that backs it; nothing is marked verified. Governance script passes.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0042 - 2026-11-14 - Restart a project from its brief
+- Author/harness: Claude (Cowork); owner wanted to keep the Foymore brief and remove everything else to run the full model again without retyping the brief.
+- What/why: new admin-only engine command resetProject (confirmation required). It keeps the brief, logo, account and project id, and removes launch channels, research request, AI authorisation, scope and history, sources, insights, directions, production tasks, assets, videos, runs, reviewer verdicts and the producer orchestrator state. Because runs are removed, the per-project provider call cap starts again. The audit trail is kept with a project_reset entry listing what was removed; the API cost ledger is untouched. Rendered MP4 files already in storage are not deleted. Button: Restart from the brief in the Research room (producers see it but only an admin can use it).
+- Requirements: FAC-HAR-012, FAC-TEN-006. PRD impact: none (operator tooling).
+- Evidence: tests/factory-source-review.test.ts (producer and customer refused, confirmation needed, brief kept, journey cleared, audited, channels can be chosen again); eslint, tsc, test:factory, build.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

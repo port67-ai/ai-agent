@@ -320,6 +320,29 @@ export function transition(
     );
     p.brief = checked.brief;
     delete p.aiConsent;
+  } else if (type === "resetProject") {
+    // Admin only. Keeps the brief (and logo), the account and the project id so nothing has to be typed again, and removes everything
+    // produced after it so the whole journey can be run from the start. The audit trail is kept and records what was removed; the cost
+    // ledger is separate and untouched, because that money was spent.
+    if (!a.admin) throw new Error("Forbidden: only an admin can restart a project from its brief");
+    if (c.confirm !== true) throw new Error("Confirm that you want to remove everything except the brief");
+    const removed = `${p.sources.length} sources, ${p.insights.length} insights, ${p.strategies.length} directions, ${p.assets.length} assets, ${p.runs.length} runs, ${(p.videos || []).length} videos`;
+    p.sources = [];
+    p.insights = [];
+    p.strategies = [];
+    p.tasks = [];
+    p.assets = [];
+    p.runs = [];
+    p.videos = [];
+    p.channels = [];
+    p.capabilities = [];
+    delete p.researchRequest;
+    delete p.aiConsent;
+    delete p.scope;
+    delete p.scopeHistory;
+    delete p.reviews;
+    delete p.producerAgent;
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "project_reset", detail: `Restarted from the brief; removed ${removed}` });
   } else if (type === "addSource") {
     if (!segments.includes(c.segment as Segment))
       throw new Error("Invalid research segment");

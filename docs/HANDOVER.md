@@ -28,6 +28,8 @@ Earlier handover follows.
 
 # Latest handover: video gating and 480p drafts (CHG-0023, PRD 1.8.0)
 
+2026-11-14; Claude; CHG-0042: admin-only Restart from the brief (Research room) keeps the brief, logo and account and clears channels, request, authorisation, scope, sources, insights, directions, drafts, assets, videos, runs and reviews so the full journey can be rerun. Audit trail and cost ledger are kept. Then as the account owner choose launch channels and request research.
+
 2026-11-13; Claude; CHG-0041: documentation-only triage of the imported requirement list. 30 rows moved from NOT_VERIFIED to IN_PROGRESS (partial) with their evidence and gaps. The remaining untouched rows are genuinely unbuilt (workflow engine, skills/tool registry, claim library, rights, finance reporting, warehouse data, Synapse audit, separate environments). Next: one live end-to-end run of the foymore project, then promote what passes.
 
 2026-11-13; Claude; CHG-0040: the producer agent is now an orchestrator plus four walled-garden reviewers (scope, source, insight, direction), each with its own model slot on the AI agents page (Producer reviewers group), free rule checks first, one metered call each, one rework per gate then a hold for a person. Reviewer verdicts and holds show in the Producer orchestrator panel (Research room). Choose a model for each reviewer, ideally different from the drafters; with none chosen they use the free checks only. Verdicts need PORT67_SYNTHESIS_ENABLED=true and an authorised brief to use a model. PORT67_PRODUCER_AGENT=true runs it automatically. Not verified live.

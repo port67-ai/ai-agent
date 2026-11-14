@@ -61,3 +61,20 @@ try {
 }
 assert.throws(() => tr(r, { type: 'approveAllAssets' }, op), /Customer approval identity/, 'off again once the switch is removed');
 console.log('Bulk insight acceptance, bulk asset approval and producer test-mode approvals passed');
+
+// Restart from the brief: admin only, confirmed, keeps the brief and removes everything produced after it.
+const admin = { ...op, admin: true };
+let z = createProject({ business: 'Brand', objective: 'Grow the business', contact: 'a@example.com' }, op, 'p4');
+z.sources.push(src('s1', 'brand', 'public_source', 'supported'));
+z.channels = ['instagram'];
+z.runs.push({ id: 'r', stage: 'research', segment: 'brand', at: '2026-11-13T10:00:00Z', status: 'completed' } as never);
+assert.throws(() => transition(z, { type: 'resetProject', confirm: true }, op), /only an admin/, 'a producer cannot restart a project');
+assert.throws(() => transition(z, { type: 'resetProject', confirm: true }, cust), /Customer|operator|admin/i, 'a customer cannot');
+assert.throws(() => transition(z, { type: 'resetProject' }, admin), /Confirm/);
+z = transition(z, { type: 'resetProject', confirm: true }, admin);
+assert.equal(z.brief.business, 'Brand', 'the brief is kept');
+assert.deepEqual([z.sources.length, z.runs.length, z.channels?.length, z.insights.length, z.strategies.length, z.assets.length], [0, 0, 0, 0, 0, 0]);
+assert.ok(z.audit.some((x) => x.action === 'project_reset' && /1 sources/.test(x.detail)), 'the audit trail records what was removed');
+z = transition(z, { type: 'setChannels', channels: ['instagram'] }, op);
+assert.deepEqual(z.channels, ['instagram'], 'the journey can start again');
+console.log('Restart from the brief: admin only, confirmed, keeps the brief, clears the journey, audited');

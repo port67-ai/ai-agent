@@ -48,6 +48,22 @@ export default function Research({
     <>
       <ChannelPicker p={p} operator={operator} busy={busy} live={live} command={command} onRunAll={onRunAll} />
       {operator && <ProducerAgentPanel p={p} onChanged={onRefresh} />}
+      {operator && (p.sources.length > 0 || p.runs.length > 0 || p.strategies.length > 0) && (
+        <section className="f-panel">
+          <h2>Restart from the brief</h2>
+          <p className="f-small">Admin only. Keeps this brief, the logo and the account, and removes the launch channels, research request, authorisation, scope, sources, insights, directions, drafts, assets, videos and reviews, so the whole journey can be run again from the start. The audit trail is kept and the API cost ledger is not touched.</p>
+          <button
+            type="button"
+            className="f-button secondary"
+            disabled={busy}
+            onClick={() => {
+              if (window.confirm("Remove everything except the brief for this project? This cannot be undone.")) void command({ type: "resetProject", confirm: true }, "Project restarted from the brief. The account owner can choose launch channels and request research again.");
+            }}
+          >
+            Restart from the brief
+          </button>
+        </section>
+      )}
       {operator && <ScopePanel p={p} operator />}
       <ResearchPrep p={p} operator={operator} />
       <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />
