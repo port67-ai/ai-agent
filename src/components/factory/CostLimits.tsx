@@ -5,7 +5,7 @@ import type { AdminCostReport } from "@/lib/factory/costs";
 type Limits = AdminCostReport["limits"];
 const text = (n: number | undefined) => (n === undefined ? "" : String(n));
 /** Owner-editable spend limits. Blank falls back to the Render environment value. Saved limits take effect on the next paid call. */
-export default function CostLimits({ limits, known, onSaved }: { limits: Limits; known: string[]; onSaved: () => void }) {
+export default function CostLimits({ limits, known, baseline, onSaved }: { limits: Limits; known: string[]; baseline: AdminCostReport["baseline"]; onSaved: () => void }) {
   const s = limits.saved;
   const [monthly, setMonthly] = useState(text(s.monthlyUsd));
   const [project, setProject] = useState(text(s.projectUsd));
@@ -24,6 +24,16 @@ export default function CostLimits({ limits, known, onSaved }: { limits: Limits;
       setNotice("Limits saved. They apply from the next paid call.");
       onSaved();
     } catch (e) { setError(e instanceof Error ? e.message : "Could not save the limits"); } finally { setBusy(false); }
+  }
+  async function act(body: Record<string, unknown>, done: (r: { repriceResult?: { repriced: number; stillUnknown: number } }) => string) {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const r = await fetch("/api/factory/admin/costs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const out = await r.json();
+      if (!r.ok) throw new Error(out.error || "That did not work");
+      setNotice(done(out));
+      onSaved();
+    } catch (e) { setError(e instanceof Error ? e.message : "That did not work"); } finally { setBusy(false); }
   }
   const field = (label: string, value: string, set: (v: string) => void, hint: string) => (
     <label className="flex flex-col gap-1">{label}
@@ -55,6 +65,17 @@ export default function CostLimits({ limits, known, onSaved }: { limits: Limits;
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="f-button" disabled={busy} onClick={() => void save()}>Save limits</button>
         {s.updatedAt && <span className="f-small">Last saved {s.updatedAt.slice(0, 16).replace("T", " ")} UTC by {s.updatedBy}</span>}
+      </div>
+      <div className="space-y-2">
+        <h4 className="font-semibold">Testing: measure from a clean start</h4>
+        <p className="f-small">
+          {baseline ? `Measuring since ${baseline.at.slice(0, 16).replace("T", " ")} UTC: ${baseline.summary.callCount} calls, ${(baseline.summary.actualMicroUsd + baseline.summary.estimatedMicroUsd) / 1e6 < 0.01 ? "under $0.01" : "$" + ((baseline.summary.actualMicroUsd + baseline.summary.estimatedMicroUsd) / 1e6).toFixed(4)} priced, ${baseline.summary.unknownCount} with unknown cost. Earlier calls stay in the ledger and the chart but no longer count towards the limits.` : "Spend limits currently count every call this month, including earlier test runs."}
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" className="f-button" disabled={busy} onClick={() => void act({ action: "reprice" }, (r) => `Recalculated ${r.repriceResult?.repriced ?? 0} calls using the current prices. ${r.repriceResult?.stillUnknown ?? 0} still have no usable price or usage.`)}>Recalculate unknown costs</button>
+          <button type="button" className="f-button" disabled={busy} onClick={() => { if (window.confirm("Start a fresh measurement now? Earlier spend stays in the ledger and chart but stops counting towards the limits.")) void act({ action: "baseline", on: true }, () => "Fresh measurement started. Spend limits now count from this moment."); }}>Reset usage counter</button>
+          {baseline && <button type="button" className="f-button secondary" disabled={busy} onClick={() => void act({ action: "baseline", on: false }, () => "Reset removed. Limits count every call this month again.")}>Stop measuring from reset</button>}
+        </div>
       </div>
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status" className="f-small">{notice}</p>}

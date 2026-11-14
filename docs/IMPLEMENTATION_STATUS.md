@@ -211,3 +211,17 @@ CHG-0056 / FAC-HAR-012: PLANNED. Layered evidence-quality scoring recorded in do
 CHG-0057 / FAC-HAR-012: PLANNED, owner decisions recorded; build not started.
 
 CHG-0058 / FAC-HAR-012: IN_PROGRESS (partial). Source grading, segment and insight ratings, research re-run with guidance and warnings built; structured facts, portal thresholds and copy-pack trace not yet.
+
+CHG-0059 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Search fee priced, unknown-cost recalculation and a testing reset for the spend counter added.
+
+| FAC-VID-001 | Owner-requested 2026-11-15 (CHG-0060) | PARTIAL | Phase 1 built (CHG-0061): separate advert plan on the project (`advert.ts`, Advert tab); explainer and template storyboard untouched. Clip and timeline kinds are phase 2 and 3. |
+| FAC-VID-002 | Owner-requested 2026-11-15 (CHG-0060) | PARTIAL | Phase 1 built (CHG-0061): deterministic treatment and shot list from the approved direction, one shot per key message plus a closing shot, music cues, editable shots, figure check against approved key messages, customer approval gate. AI treatment drafter not built. |
+| FAC-VID-003 | Owner-requested 2026-11-15 (CHG-0060) | PARTIAL | Phase 1 built (CHG-0061): typed Continuity Profile (hex palette, lighting, camera body, lens, aspect, grade, per-shot lens and lighting overrides), estimate or confirmed, editable, producer approval required before compile. Extraction from reference images not built. |
+| FAC-VID-004 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Reference assets via an approved image tool. |
+| FAC-VID-005 | Owner-requested 2026-11-15 (CHG-0060) | PARTIAL | Phase 1 built (CHG-0061): deterministic compiler, ruleset generic-v1, strict reference order, 10 second shot limit, draft 480p and final 1080p tiers, golden tests. Provider specific rule sets and approved-asset validation arrive with adapters. |
+| FAC-VID-006 | Owner-requested 2026-11-15 (CHG-0060) | PARTIAL | Phase 1 built (CHG-0061): shot and advert length limits and tier selector with seconds shown. No spend, no dollar estimate and no ledger metering until a generation adapter exists. |
+| FAC-VID-007 | Owner-requested 2026-11-15 (CHG-0060) | PARTIAL | Phase 1 built (CHG-0061): producer approves Continuity Profile, customer approves treatment (test mode on-behalf supported, audited). Draft clip and final render gates and AI advert reviewers not built. |
+| FAC-VID-008 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Timeline and editor export. |
+| FAC-VID-009 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Rights, consent and claims checks. |
+| FAC-VID-010 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Vendor evaluation under section 23.1. |
+| FAC-VID-011 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Measure time and cost per advert. |

@@ -217,6 +217,51 @@ export type ResearchRun = {
   /** When a research call ran but returned nothing citable: the start of what the model wrote, for the producer only. Never used as evidence. */
   note?: string;
 };
+/** Video advert track (PRD 25.5). Phase 1 is planning only: treatment, shot list, Continuity Profile, deterministic prompts. No vendor is called. */
+export type AdvertRef = { kind: "character" | "location" | "prop"; label: string };
+export type AdvertShot = {
+  id: string;
+  n: number;
+  /** Index into the approved direction's key messages that this shot expresses. */
+  keyMessage: number;
+  sourceIds: string[];
+  seconds: number;
+  scene: string;
+  action: string;
+  dialogue: string;
+  onScreen: string;
+  refs: AdvertRef[];
+  overrides?: { lighting?: string; lens?: string };
+};
+export type Continuity = {
+  /** Hex colours, most important first. */
+  palette: string[];
+  lighting: string;
+  cameraBody: string;
+  lens: string;
+  aspect: "16:9" | "9:16" | "1:1" | "4:5";
+  grade: string;
+  /** Values are estimates until a producer confirms them. */
+  confidence: "estimate" | "confirmed";
+  source: "template" | "producer";
+  approved: boolean;
+  approvedBy?: string;
+  approvedAt?: string;
+};
+export type AdvertPlan = {
+  id: string;
+  version: number;
+  strategyHash: string;
+  status: "draft" | "shared" | "approved" | "changes_requested";
+  treatment: { title: string; logline: string; story: string; tone: string; durationSec: number; music: { atSec: number; cue: string }[] };
+  shots: AdvertShot[];
+  continuity: Continuity;
+  createdAt: string;
+  hash: string;
+  feedback?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+};
 export type Project = {
   accountId?: string;
   createdBy?: string;
@@ -240,6 +285,8 @@ export type Project = {
   tasks: ProductionTask[];
   assets: Asset[];
   videos?: Video[];
+  /** The current video advert plan for the approved direction. Customers see it only once shared. */
+  advert?: AdvertPlan;
   /** Launch channels (IDs from channels.ts) chosen for this campaign; they steer research, direction and copy. */
   channels?: string[];
   /** Per research agent status, computed for the response only (never stored) so customers can follow progress without seeing run internals. */
@@ -310,6 +357,8 @@ export type Database = {
   accounts?: Account[];
   aiRouting?: AiRoutingConfig;
   budgetSettings?: BudgetSettings;
+  /** Spend before this moment stays in the ledger but no longer counts towards the caps (testing aid). */
+  costBaseline?: { at: string; by: string };
   approvalMode?: { mode: "ai" | "manual"; updatedAt: string; updatedBy: string };
   team?: TeamMember[];
   teamAudit?: TeamAuditEntry[];

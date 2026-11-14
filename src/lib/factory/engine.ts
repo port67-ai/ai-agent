@@ -1,3 +1,4 @@
+import { buildAdvert, advertIssues, planHash, validateContinuity, MAX_SHOT_SEC } from "./advert";
 import { allSegmentEvidence, gradeContext, gradeSource } from "./evidence";
 import { producerApprovalsOn } from "./approval-mode";
 import { accountScope, canCreateProject, linkProjectOwnership } from "./accounts";
@@ -290,6 +291,8 @@ export function transition(
     "approveAsset",
     "requestAssetChanges",
     "approveAllAssets",
+    "approveAdvert",
+    "requestAdvertChanges",
   ];
   if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch"].includes(type)) operator(a);
   // Test mode only (PORT67_PRODUCER_APPROVALS=true, off by default): a producer may press the customer's approval buttons so the
@@ -697,6 +700,65 @@ export function transition(
         asset.approvedAt = now();
       }
     }
+  } else if (type === "draftAdvert") {
+    const s = approved(p);
+    if (p.advert && p.advert.strategyHash === s.hash && (p.advert.status === "shared" || p.advert.status === "approved"))
+      throw new Error("This advert plan is already with the customer or approved; ask for changes first");
+    const built = buildAdvert(p, s, (p.advert?.version || 0) + 1);
+    p.advert = { ...built, id: id(), createdAt: now() };
+  } else if (type === "editAdvertShot" || type === "setContinuity" || type === "approveContinuity" || type === "shareAdvert") {
+    const ad = p.advert;
+    if (!ad) throw new Error("Plan the advert first");
+    if (ad.status === "shared" || ad.status === "approved") throw new Error("Ask for changes before editing a shared or approved advert");
+    if (type === "editAdvertShot") {
+      const shot = ad.shots.find((x) => x.id === c.shotId);
+      if (!shot) throw new Error("Shot not found");
+      if (c.seconds !== undefined) {
+        const n = Number(c.seconds);
+        if (!Number.isFinite(n) || n < 1 || n > MAX_SHOT_SEC) throw new Error(`Shot length must be 1 to ${MAX_SHOT_SEC} seconds`);
+        shot.seconds = Math.round(n * 10) / 10;
+      }
+      for (const [k, max] of [["scene", 400], ["action", 400], ["dialogue", 300], ["onScreen", 120]] as const)
+        if (c[k] !== undefined) shot[k] = text(c[k], k, max, k === "scene" || k === "action");
+      if (c.refs !== undefined) {
+        if (!Array.isArray(c.refs) || c.refs.length > 9) throw new Error("References must be a list of at most nine");
+        shot.refs = c.refs.map((r) => {
+          const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+          if (!["character", "location", "prop"].includes(o.kind as string)) throw new Error("Reference kind must be character, location or prop");
+          return { kind: o.kind as "character", label: text(o.label, "reference label", 80, true) };
+        });
+      }
+      if (c.overrides !== undefined) {
+        const o = (c.overrides && typeof c.overrides === "object" ? c.overrides : {}) as Record<string, unknown>;
+        const lighting = text(o.lighting, "lighting", 300), lens = text(o.lens, "lens", 160);
+        shot.overrides = lighting || lens ? { ...(lighting ? { lighting } : {}), ...(lens ? { lens } : {}) } : undefined;
+      }
+      ad.treatment.durationSec = ad.shots.reduce((n, x) => n + x.seconds, 0);
+      ad.hash = planHash(ad);
+      ad.status = "draft";
+    } else if (type === "setContinuity") {
+      ad.continuity = validateContinuity(c.continuity);
+    } else if (type === "approveContinuity") {
+      ad.continuity.approved = true;
+      ad.continuity.confidence = "confirmed";
+      ad.continuity.approvedBy = a.subject;
+      ad.continuity.approvedAt = now();
+    } else {
+      const problems = advertIssues(p, ad);
+      if (problems.length) throw new Error(problems.join(" "));
+      if (!ad.continuity.approved) throw new Error("Approve the Continuity Profile before sharing the advert");
+      ad.status = "shared";
+    }
+  } else if (type === "approveAdvert" || type === "requestAdvertChanges") {
+    const ad = p.advert;
+    if (!ad || ad.status !== "shared") throw new Error("The advert plan must be shared for review");
+    requireHash(c.hash, ad.hash);
+    ad.status = type === "approveAdvert" ? "approved" : "changes_requested";
+    ad.feedback = text(c.feedback, "feedback", 2000, type !== "approveAdvert");
+    if (ad.status === "approved") {
+      ad.approvedBy = approver;
+      ad.approvedAt = now();
+    }
   } else if (type === "proposeCapability") {
     if (p.capabilities.length >= 30)
       throw new Error("Capability proposal limit reached");
@@ -757,6 +819,7 @@ export function projectView(input: Project, a: Principal): Project {
   delete p.scopeHistory;
   delete p.producerAgent;
   delete p.reviews;
+  if (p.advert && p.advert.status !== "shared" && p.advert.status !== "approved") delete p.advert;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");
   const visible = new Set(p.strategies.flatMap((s) => s.evidenceIds));

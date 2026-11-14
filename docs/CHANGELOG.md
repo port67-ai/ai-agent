@@ -447,3 +447,21 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-012. PRD impact: none.
 - Evidence: tests/factory-evidence.test.ts (grading, ratings, producer-only grades, one re-run then warn, no loop); tests/factory-producer-agent.test.ts updated; tsc, eslint, test:factory pass.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0059 - 2026-11-14 - Realistic cost counting, recalculation and a reset for testing
+- Author/harness: Claude (Cowork); owner compared Private API costs ($29.14 used or held) with OpenAI's own usage page (about $1 for the same week) and asked for a realistic count and a reset while testing.
+- What/why: cause found. 29 completed calls had no cost because the model had no price when each call started, and calls with unknown cost are held at $1 each, so $29 of the total was holds, not spend; the real priced spend was $0.14. Also OpenAI calls that use web search could never be priced because no search fee was stored. Changes: (1) OpenAI models now carry the web search fee, $0.01 per call ($10 per 1,000), so research calls are priced from their counted tokens and searches (checked: 455k in, 43k out, 50 searches on gpt-5.4-mini comes to about $1.04 against $0.98 on OpenAI's page). (2) New "Recalculate unknown costs" button prices past calls that have counted usage but had no price, using current prices; reconciled or already-priced calls are untouched and calls with no usable usage stay unknown. (3) New "Reset usage counter" button starts a fresh measurement: earlier calls stay in the ledger and the chart but stop counting towards the spend limits; a status line shows calls and spend since the reset, and "Stop measuring from reset" removes it. Intended as a testing aid and can be removed later. Shared estimate function (estimateMicroUsd) now used when a call finishes and when recalculating.
+- Requirements: FAC-CST-003. PRD impact: none.
+- Evidence: tests/factory-cost-series.test.ts extended (search pricing, unknown stays unknown, recalculation, reset); tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0060 - 2026-11-15 - PRD 1.24.0: cinematic video advert production track (docs only)
+- Author/harness: Claude (Cowork); owner asked to add a supplied "AI Commercial Production OS" template to the video part of the PRD and to describe how we adopt it for a video advert, as distinct from an animated explainer.
+- Requirements: FAC-VID-001 to FAC-VID-011 (new, PLANNED), FAC-ART-004, FAC-ART-006, FAC-BAS-003, FAC-BAS-005. PRD impact: 1.24.0.
+- Evidence: docs governance check passes.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0061 - 2026-11-15 - Video advert phase 1: treatment, Continuity Profile, prompt compiler
+- What/why: first build of the video advert track (PRD 25.5), no vendor called and nothing charged. New `advert.ts` builds a treatment and shot list from the approved direction (one shot per key message plus a closing call to action shot, each linked to a key message and its evidence, 10 second shot limit, music cues), checks that spoken and on-screen figures come from the approved key messages, holds a typed Continuity Profile (hex palette, lighting, camera body, lens, aspect, grade, per-shot overrides) that a producer must approve, and compiles each shot to a deterministic prompt (ruleset generic-v1, references ordered characters, locations, props, draft 480p or final 1080p tier). Gates: producer approves continuity, customer approves the treatment (producer test mode on behalf, audited). New Advert tab, `advert-pack` download of the prompt pack once approved, commands draftAdvert, editAdvertShot, setContinuity, approveContinuity, shareAdvert, approveAdvert, requestAdvertChanges. Customers see a plan only once shared.
+- Requirements: FAC-VID-001, 002, 003, 005, 006, 007 (PARTIAL). PRD impact: none (1.24.0 already describes the track).
+- Tests: `tests/factory-advert.test.ts` (build, golden prompt, limits, invented figure, pack gate) and the campaign integration flow.
