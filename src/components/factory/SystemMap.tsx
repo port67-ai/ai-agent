@@ -18,7 +18,7 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
   { id: "anthropic", label: "Anthropic", color: "#fb923c" },
   { id: "deepseek", label: "DeepSeek", color: "#f472b6" },
 ];
-const COLOR = { input: "#22d3ee", agent: "#a78bfa", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
+const COLOR = { input: "#22d3ee", agent: "#a78bfa", producer: "#f97316", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
   "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine,
@@ -98,8 +98,8 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   const P = flow.pipeline;
   const edgesFor = (id: string) => flow.edges.filter((e) => e.agent === id);
   const provColor = (id?: string) => PROVIDERS.find((p) => p.id === id)?.color || COLOR.out;
-  // The LLM column starts below the producer orchestrator and its four reviewers.
-  const providerY: Record<string, number> = { openai: 700, gemini: 810, anthropic: 920, deepseek: 1030 };
+  // The LLM column starts below the producer orchestrator and its three right-hand reviewers; the scope reviewer sits in the scoping band.
+  const providerY: Record<string, number> = { openai: 602, gemini: 740, anthropic: 850, deepseek: 960 };
   const PX = 906;
   const PW = 170;
   const PH = 74;
@@ -166,6 +166,24 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
       </g>
     );
   };
+  // A producer reviewer: purple like every agent, model or free checks, calls and cost, click to choose its model.
+  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, extra = "") => {
+    const a = byId.get(rid);
+    if (!a) return null;
+    const stat = a.stats!;
+    const running = stat.inFlight > 0;
+    const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : false;
+    return (
+      <Node id={rid} x={x} y={y} w={w} h={h} color={COLOR.producer} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
+        pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
+        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${edgesFor(rid).some((e) => e.unpriced > 0) ? "cost unknown" : usd(stat.estimatedMicroUsd)}` : "Sees only its own inputs", ...(h > 90 && extra ? [extra] : [])]}
+        state={running ? "running" : failed ? "failed" : waiting > 0 ? "blocked" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : waiting > 0 ? `${waiting} WAITING` : undefined}
+        onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
+        onHover={(e) => showAt(rid, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
+    );
+  };
+  // Verdicts flow from an in-flow reviewer, along the free channel under its row, up the producer bus into the orchestrator.
+  const verdictLink = (x: number, y: number) => <Link d={`M${x} ${y} L${x} 718 L1090 718 L1090 196 L${PX + PW} 196`} color={COLOR.producer} dim={!PR.reviews} />;
   const total = flow.models.reduce((n, m) => n + m.microUsd, 0);
   const calls = flow.models.reduce((n, m) => n + m.calls, 0);
   const failedCalls = flow.models.reduce((n, m) => n + (m.failed || 0) + (m.unknown || 0), 0);
@@ -175,7 +193,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
   const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative"];
-  const reviewIds = ["review:scope", "review:sources", "review:insights", "review:direction"];
+  const columnIds = ["review:direction"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Direction review" };
   const PR = P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 };
   const ids = ["scope:business", ...researchIds, "synthesis:insights", "synthesis:strategy", "synthesis:content"];
@@ -216,11 +234,12 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <Link d={`M${COLS[0] + NW} 202 L${COLS[1] - 2} 202`} color={COLOR.agent} dim={!S.classified} />
           <Node id="store-scope" x={COLS[1]} y={150} w={COLS[2] + NW - COLS[1]} h={AH} color={COLOR.store} icon={Database} title="Firestore · classification and scope"
             lines={[`${S.classified} classified · ${S.ai} AI · ${S.template} template · ${S.manual} edited${S.stale ? " · " + S.stale + " stale" : ""}`, top || "No business classified yet", "Read by: research agents, preparation panel, dossier, GET /scope"]} />
-          <Link d={`M${COLS[2] + NW} 202 L${COLS[3] - 2} 202`} color={COLOR.gate} dim />
-          <Node id="scope-edit" x={COLS[3]} y={150} h={AH} color={COLOR.gate} icon={UserCheck} title="Producer scope edit" lines={["Optional · human", `${S.manual} edited by hand`]} dashed />
+          <Link d={`M${COLS[2] + NW} 202 L${COLS[3] - 2} 202`} color={COLOR.producer} dim={!PR.reviews} />
+          {reviewNode("review:scope", COLS[3], 150, NW, AH, 0, "Checks scope before research")}
+          <Link d={`M${COLS[3] + NW} 198 L${PX - 2} 198`} color={COLOR.producer} dim={!PR.reviews} label="verdicts" lx={COLS[3] + NW + 6} ly={190} />
           <Link d={`M${COLS[0] + NW / 2} ${150 + AH} L${COLS[0] + NW / 2} 298`} color={COLOR.store} dim={!S.classified} />
           {[1, 2].map((i) => <Link key={"sc" + i} d={`M${COLS[i] + NW / 2} ${150 + AH} L${COLS[i] + NW / 2} 298`} color={COLOR.store} dim={!S.classified} label={i === 1 ? "scoped questions" : undefined} lx={COLS[i] + NW / 2 + 8} ly={286} />)}
-          <Link d={`M${COLS[3] + NW / 2} ${150 + AH} L${COLS[3] + NW / 2} 298`} color={COLOR.gate} dim />
+          <Link d={`M${COLS[3] + NW / 2} ${150 + AH} L${COLS[3] + NW / 2} 298`} color={COLOR.producer} dim={!PR.reviews} />
 
           <text x="30" y="286" className="sm-band">3 · RESEARCH</text>
           {researchIds.map(agentNode)}
@@ -229,11 +248,13 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
 
           <text x="30" y="568" className="sm-band">4 · REVIEW</text>
           <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
-          <Node id="gate-1" x={COLS[0]} y={590} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Review sources" lines={["Gate 1 · producer", `${P.sources.supported} supported · ${P.sources.rejected} rejected`]} state={gateState(waiting.sourceReview) as NodeProps["state"]} badge={gateBadge(waiting.sourceReview)} />
+          {reviewNode("review:sources", COLS[0], 590, NW, AH, waiting.sourceReview, `${P.sources.supported} supported · ${P.sources.rejected} rejected`)}
+          {verdictLink(COLS[0] + NW / 2, 590 + AH)}
           <Link d={`M${COLS[0] + NW} 642 L${COLS[1] - 2} 642`} color={COLOR.gate} dim={!P.sources.supported} />
           {agentNode("synthesis:insights")}
           <Link d={`M${COLS[1] + NW} 642 L${COLS[2] - 2} 642`} color={COLOR.agent} dim={!P.insights.total} />
-          <Node id="gate-2" x={COLS[2]} y={590} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Accept insights" lines={["Gate 2 · producer", `${P.insights.reviewed} accepted · ${P.insights.draft} draft`]} state={gateState(insightGate) as NodeProps["state"]} badge={gateBadge(insightGate)} />
+          {reviewNode("review:insights", COLS[2], 590, NW, AH, insightGate, `${P.insights.reviewed} accepted · ${P.insights.draft} draft`)}
+          {verdictLink(COLS[2] + NW / 2, 590 + AH)}
           <Link d={`M${COLS[2] + NW} 642 L${COLS[3] - 2} 642`} color={COLOR.gate} dim={!P.insights.reviewed} />
           {agentNode("synthesis:strategy")}
           <Link d={`M${COLS[1] + NW - 34} ${590 + AH} L${COLS[1] + NW - 34} 742`} color={COLOR.store} dim={!P.insights.total} />
@@ -264,31 +285,22 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
 
           {/* Producer orchestrator: drawn like an LLM at the top of the LLM column, but it is a rules-only agent that steers its four reviewers. */}
           <text x={PX} y={136} className="sm-band">PRODUCER AGENT</text>
-          <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.agent} icon={Bot} title="Orchestrator"
-            lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "No loops · stops at customer gates"]}
+          <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.producer} icon={Bot} title="Orchestrator"
+            lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "Stops at customer gates"]}
             state={PR.holds ? "blocked" : ""} badge={PR.holds ? `${PR.holds} HELD` : undefined} />
-          {reviewIds.map((rid, i) => {
-            const a = byId.get(rid);
-            if (!a) return null;
+          <Link d={`M${COLS[3] + NW - 20} 590 L${COLS[3] + NW - 20} 545 L${PX + PW / 2} 545 L${PX + PW / 2} 350`} color={COLOR.producer} dim={!P.directions.total} label="draft direction" lx={COLS[3] + NW - 12} ly={538} />
+          {columnIds.map((rid, i) => {
             const y = 262 + i * 98;
-            const stat = a.stats!;
-            const running = stat.inFlight > 0;
-            const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : false;
             return (
               <g key={rid}>
-                <Link d={`M${PX + PW} ${196} L1090 ${196} L1090 ${y + 43} L${PX + PW + 2} ${y + 43}`} color={COLOR.agent} dim={!PR.reviews} />
-                <Node id={rid} x={PX} y={y} w={PW} h={86} color={COLOR.agent} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
-                  pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
-                  lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${edgesFor(rid).some((e) => e.unpriced > 0) ? "cost unknown" : usd(stat.estimatedMicroUsd)}` : "Sees only its own inputs"]}
-                  state={running ? "running" : failed ? "failed" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
-                  onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
-                  onHover={(e) => showAt(rid, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
+                <Link d={`M${PX + PW + 2} ${y + 43} L1090 ${y + 43} L1090 ${196} L${PX + PW} ${196}`} color={COLOR.producer} dim={!PR.reviews} />
+                {reviewNode(rid, PX, y, PW, 86, 0)}
               </g>
             );
           })}
 
           {/* LLM providers: each connector from an agent is one API call path. */}
-          <text x={PX} y={684} className="sm-band">LLM APIS (CALLS OUT)</text>
+          <text x={PX} y={586} className="sm-band">LLM APIS (CALLS OUT)</text>
           {PROVIDERS.map((p) => {
             const used = flow.models.filter((m) => m.provider === p.id);
             const c = used.reduce((n, m) => n + m.calls, 0);
@@ -321,12 +333,13 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
       <ul className="f-legend sm-legend">
         <li><i style={{ background: COLOR.input }} /> Input form</li>
         <li><i style={{ background: COLOR.agent }} /> AI or template agent</li>
+        <li><i style={{ background: COLOR.producer }} /> Producer: orchestrator and its four reviewers</li>
         <li><i style={{ background: COLOR.store }} /> Stored in Firestore or Storage</li>
         <li><i style={{ background: COLOR.gate }} /> Human gate, amber when blocking</li>
         <li><i style={{ background: COLOR.mon }} /> Monitoring</li>
         <li><i style={{ background: COLOR.bad }} /> Failed or unknown</li>
       </ul>
-      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). The producer orchestrator (top right, drawn like a model but rules only, with no cost of its own) steers the four producer reviewers beneath it: each sees only its own inputs, sends work back for at most one redraft, and then hands over to a person. It runs the steps in bands 4 and 5, audits every step on the project, and stops at the two customer gates: direction approval and asset approval. Port67 never posts to a channel.</p>
+      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). The producer orchestrator (top right, drawn like a model but rules only, with no cost of its own) steers the four producer reviewers (scope in the scoping band, the others beneath it): each sees only its own inputs, sends work back for at most one redraft, and then hands over to a person. It runs the steps in bands 4 and 5, audits every step on the project, and stops at the two customer gates: direction approval and asset approval. Port67 never posts to a channel.</p>
     </section>
   );
 }
