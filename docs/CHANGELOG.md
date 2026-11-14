@@ -319,3 +319,24 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-012 (reworked). PRD 1.23.0. PRD impact: FAC-HAR-012 rewritten for the orchestrator and four reviewers.
 - Evidence: tests/factory-producer-agent.test.ts (planning, walled-garden inputs including through a mocked provider call, free checks, strict parsing, metered reviewer runs, source rejection applied, insight rework with notes to the drafter, no repeat, hold, direction hold then share, customer gates, caps, role and demo checks); eslint, tsc, test:factory, build.
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status. Reviewer quality with real models, the panel and the automatic triggers are unverified live.
+
+## CHG-0041 - 2026-11-13 - Requirement status triage (documentation only)
+- Author/harness: Claude (Cowork); owner asked for the remaining requirements to be progressed unattended. No code was changed: the status of 30 requirements that were still marked NOT_VERIFIED from the imported baseline was checked against the repository and moved to IN_PROGRESS (partial) with the evidence that exists and what is missing (cost ledger, audit, evidence records, approvals, roles, registry, CI and governance, ADRs).
+- Not changed: requirements with no implementation stay NOT_VERIFIED (workflow engine and Cloud Tasks, skills and tool registry, claim library, rights metadata, finance and margin reporting, warehouse data, avatar ads, Synapse audit, separate environments).
+- Requirements: FAC-CST-001 to 004, FAC-OBS-002 to 004, FAC-EVD-001, 002, FAC-ART-001, 002, FAC-WFL-007, 008, FAC-AGT-001, 003, 004, FAC-HAR-001, 002, FAC-D-006, 008, 009, FAC-TEN-001, 003, FAC-CTX-002, FAC-DEV-001 to 006. PRD impact: none (status only).
+- Evidence: each row cites the test file or code that backs it; nothing is marked verified. Governance script passes.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0042 - 2026-11-14 - Restart a project from its brief
+- Author/harness: Claude (Cowork); owner wanted to keep the Foymore brief and remove everything else to run the full model again without retyping the brief.
+- What/why: new admin-only engine command resetProject (confirmation required). It keeps the brief, logo, account and project id, and removes launch channels, research request, AI authorisation, scope and history, sources, insights, directions, production tasks, assets, videos, runs, reviewer verdicts and the producer orchestrator state. Because runs are removed, the per-project provider call cap starts again. The audit trail is kept with a project_reset entry listing what was removed; the API cost ledger is untouched. Rendered MP4 files already in storage are not deleted. Button: Restart from the brief in the Research room (producers see it but only an admin can use it).
+- Requirements: FAC-HAR-012, FAC-TEN-006. PRD impact: none (operator tooling).
+- Evidence: tests/factory-source-review.test.ts (producer and customer refused, confirmation needed, brief kept, journey cleared, audited, channels can be chosen again); eslint, tsc, test:factory, build.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0043 - 2026-11-14 - Producer orchestrator and its four reviewers on the system map
+- Author/harness: Claude (Cowork); owner asked for the producer orchestrator and its sub producers on the map, the orchestrator sitting above the LLM column and looking like an LLM but being a rules-only agent linked to its reviewers.
+- What/why: top of the right-hand column now holds an Orchestrator node (same size and style as the provider nodes, robot icon, rules only, no model) with passes, verdict count, and a held-for-a-person badge. Beneath it are the four reviewer nodes (scope, source, insight, direction), each showing its chosen model or free checks only, its calls and cost, running and failed states, with click to choose a model and the hover tooltip. A bus line links the orchestrator to each reviewer. The LLM provider column moved down to make room. New pipeline.producer counters (passes, verdicts by AI and by rules, holds, pending redrafts) are computed from the projects. Reviewer calls are counted in the provider totals; separate lines from reviewers to providers are not drawn.
+- Requirements: FAC-HAR-008, FAC-HAR-012. PRD impact: none.
+- Evidence: tests/factory-system-map.test.tsx, factory-map-interactive.test.tsx, factory-observability.test.ts still pass; layout checked in a static render of the column only, not in the live app.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

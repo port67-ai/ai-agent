@@ -1,5 +1,5 @@
 "use client";
-import { Activity, Bell, Building2, Clapperboard, Cloud, Compass, Database, Download, FileText, Film, Globe, HardDrive, LayoutDashboard, PenLine, Palette, Search, Send, Share2, ShieldCheck, Sparkles, Target, UserCheck, Users } from "lucide-react";
+import { Activity, Bell, Bot, Building2, Clapperboard, Cloud, Compass, Database, Download, FileText, Film, Globe, HardDrive, LayoutDashboard, PenLine, Palette, Search, Send, Share2, ShieldCheck, Sparkles, Target, UserCheck, Users } from "lucide-react";
 import { useRef, useState, type ComponentType, type MouseEvent } from "react";
 import { edgeTip, usd, type Tip } from "./edge-tip";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
@@ -22,6 +22,7 @@ const COLOR = { input: "#22d3ee", agent: "#a78bfa", store: "#34d399", gate: "#fb
 const AGENT_ICON: Record<string, Icon> = {
   "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine,
+  "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
 };
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const secs = (ms?: number) => (ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
@@ -97,7 +98,8 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   const P = flow.pipeline;
   const edgesFor = (id: string) => flow.edges.filter((e) => e.agent === id);
   const provColor = (id?: string) => PROVIDERS.find((p) => p.id === id)?.color || COLOR.out;
-  const providerY: Record<string, number> = { openai: 300, gemini: 420, anthropic: 540, deepseek: 660 };
+  // The LLM column starts below the producer orchestrator and its four reviewers.
+  const providerY: Record<string, number> = { openai: 700, gemini: 810, anthropic: 920, deepseek: 1030 };
   const PX = 906;
   const PW = 170;
   const PH = 74;
@@ -173,6 +175,9 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
   const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative"];
+  const reviewIds = ["review:scope", "review:sources", "review:insights", "review:direction"];
+  const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Direction review" };
+  const PR = P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 };
   const ids = ["scope:business", ...researchIds, "synthesis:insights", "synthesis:strategy", "synthesis:content"];
   const S = P.scopes || { classified: 0, ai: 0, template: 0, manual: 0, stale: 0, byCategory: {} };
   const top = Object.entries(S.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(" · ");
@@ -222,7 +227,8 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           {COLS.map((x, i) => <Link key={"wr" + i} d={`M${x + NW - 34} ${300 + AH} L${x + NW - 34} 470`} color={COLOR.store} dim={!(byId.get(researchIds[i])?.stats?.calls)} label={i === 0 ? "cited findings" : undefined} lx={x + NW - 26} ly={452} />)}
           <Bar y={472} title="Firestore · sources and findings" sub={`${P.sources.total} sources · ${P.sources.findings} claim-level findings · ${P.gaps} gaps · ${P.sources.unreviewed} unreviewed`} />
 
-          <text x="30" y="568" className="sm-band">4 · REVIEW</text>          <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
+          <text x="30" y="568" className="sm-band">4 · REVIEW</text>
+          <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
           <Node id="gate-1" x={COLS[0]} y={590} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Review sources" lines={["Gate 1 · producer", `${P.sources.supported} supported · ${P.sources.rejected} rejected`]} state={gateState(waiting.sourceReview) as NodeProps["state"]} badge={gateBadge(waiting.sourceReview)} />
           <Link d={`M${COLS[0] + NW} 642 L${COLS[1] - 2} 642`} color={COLOR.gate} dim={!P.sources.supported} />
           {agentNode("synthesis:insights")}
@@ -256,8 +262,33 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <Link d={`M${COLS[2] + NW} 1140 L${COLS[3] - 2} 1140`} color={COLOR.out} dim={!P.assetsApproved} />
           <Node id="publish" x={COLS[3]} y={1100} h={80} color={COLOR.out} icon={Globe} title="Publish yourself" lines={["Outside Port67", "Port67 never posts"]} dashed />
 
+          {/* Producer orchestrator: drawn like an LLM at the top of the LLM column, but it is a rules-only agent that steers its four reviewers. */}
+          <text x={PX} y={136} className="sm-band">PRODUCER AGENT</text>
+          <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.agent} icon={Bot} title="Orchestrator"
+            lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "No loops · stops at customer gates"]}
+            state={PR.holds ? "blocked" : ""} badge={PR.holds ? `${PR.holds} HELD` : undefined} />
+          {reviewIds.map((rid, i) => {
+            const a = byId.get(rid);
+            if (!a) return null;
+            const y = 262 + i * 98;
+            const stat = a.stats!;
+            const running = stat.inFlight > 0;
+            const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : false;
+            return (
+              <g key={rid}>
+                <Link d={`M${PX + PW} ${196} L1090 ${196} L1090 ${y + 43} L${PX + PW + 2} ${y + 43}`} color={COLOR.agent} dim={!PR.reviews} />
+                <Node id={rid} x={PX} y={y} w={PW} h={86} color={COLOR.agent} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
+                  pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
+                  lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${edgesFor(rid).some((e) => e.unpriced > 0) ? "cost unknown" : usd(stat.estimatedMicroUsd)}` : "Sees only its own inputs"]}
+                  state={running ? "running" : failed ? "failed" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
+                  onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
+                  onHover={(e) => showAt(rid, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
+              </g>
+            );
+          })}
+
           {/* LLM providers: each connector from an agent is one API call path. */}
-          <text x={PX} y={282} className="sm-band">LLM APIS (CALLS OUT)</text>
+          <text x={PX} y={684} className="sm-band">LLM APIS (CALLS OUT)</text>
           {PROVIDERS.map((p) => {
             const used = flow.models.filter((m) => m.provider === p.id);
             const c = used.reduce((n, m) => n + m.calls, 0);
@@ -295,7 +326,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
         <li><i style={{ background: COLOR.mon }} /> Monitoring</li>
         <li><i style={{ background: COLOR.bad }} /> Failed or unknown</li>
       </ul>
-      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). The producer agent (rules only, no model or cost) runs the producer steps in bands 4 and 5 for you, with every step audited and recorded on the project, and stops at the two customer gates: direction approval and asset approval. Port67 never posts to a channel.</p>
+      <p className="f-small">Stored in Firestore: the business classification and each agent\u2019s question list (saved on the project, versioned, readable at any time), parsed results, usage counters, run records and the brief snapshot. Passed on without storing: prompts and raw model responses (OpenAI is asked not to retain requests; other providers follow their account terms). The producer orchestrator (top right, drawn like a model but rules only, with no cost of its own) steers the four producer reviewers beneath it: each sees only its own inputs, sends work back for at most one redraft, and then hands over to a person. It runs the steps in bands 4 and 5, audits every step on the project, and stops at the two customer gates: direction approval and asset approval. Port67 never posts to a channel.</p>
     </section>
   );
 }

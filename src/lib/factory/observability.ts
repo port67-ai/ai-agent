@@ -91,6 +91,8 @@ export type PipelineStats = {
   /** Classifications stored on projects in Firestore. */
   scopes: { classified: number; ai: number; template: number; manual: number; stale: number; byCategory: Record<string, number> };
   waiting: { producerStart: number; sourceReview: number; insightReview: number; directionApproval: number; assetApproval: number };
+  /** The producer orchestrator and its four reviewers, counted over every project. */
+  producer?: { passes: number; reviews: number; byAi: number; byRules: number; holds: number; pending: number };
 };
 export function pipelineStats(projects: Project[]): PipelineStats {
   const sum = (f: (p: Project) => number) => projects.reduce((n, p) => n + f(p), 0);
@@ -139,6 +141,14 @@ export function pipelineStats(projects: Project[]): PipelineStats {
       manual: count((p) => p.scope?.source === "manual"),
       stale: count((p) => !!p.scope && p.scope.briefHash !== scopeHash(p)),
       byCategory: projects.reduce<Record<string, number>>((m, p) => (p.scope ? { ...m, [p.scope.classification.category]: (m[p.scope.classification.category] || 0) + 1 } : m), {}),
+    },
+    producer: {
+      passes: sum((p) => p.producerAgent?.passes || 0),
+      reviews: sum((p) => (p.reviews || []).length),
+      byAi: sum((p) => (p.reviews || []).filter((r) => r.by === "ai").length),
+      byRules: sum((p) => (p.reviews || []).filter((r) => r.by === "rules").length),
+      holds: count((p) => !!p.producerAgent?.hold),
+      pending: count((p) => !!p.producerAgent?.pending),
     },
     waiting: {
       producerStart: count((p) => !!p.researchRequest && researchRun(p).length === 0),
