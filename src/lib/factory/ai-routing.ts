@@ -1,3 +1,4 @@
+import { standardPrice } from "./standard-prices";
 import type { AiRoute, AiRoutingConfig } from "./model";
 import type { Repository } from "./repository";
 import { AI_ROUTING_NAMESPACE, normalizePricing, type Pricing } from "./costs";
@@ -158,6 +159,7 @@ export async function stageReady(repo: Repository, stage: ProviderStage, env: En
 function hasPrice(config: AiRoutingConfig, provider: string, model: string, env: Env) {
   const key = `${provider}:${model}`;
   if (config.pricing && Object.hasOwn(config.pricing, key)) return true;
+  if (standardPrice(provider, model)) return true;
   try {
     return !!env.PORT67_MODEL_PRICING_JSON && Object.hasOwn(JSON.parse(env.PORT67_MODEL_PRICING_JSON), key);
   } catch {
@@ -236,6 +238,8 @@ export async function suggestPublicPrices(models: { provider: Provider; model: s
     fetchedAt: today,
     prices: wanted.map(({ provider, model }) => {
       const key = `${provider}:${model}`;
+      const standard = standardPrice(provider, model);
+      if (standard) return { key, found: true as const, pricing: normalizePricing(standard) };
       const hit = [model, `${provider}/${model}`].map((k) => (Object.hasOwn(catalogue, k) ? catalogue[k] : undefined)).find(Boolean);
       const input = perMillion(hit?.input_cost_per_token);
       const output = perMillion(hit?.output_cost_per_token);

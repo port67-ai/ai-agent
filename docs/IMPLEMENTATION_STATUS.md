@@ -187,3 +187,13 @@ CHG-0013 / FAC-CST-003: IN_PROGRESS, bounded subset. Hard USD caps (workspace mo
 CHG-0044 / FAC-HAR-012: IN_PROGRESS (partial). Producer orchestrator also resumes when a project is opened after research (auto, fingerprint-skipped), so source review onward no longer depends on a single post-research kick. Customer direction approval and final asset approval remain human.
 
 CHG-0045 / FAC-HAR-012: IN_PROGRESS (partial). Admin manual or AI producer approval switch for the direction (default AI, requires PORT67_PRODUCER_APPROVALS=true); final asset approval stays with the account owner.
+
+CHG-0046 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Spend limits are now owner-editable in the portal (monthly, project, run, per-call hold, per model) and the Private API costs page has an interactive cumulative cost history by harness and model.
+
+CHG-0047 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard DeepSeek prices (peak rate) used when no admin or env price is set.
+
+CHG-0048 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard Gemini prices (official list, conservative tier, grounded search as per-call fee).
+
+CHG-0049 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard OpenAI prices (Standard short-context tier; no search fee).
+
+CHG-0050 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Built-in standard Claude prices plus $10 per 1,000 web search.

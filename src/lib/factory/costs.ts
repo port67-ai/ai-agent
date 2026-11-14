@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repository';
-import { assertWithinBudget, budgetConfig, budgetStatus } from './budget';
+import { standardPrice } from './standard-prices';
+import { assertWithinBudget, budgetConfig, budgetStatus, validateBudgetSettings, type BudgetSettings } from './budget';
 export const ADMIN_LEDGER_NAMESPACE = 'factory-admin-ledger';
 export const MAX_LEDGER_CALLS = 150;
 export type ApiUsage = { inputTokens: number; outputTokens: number; cachedInputTokens?: number; cacheCreationInputTokens?: number; toolCalls?: number; toolUsageUnknown?: boolean };
@@ -26,18 +27,20 @@ export function pricingFor(provider: string, model: string, admin?: Record<strin
   const key=`${provider}:${model}`;
   if(admin && Object.hasOwn(admin,key)) return normalizePricing(admin[key]);
   const config=process.env.PORT67_MODEL_PRICING_JSON;
-  if(!config) return;
-  const p=JSON.parse(config)[key] as Pricing|undefined;
-  if(!p) return;
-  return normalizePricing(p);
+  const p=config?JSON.parse(config)[key] as Pricing|undefined:undefined;
+  if(p) return normalizePricing(p);
+  // Last resort: the built-in standard list price for the model (see standard-prices.ts).
+  const standard=standardPrice(provider,model);
+  return standard?normalizePricing(standard):undefined;
 }
 export async function reserveApiCall(repo: Repository, input: ApiCallInput): Promise<string> {
   const metadata = Object.fromEntries(['accountId','workspaceId','projectId','runId','stage','provider','model','actor'].map(k=>[k,text(input[k as Exclude<keyof ApiCallInput,'agent'>])])) as ApiCallInput;
   let adminPricing: Record<string, Pricing>|undefined;
-  try { adminPricing=(await repo.read(AI_ROUTING_NAMESPACE)).aiRouting?.pricing; } catch { /* unreadable prices mean unknown cost, which the cap holds at its call hold */ }
+  let saved: BudgetSettings|undefined;
+  try { const settings=await repo.read(AI_ROUTING_NAMESPACE); adminPricing=settings.aiRouting?.pricing; saved=settings.budgetSettings; } catch { /* unreadable prices mean unknown cost, which the cap holds at its call hold */ }
   const pricing=pricingFor(metadata.provider,metadata.model,adminPricing);
   // Invalid cap settings throw here, before any reservation, so a typo blocks paid calls rather than lifting the cap.
-  const budget=budgetConfig();
+  const budget=budgetConfig(process.env,saved);
   // Archived batches are immutable history. Their ids are re-checked inside the mutation so archiving cannot hide spend.
   const archiveIds=(await ledgerNamespaces(repo)).slice(1);
   const archived=(await Promise.all(archiveIds.map(async id=>{const db=await repo.read(id) as Ledger; if(!db.apiCalls) throw Error('Ledger archive is unavailable; spend cannot be checked'); return db.apiCalls;}))).flat();
@@ -45,7 +48,7 @@ export async function reserveApiCall(repo: Repository, input: ApiCallInput): Pro
   const row: ApiCall={...metadata,...(agent?{agent}:{}),id:randomUUID(),createdAt:new Date().toISOString(),status:'reserved',...(pricing?{pricing}:{})};
   return repo.mutate(ADMIN_LEDGER_NAMESPACE,db=>{ const ledger=db as Ledger; const rows=ledger.apiCalls??=[]; if(rows.length>=MAX_LEDGER_CALLS) throw new Error('Admin ledger capacity reached; export and archive ledger before further API calls');
     if(JSON.stringify(ledger.ledgerArchives||[])!==JSON.stringify(archiveIds)) throw new Error('Ledger archive changed during the spend check; retry');
-    assertWithinBudget([...archived,...rows],budget,metadata.projectId);
+    assertWithinBudget([...archived,...rows],budget,metadata.projectId,new Date(),{runId:metadata.runId,provider:metadata.provider,model:metadata.model});
     rows.push(row); return row.id; });
 }
 /** Provider adapters must normalize inputTokens to include cached and cache-creation input. */
@@ -107,8 +110,9 @@ export async function adminCostReport(repo: Repository,filters:CostFilters={}) {
   const offset=Math.min(integer(filters.offset??0),rows.length);const limit=Math.min(integer(filters.limit??50),100);
   const breakdown=Object.fromEntries((['accountId','projectId','provider','model'] as const).map(key=>[key,[...new Set(rows.map(r=>r[key]))].map(value=>({value,...summarize(rows.filter(r=>r[key]===value))}))])) as Record<'accountId'|'projectId'|'provider'|'model',({value:string}&CostSummary)[]>;
   let budget:ReturnType<typeof budgetStatus>|{error:string};
-  try { budget=budgetStatus(all,budgetConfig()); } catch(e) { budget={error:e instanceof Error?e.message:'Invalid budget configuration'}; }
-  return {summary:summarize(rows),budget,breakdown,total:rows.length,offset,limit,rows:rows.slice(offset,offset+limit),capacity:MAX_LEDGER_CALLS,pricingNotice:'Estimates use reservation-time configured pricing. Unknown calls are not zero cost. Reserved calls may still be in flight or interrupted.'};
+  const saved=(await repo.read(AI_ROUTING_NAMESPACE).catch(()=>({} as Record<string,never>)) as {budgetSettings?:BudgetSettings}).budgetSettings;
+  try { budget=budgetStatus(all,budgetConfig(process.env,saved)); } catch(e) { budget={error:e instanceof Error?e.message:'Invalid budget configuration'}; }
+  return {summary:summarize(rows),budget,limits:{saved:saved||{},env:{monthlyUsd:process.env.PORT67_MONTHLY_BUDGET_USD||'',projectUsd:process.env.PORT67_PROJECT_BUDGET_USD||'',callHoldUsd:process.env.PORT67_CALL_HOLD_USD||''}},breakdown,total:rows.length,offset,limit,rows:rows.slice(offset,offset+limit),capacity:MAX_LEDGER_CALLS,pricingNotice:'Estimates use reservation-time configured pricing. Unknown calls are not zero cost. Reserved calls may still be in flight or interrupted.'};
 }
 export type AdminCostReport=Awaited<ReturnType<typeof adminCostReport>>;
 
@@ -151,4 +155,13 @@ export async function archiveApiCalls(repo:Repository,actor:string) {
   (ledger.ledgerArchives ||= []).push(namespace);
  });
  return {id:namespace,count:rows.length};
+}
+
+/** Saves the spend limits typed in the admin portal. Blank clears a limit back to the Render environment value. */
+export async function saveBudgetSettings(repo:Repository,raw:unknown,actor:string) {
+ text(actor);
+ const next=validateBudgetSettings(raw);
+ budgetConfig(process.env,next); // refuses a combination that cannot be applied
+ await repo.mutate(AI_ROUTING_NAMESPACE,db=>{ db.budgetSettings={...next,updatedAt:new Date().toISOString(),updatedBy:actor}; });
+ return next;
 }
