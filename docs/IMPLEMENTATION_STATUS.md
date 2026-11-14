@@ -183,3 +183,7 @@ CHG-0011: account menu (avatar, identity, Sign out) and clear post-sign-in landi
 CHG-0012: post-sign-in banner now dismisses when a brief is created (presentation only). Owner confirmed on the live CHG-0011 build, 2026-11-12, that Firebase sign-in, workspace open and brief creation work; this is manual owner observation, not recorded acceptance evidence, so no requirement is promoted to VERIFIED.
 
 CHG-0013 / FAC-CST-003: IN_PROGRESS, bounded subset. Hard USD caps (workspace monthly, default $25, and optional per-project monthly) are enforced before every managed model call with unknown costs held at a configured amount; unit and integration tests pass locally. Task and workflow level caps, provider-invoice reconciliation and live provider verification remain NOT_VERIFIED. No requirement promoted to VERIFIED.
+
+CHG-0044 / FAC-HAR-012: IN_PROGRESS (partial). Producer orchestrator also resumes when a project is opened after research (auto, fingerprint-skipped), so source review onward no longer depends on a single post-research kick. Customer direction approval and final asset approval remain human.
+
+CHG-0045 / FAC-HAR-012: IN_PROGRESS (partial). Admin manual or AI producer approval switch for the direction (default AI, requires PORT67_PRODUCER_APPROVALS=true); final asset approval stays with the account owner.

@@ -1,3 +1,4 @@
+import { producerApprovalsOn } from "./approval-mode";
 import { accountScope, canCreateProject, linkProjectOwnership } from "./accounts";
 import { productionCapabilities } from "./registry";
 import { validChannels } from "./channels";
@@ -272,10 +273,10 @@ export function transition(
   if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch"].includes(type)) operator(a);
   // Test mode only (PORT67_PRODUCER_APPROVALS=true, off by default): a producer may press the customer's approval buttons so the
   // journey can be clicked through. Every such approval is recorded as given on the customer's behalf.
-  const onBehalf = customerActions.includes(type) && a.role === "operator" && process.env.PORT67_PRODUCER_APPROVALS === "true";
+  const onBehalf = customerActions.includes(type) && a.role === "operator" && producerApprovalsOn();
   if (customerActions.includes(type) && a.role !== "customer" && !onBehalf)
     throw new Error("Customer approval identity required");
-  const approver = onBehalf ? `${a.subject} (on behalf of the customer, test mode)` : a.subject;
+  const approver = onBehalf ? (a.subject === "port67-producer-agent" ? "AI producer (on behalf of the customer)" : `${a.subject} (on behalf of the customer, test mode)`) : a.subject;
   if (requestId && p.processed.includes(requestId)) return p;
   if (type === "authoriseAI") {
     if (c.confirm !== true)
@@ -705,7 +706,7 @@ export function projectView(input: Project, a: Principal): Project {
     else if (autoApproveProducer()) p.researchNote = "Starting automatically.";
   }
   if (a.role === "operator") {
-    p.producerApprovals = process.env.PORT67_PRODUCER_APPROVALS === "true";
+    p.producerApprovals = producerApprovalsOn();
     p.aiAuthorised = hasProviderConsent(p);
     return p;
   }

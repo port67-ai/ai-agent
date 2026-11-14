@@ -1,3 +1,4 @@
+import { loadApprovalMode, producerApprovalsOn } from "./approval-mode";
 import { access, digest, id, operator, transition } from "./engine";
 import { runContent } from "./content-run";
 import { runSynthesis } from "./synthesis-run";
@@ -24,7 +25,7 @@ const MAX_PASSES = 30;
 const MAX_LOG = 40;
 const MAX_REWORKS = 1;
 
-export type StepId = "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
+export type StepId = "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
 export const STEP_LABEL: Record<StepId, string> = {
   reviewScope: "Scope producer reviews the classification",
   reviewSources: "Source producer reviews the sources",
@@ -32,6 +33,7 @@ export const STEP_LABEL: Record<StepId, string> = {
   reviewInsights: "Insight producer reviews the draft insights",
   draftDirection: "Draft direction with AI",
   reviewDirection: "Direction producer reviews the direction",
+  approveDirection: "AI producer approves the direction on the customer's behalf",
   produce: "Create production drafts",
   draftCopyPack: "Draft AI copy pack",
   shareAssets: "Share assets with the account owner",
@@ -88,6 +90,7 @@ export function planNext(p: Project, aiReady: boolean): Plan {
   // Direction
   const direction = p.strategies.at(-1);
   if (!direction) return aiReady ? { step: "draftDirection" } : wait("waiting_human", "AI drafting is not configured: draft the direction by hand.");
+  if (direction.status === "shared" && producerApprovalsOn()) return { step: "approveDirection" };
   if (direction.status === "shared") return wait("waiting_customer", "Direction shared: waiting for the account owner to approve it.");
   if (direction.status === "changes_requested") return wait("waiting_human", "The account owner asked for changes to the direction: a producer decides how to rework it.");
   if (direction.status === "draft") {
@@ -147,6 +150,7 @@ export async function runProducerAgent(repo: Repository, a: Principal, projectId
     if ((state?.passes || 0) >= MAX_PASSES) return first;
     if (!opts.force && state?.lastFingerprint === progressFingerprint(first)) return first;
     if (opts.force && state) await patchAgent(repo, op, projectId, (s) => { s.reworks = {}; delete s.pending; delete s.hold; });
+    await loadApprovalMode(repo, 0);
     const aiReady = await stageReady(repo, "synthesis").catch(() => false);
     for (let n = 0; n < MAX_STEPS; n++) {
       const current = await read();
@@ -244,6 +248,10 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
       else if ((await reworked("insights")) < MAX_REWORKS && aiReady) await sendBack("insights", notes, holdSubject([]));
     }
     return `${rec.summary} (${rec.by})`;
+  }
+  if (step === "approveDirection") {
+    await command((p) => [{ type: "approveStrategy", hash: p.strategies.at(-1)!.hash }]);
+    return "approved after the direction producer passed it";
   }
   if (step === "reviewDirection") {
     const rec = await reviewGate(repo, op, projectId, "direction");

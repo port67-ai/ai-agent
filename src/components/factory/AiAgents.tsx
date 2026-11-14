@@ -38,10 +38,12 @@ export default function AiAgents() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [approval, setApproval] = useState<{ mode: "ai" | "manual"; masterSwitch: boolean; effective: boolean } | null>(null);
   const load = useCallback(async () => {
     try {
-      const [agents, route] = await Promise.all([post<Overview>("ai-agents"), post<Routing>("ai-routing")]);
+      const [agents, route, mode] = await Promise.all([post<Overview>("ai-agents"), post<Routing>("ai-routing"), post<NonNullable<typeof approval>>("approval-mode")]);
       setData(agents);
+      setApproval(mode);
       setRouting(route);
       setError("");
     } catch (e) {
@@ -116,6 +118,25 @@ export default function AiAgents() {
         </div>
         {(!data.switches.research || !data.switches.synthesis) && (
           <p className="f-small">Master switches in Render: research {data.switches.research ? "on" : "off"}, drafting {data.switches.synthesis ? "on" : "off"} (PORT67_RESEARCH_ENABLED, PORT67_SYNTHESIS_ENABLED). Agents cannot run while a switch is off.</p>
+        )}
+        {approval && (
+          <div className="f-callout" role="group" aria-label="Direction approval">
+            <strong>Direction approval: {approval.mode === "ai" ? "AI producer" : "Manual (account owner)"}</strong>
+            <p className="f-small">
+              {approval.mode === "ai"
+                ? "After the direction producer passes the campaign direction, the AI producer approves it on the customer's behalf (recorded in the audit trail) and the chain carries on to copy pack and production. The account owner still approves the final assets."
+                : "The chain stops after the direction producer passes the direction until the account owner approves it."}
+              {!approval.masterSwitch && " The Render switch PORT67_PRODUCER_APPROVALS=true is off, so only the account owner can approve until it is set."}
+            </p>
+            <div className="f-actions">
+              {(["ai", "manual"] as const).map((m) => (
+                <button key={m} type="button" className={approval.mode === m ? "f-primary" : "f-secondary"} aria-pressed={approval.mode === m} disabled={busy || approval.mode === m}
+                  onClick={async () => { setBusy(true); try { setApproval(await post("approval-mode", { mode: m })); setError(""); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>
+                  {m === "ai" ? "AI producer approval" : "Manual approval"}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {data.switches.autoApproveProducer && (
           <p className="f-callout" role="status">

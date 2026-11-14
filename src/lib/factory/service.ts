@@ -1,3 +1,4 @@
+import { approvalOverview, loadApprovalMode, saveApprovalMode } from "./approval-mode";
 import { meteredModelCall } from "./metering";
 import { registerAccount, listAccounts, canCreateProject } from "./accounts";
 import { addTeamMember, listTeam, removeTeamMember, withTeamRole } from "./team";
@@ -406,6 +407,7 @@ export async function handleFactory(
     )
       return json({ error: "Cross-origin request rejected" }, 403);
     const a = await principal(request, identityLookup);
+    await loadApprovalMode(repository);
     const data = request.method === "POST" ? await body(request) : {};
     const visitorName = "port67_factory_visitor";
     const visitor = readSession(cookie(request, visitorName), sessionKey());
@@ -564,6 +566,12 @@ export async function handleFactory(
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       return json(await agentsOverview(repository));
     }
+    if (route === "admin/approval-mode") {
+      // Owner only. Switches the customer's direction approval between the account owner (manual) and the AI producer.
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      if(request.method==="POST") await saveApprovalMode(repository,data.mode,a.subject);
+      return json(await approvalOverview(repository));
+    }
     if (route === "admin/ai-routing") {
       // Owner only. Chooses provider and model per job and holds prices; API keys stay in Render.
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
@@ -624,6 +632,8 @@ export async function handleFactory(
       if (path.length === 2 && request.method === "GET") {
         // Self-healing: a request made before the switch was on, or one that could not start, is retried on the next view.
         if (autoApproveProducer() && !a.demo && p.researchRequest) void autoStartResearch(a, projectId).catch(() => undefined);
+        // The producer orchestrator resumes on a view too (skipped when nothing changed), so a missed kick never leaves a step waiting.
+        if (p.runs.length && !p.runs.some((r) => r.status === "running")) kickProducerAgent(a, projectId, "project view");
         return json({ project: projectView(p, a) });
       }
       if (path[2] === "research-plan" && request.method === "GET")
