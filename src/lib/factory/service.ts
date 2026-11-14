@@ -1,9 +1,10 @@
+import { costSeries, type SeriesRange } from "./cost-series";
 import { approvalOverview, loadApprovalMode, saveApprovalMode } from "./approval-mode";
 import { meteredModelCall } from "./metering";
 import { registerAccount, listAccounts, canCreateProject } from "./accounts";
 import { addTeamMember, listTeam, removeTeamMember, withTeamRole } from "./team";
 import { verifyFactoryIdentity, revalidateIdentitySession, type FactoryTokenVerifier, type FactoryUserLookup } from "./identity";
-import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls } from "./costs";
+import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls, saveBudgetSettings } from "./costs";
 import { safeProviderConfiguration } from "./providers";
 import { runContent } from "./content-run";
 import { agentsOverview } from "./ai-agents";
@@ -544,10 +545,16 @@ export async function handleFactory(
       });
     }
     if (!a) return json({ error: "Sign in to continue" }, 401);
+    if (route === "admin/costs/series") {
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      const q=new URL(request.url).searchParams;
+      return json(costSeries(await exportApiCalls(repository),{range:(q.get("range")||undefined) as SeriesRange|undefined,harness:q.get("harness")||undefined}));
+    }
     if (route === "admin/costs" || route === "admin/costs/export") {
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       if(route === "admin/costs/export" && request.method==="GET") return new Response(JSON.stringify({exportedAt:new Date().toISOString(),calls:await exportApiCalls(repository)}),{headers:{"content-type":"application/json","content-disposition":"attachment; filename=port67-api-costs.json","cache-control":"no-store","x-content-type-options":"nosniff"}});
-      if(request.method==="POST" && data.action==="archive") await archiveApiCalls(repository,a.subject);
+      if(request.method==="POST" && data.action==="limits") await saveBudgetSettings(repository,data.limits,a.subject);
+      else if(request.method==="POST" && data.action==="archive") await archiveApiCalls(repository,a.subject);
       else if(request.method==="POST") {
         await reconcileApiCall(repository,text(data.id,"call",100,true),{actualMicroUsd:Number(data.actualMicroUsd),reference:text(data.reference,"reference",100,true),actor:a.subject});
       }

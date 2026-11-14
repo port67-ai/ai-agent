@@ -1,4 +1,5 @@
 import type { ApiCall, Pricing } from "./costs";
+import type { BudgetSettings } from "./budget";
 import type { ResearchScope, ScopeEntry } from "./scope";
 export const segments = [
   "brand",
@@ -295,6 +296,7 @@ export type AiRoutingConfig = {
 export type Database = {
   accounts?: Account[];
   aiRouting?: AiRoutingConfig;
+  budgetSettings?: BudgetSettings;
   approvalMode?: { mode: "ai" | "manual"; updatedAt: string; updatedBy: string };
   team?: TeamMember[];
   teamAudit?: TeamAuditEntry[];

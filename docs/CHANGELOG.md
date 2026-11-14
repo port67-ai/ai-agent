@@ -356,3 +356,38 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-HAR-012. PRD impact: none.
 - Evidence: tsc, eslint and npm run test:factory pass (tests/factory-producer-agent.test.ts covers default, master switch off, manual wait, AI approval and invalid mode).
 - Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0046 - 2026-11-14 - Private API costs: editable spend limits and interactive cost history
+- Author/harness: Claude (Cowork); owner asked for all cost controls in one place, editable in the portal, and a historical cost chart.
+- What/why: (1) Spend limits editable under Private API costs: monthly total, per project, per run, per-call hold for unknown cost, and per model per month (provider:model). Saved in the admin settings store, override the Render values, blank falls back to Render (PORT67_MONTHLY_BUDGET_USD etc. still work). Validated before saving; enforced at reservation time with the existing fail-closed holds. Block messages now point to the portal. (2) Cost history: new owner-only route admin/costs/series and an interactive chart. Periods: day (24 hourly points), month (30 daily), 3 months (daily), 6 months (weekly), 12 months (monthly). Lines are cumulative for the period; hover shows cost, input/output tokens and calls up to that point; legend toggles lines; a harness selector isolates one harness (lines then become its models); tables list every harness and model used in the period with cost, tokens and calls. Unknown-cost calls are counted separately, never as free.
+- Requirements: FAC-CST-003. PRD impact: none.
+- Evidence: tests/factory-cost-series.test.ts (series buckets, cumulative totals, harness isolation, limits validation and enforcement by total, run and model, portal beats env); tsc, eslint, test:factory and build pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0047 - 2026-11-14 - Built-in standard DeepSeek prices
+- Author/harness: Claude (Cowork); owner supplied DeepSeek's price list to be used as the standard when a DeepSeek model is selected.
+- What/why: new src/lib/factory/standard-prices.ts holds deepseek-flash (also the retired names deepseek-v4-flash and deepseek-v4-flash-vision-exp, billed at Flash) and deepseek-v4-pro. Used when no admin price or PORT67_MODEL_PRICING_JSON entry exists, so calls are priced and capped; the model picker pre-fills them and "Fetch public price" returns them. Admin and environment prices still win. DeepSeek charges half off-peak but only one rate is stored, so the peak rate is used (Flash $0.30 in, $0.006 cached, $1.20 out; Pro $1.32 in, $0.044 cached, $3.96 out per 1M tokens; search $0.75 per 1,000 as a per-call fee). Estimates can overstate the real bill, never understate it. Speech, OCR and web fetch prices are not used by the app and were not added.
+- Requirements: FAC-CST-003. PRD impact: none.
+- Evidence: tests/factory-cost-series.test.ts (standard prices, retired names, unlisted model stays unpriced, admin price wins); tsc, eslint and test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0048 - 2026-11-14 - Built-in standard Gemini prices
+- Author/harness: Claude (Cowork); owner approved adding Gemini prices read from Google's official pricing page.
+- What/why: standard-prices.ts now also holds gemini-3.5-flash, gemini-3-flash-preview, gemini-3.1-flash-lite, gemini-3.1-pro-preview (and customtools), gemini-2.5-pro and gemini-2.5-flash at the Standard paid-tier text rates, with cached-input rates; Pro models use the higher over-200k-token rate so cost is never understated. Grounded search is a per-call fee: $14 per 1,000 search queries on Gemini 3, $35 per 1,000 grounded prompts on 2.5. Free monthly allowances and per-query counts are not tracked. A list the owner pasted (gemini-4-*, 3.8-flash, 3.5-flash-lite) does not match Google's page and was not used; unlisted models stay unpriced. Admin and environment prices still win.
+- Requirements: FAC-CST-003. PRD impact: none.
+- Evidence: tests/factory-cost-series.test.ts extended; tsc, eslint, test:factory pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0049 - 2026-11-14 - Built-in standard OpenAI prices
+- Author/harness: Claude (Cowork); owner supplied OpenAI's price list from its website.
+- What/why: standard-prices.ts now holds 27 OpenAI models (gpt-6 and gpt-5.6 families, gpt-5.5, 5.4, 5.2, 5.1, 5, 4.1, 4o, o3 and their mini, nano and pro variants, including deprecated ones) at the Standard, short-context rates with cached-input prices; where cache-write prices exist the higher 12h write rate is stored. Used only when no admin or environment price exists. No web search fee was supplied, so OpenAI search calls are priced on tokens only until a per-call fee is entered on the model dialog. Flex/Batch, Fast and long-context prices are not used. The list was taken as supplied and not independently checked against OpenAI's site.
+- Requirements: FAC-CST-003. PRD impact: none.
+- Evidence: tests/factory-cost-series.test.ts extended; tsc, eslint, test:factory and build pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.
+
+## CHG-0050 - 2026-11-14 - Built-in standard Anthropic (Claude) prices
+- Author/harness: Claude (Cowork); owner supplied a Claude API price list; checked against Anthropic's official pricing page.
+- What/why: standard-prices.ts now holds claude-fable-5-2 ($8 in, $40 out, $0.20 cache read), claude-opus-5-5 ($4/$20/$0.20), claude-sonnet-5-5 ($2/$10/$0.10) and claude-haiku-5-5 ($0.10/$0.50/$0.01), per 1M tokens, plus web search at $10 per 1,000 as a per-call fee. The official page confirms the cache-read prices, Haiku's rates, the search fee and the 2x Fast mode prices (which imply these base rates). Cache writes are stored at 2x the input rate (derived, 1h write). Haiku 5.5 charges more above 100k-token prompts ($0.50/$2.50); the up-to-100k rate is stored because the app's prompts stay far below it. Batch and Fast mode are not modelled. Older Opus models (5 and earlier) were not added.
+- Requirements: FAC-CST-003. PRD impact: none.
+- Evidence: tests/factory-cost-series.test.ts extended; tsc, eslint, test:factory and build pass.
+- Status: in the working tree; consult Git/GitHub for branch, commit and merge status.

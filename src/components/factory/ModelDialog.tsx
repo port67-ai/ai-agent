@@ -1,4 +1,5 @@
 "use client";
+import { standardPrice } from "@/lib/factory/standard-prices";
 import { useEffect, useRef, useState } from "react";
 import { Download, Save, X } from "lucide-react";
 import type { AiRoute } from "@/lib/factory/model";
@@ -13,7 +14,7 @@ export default function ModelDialog({ agent, routing, suggest, onClose, onSaved 
   const own = routing.config.slots?.[agent.id];
   const pick = research ? suggest?.suggested.research : suggest?.suggested.synthesis;
   const start = own || (agent.model ? { provider: agent.model.provider, model: agent.model.model } : pick || { provider: "", model: "" });
-  const priceOf = (provider: string, model: string) => toPrice(routing.config.pricing?.[`${provider}:${model}`]);
+  const priceOf = (provider: string, model: string) => toPrice(routing.config.pricing?.[`${provider}:${model}`] ?? standardPrice(provider, model));
   const [provider, setProvider] = useState<string>(start.provider);
   const [model, setModel] = useState(start.model);
   const [price, setPrice] = useState<Price>(priceOf(start.provider, start.model));
