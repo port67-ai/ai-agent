@@ -62,7 +62,7 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-OBS-003 | Imported proposed baseline | IN_PROGRESS (partial) | Project audit trail separate from technical logs: actor, role, action, time, including producer reviewer verdicts and approvals made on a customer's behalf in test mode; authorisation-decision detail partial |
 | FAC-OBS-004 | Imported proposed baseline | IN_PROGRESS (partial) | Prompts and raw model replies are not stored; the ledger keeps usage counters only; no automated log-redaction test |
 | FAC-OBS-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-SKL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
+| FAC-SKL-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion CHG-0075: variables and input list. CHG-0076: reviewer variable limits. |
 | FAC-SKL-002 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-SKL-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-TEN-001 | Imported proposed baseline | IN_PROGRESS (partial) | Account-scoped workspaces with verified identity; two-account isolation tested (tests/factory-accounts.test.ts, factory-identity.test.ts); storage-rule and emulator checks partial |
@@ -239,6 +239,7 @@ Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. 
 | FAC-SKL-001 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): `skills.ts`; defaults for all 12 AI agents; skill appended after fixed rules via the metered call wrapper and provider boundary. |
 | FAC-SKL-002 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): versioned saves in the database, latest runs on the next call, history with editor, time and note, admin-only route `admin/skills`. |
 | FAC-SKL-003 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): Skill chip on every agent node on the map plus a Skill button on each agent card; popup with purpose, edit, history and default reload. |
+| FAC-SKL-004 | Owner-requested 2026-11-16 (CHG-0078) | IMPLEMENTED | Built (CHG-0078): audience and three optional brief fields to researchers; graded sources, findings, profile and gaps to the insight writer. Strategy, copy and scoping inputs not yet reviewed for the same gaps. |
 | FAC-FMT-001 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): seven formats in `formats.ts`; producer confirms in the Campaign plan panel on the Campaign direction tab. |
 | FAC-FMT-002 | Owner-requested 2026-11-15 (CHG-0063, CHG-0065) | IMPLEMENTED | Built: rules-based suggestions (CHG-0063) and the AI format agent (CHG-0065, slot `synthesis:formats`, skill-backed, strict contract, metered). The producer always decides.
 | FAC-FMT-003 | Owner-requested 2026-11-15 (CHG-0063) | PARTIAL | Built (CHG-0063): formats go into the direction prompt and the advert track requires a video format. Per-format production beyond the existing storyboard, copy and advert tracks is not built. |
@@ -250,3 +251,5 @@ Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. 
 | FAC-IDE-003 | Owner-requested 2026-11-15 (CHG-0063) | PLANNED | Not started: ad account metrics, creator sourcing and outreach need a tool adoption review first (section 23.1). Per-format production beyond storyboard, copy pack and advert is also not started.
 | FAC-OBS-001 | Owner-requested 2026-11-15 (CHG-0064) | IMPLEMENTED | Run progress panel with approval links and orchestrator hold hover. Producers only. |
 | FAC-OBS-002 | Owner-requested 2026-11-15 (CHG-0064) | PLANNED | Not started: more space between agent nodes on the AI agents map so lines and labels do not overlap; customer-safe tracker. |
+| FAC-STO-001 | Owner-requested 2026-11-16 (CHG-0077) | IMPLEMENTED | Built (CHG-0077): storage gauge in the producer Overview and diagnostics, automatic trimming of old run copies on save, manual Trim button. |
+| FAC-STO-002 | Owner-requested 2026-11-16 (CHG-0077) | PLANNED | Not started. Split the project record into separate records; trigger is about 60 percent of the limit on the gauge or before several live customers. |

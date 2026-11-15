@@ -138,3 +138,25 @@ assert.throws(() => prepareSynthesis(p, "strategy"), /authoris/i);
 console.log(
   "AI synthesis: public-context consent, reviewed evidence/insights, ID validation and cautious confidence passed.",
 );
+
+// Richer inputs: optional brief fields keep the fingerprint when empty; the insight writer sees grade, findings, profile and gaps, best evidence first
+{
+  const bare = createProject({ business: "Brand", objective: "Introduce a consumer product", contact: "a@example.com" }, op);
+  assert.ok(!("market" in bare.brief) && !("proof" in bare.brief) && !("differentiators" in bare.brief), "empty optional fields are not stored, so existing authorisations stay valid");
+  const rich = createProject({ business: "Brand", objective: "Introduce a consumer product", contact: "a@example.com", market: "Kent", differentiators: "Hand finished", proof: "400 five-star reviews" }, op);
+  assert.equal(rich.brief.market, "Kent");
+  let q = transition(rich, { type: "authoriseAI", confirm: true }, op);
+  const add = (title: string, url: string, excerpt: string) => { q = transition(q, { type: "addSource", segment: "customer", title, url, excerpt }, op); q = transition(q, { type: "reviewSource", id: q.sources.at(-1)!.id, status: "supported" }, op); };
+  add("Thin forum post", "https://forum.example.net/t/1", "ok");
+  add("Detailed review study", "https://www.reviewsite.example.org/study", "Customers said the finish lasted years. 62% repeat purchase across 400 reviews in 2025. ".repeat(4));
+  q.sources[1].findings = [{ claim: "Customers praise finish durability", quote: "lasted years" }];
+  q.runs.push({ id: "r1", at: "2026-11-01T00:00:00Z", status: "completed", provider: "x", model: "m", stage: "research", segment: "customer", gaps: ["No pricing data found"] } as never);
+  const s = prepareSynthesis(q, "insights").payload as { brief: Record<string, unknown>; sources: { id: string; grade?: { score: number }; findings?: unknown[] }[]; researchGaps: { segment: string; gaps: string[] }[] };
+  assert.equal(s.brief.market, "Kent");
+  assert.equal(s.brief.proofTheBusinessHas, "400 five-star reviews");
+  assert.ok(s.sources.every((x) => typeof x.grade?.score === "number"), "every source carries its grade");
+  assert.ok(s.sources[0].grade!.score >= s.sources[1].grade!.score, "best graded evidence first");
+  assert.ok(s.sources.some((x) => x.findings?.length), "claim-level findings are passed");
+  assert.deepEqual(s.researchGaps, [{ segment: "customer", gaps: ["No pricing data found"] }]);
+  console.log("Richer agent inputs passed");
+}

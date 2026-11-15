@@ -503,6 +503,8 @@ export default function Portal() {
                       busy={busy}
                       aiReady={!!config?.synthesisReady && !principal.demo}
                       canApproveForCustomer={!!p.producerApprovals}
+                      accountBytes={projects.filter((x) => (x.accountId || x.workspaceId) === (p.accountId || p.workspaceId)).reduce((n, x) => n + (x.storage?.bytes || 0), 0) || undefined}
+                      onTrim={() => void command({ type: "trimHistory" }, "Old run copies removed. Run records, usage and the audit trail are kept.")}
                       onAi={(stage) => void run(() => api("projects/" + p.id + "/synthesis", { stage }), "AI draft ready. Review it in the matching tab.")}
                       onAct={(act) => {
                         const s = p.strategies.at(-1);
@@ -1155,6 +1157,15 @@ export default function Portal() {
                 </Field>
                 <Field label="Inspirational brands or references">
                   <textarea name="inspiration" maxLength={2000} />
+                </Field>
+                <Field label="Where you operate or sell">
+                  <input name="market" maxLength={300} placeholder="Town, region or country; online only; stockists" />
+                </Field>
+                <Field label="What makes you different">
+                  <textarea name="differentiators" maxLength={1000} />
+                </Field>
+                <Field label="Proof you already have (reviews, awards, case studies, numbers)">
+                  <textarea name="proof" maxLength={1500} />
                 </Field>
                 <LogoField />
               </details>

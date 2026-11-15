@@ -95,6 +95,15 @@ export default function BriefEditor({
               maxLength={2000}
             />
           </Field>
+          <Field label="Where you operate or sell">
+            <input name="market" defaultValue={p.brief.market || ""} maxLength={300} placeholder="Town, region or country; online only; stockists" />
+          </Field>
+          <Field label="What makes you different">
+            <textarea name="differentiators" defaultValue={p.brief.differentiators || ""} maxLength={1000} />
+          </Field>
+          <Field label="Proof you already have (reviews, awards, case studies, numbers)">
+            <textarea name="proof" defaultValue={p.brief.proof || ""} maxLength={1500} />
+          </Field>
           <LogoField initial={p.brief.logoData} />
         </details>
         <button className="f-button secondary" disabled={busy}>

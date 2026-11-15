@@ -1,3 +1,4 @@
+import { projectParts, STORAGE_LIMIT_BYTES } from "./storage-gauge";
 import type { Project } from "./model";
 
 // Producer and admin diagnostics for one project: everything needed to understand a failure, with timestamps, in a form that
@@ -57,6 +58,7 @@ function buildReport(p: Project, ctx: DiagnosticsContext) {
     scope: p.scope ? { version: p.scope.version, source: p.scope.source, at: p.scope.at, model: p.scope.model, note: p.scope.note, classification: p.scope.classification } : null,
     researchNote: p.researchNote,
     counts: { runs: p.runs.length, failedRuns: p.runs.filter((r) => r.status === "failed").length, sources: p.sources.length, unreviewed: p.sources.filter((s) => s.status === "unreviewed").length },
+    storage: { ...projectParts(p), limitBytes: STORAGE_LIMIT_BYTES },
     failures,
     events,
     ledger: ctx.ledger?.filter((c) => !cut || c.at >= cut),
@@ -74,6 +76,7 @@ export function renderDiagnostics(r: DiagnosticsReport): string {
   L.push("## Models in use", ...r.routes.map((x) => `- ${x.agent}: ${x.problem ? "PROBLEM: " + x.problem : `${x.provider} ${x.model} (${x.source})`}`), "");
   L.push("## Scope", r.scope ? `- v${r.scope.version} from ${r.scope.source} at ${r.scope.at}${r.scope.model ? " (" + r.scope.model + ")" : ""}: ${r.scope.classification.businessType} / ${r.scope.classification.category} / size ${r.scope.classification.size} / reach ${r.scope.classification.reach}${r.scope.note ? "\n- Note: " + r.scope.note : ""}` : "- Not classified yet", "");
   if (r.researchNote) L.push("## Research note", r.researchNote, "");
+  L.push("## Storage", `- This project: ${Math.round(r.storage.bytes / 1024)} KB. All projects of one account share about ${Math.round(r.storage.limitBytes / 1024)} KB.`, ...r.storage.parts.map((x) => `- ${x.name}: ${Math.round(x.bytes / 1024)} KB${x.count === undefined ? "" : ` (${x.count} items)`}`), "");
   L.push(`## Failures (${r.failures.length})`);
   if (!r.failures.length) L.push("- None recorded");
   for (const f of r.failures) L.push(`- ${f.at} ${f.agent} [${f.status}]${f.provider ? " " + f.provider + " " + f.model : ""}${f.seconds !== undefined ? " after " + f.seconds + "s" : ""}: ${f.text}${f.note ? "\n  Model wrote instead of findings (not evidence): " + f.note : ""}${f.requestId ? "\n  Provider request ID: " + f.requestId : ""}`);

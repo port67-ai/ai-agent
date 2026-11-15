@@ -500,6 +500,27 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0078 - 2026-11-16 - Agents receive the context they need to search and write precisely
+- What/why: an audit found the research agents never received the brief's audience as a field (only 120 characters folded into two questions), the brief had no place for where the business operates, what makes it different or the proof it already has, and the insight writer saw only each source's excerpt, no grade, no claim-level findings, no scoping profile and no research gaps, from a 30-source cap filled three per research agent regardless of quality. Changes: (1) every research agent gets the full audience; (2) the insight writer's sources are ranked by grade, each carries its grade and claim-level findings, and it also receives the scoping profile and the research gaps, with an instruction to weigh grade, prefer findings and treat the business's own proof as claims; (3) three optional brief fields (Where you operate or sell, What makes you different, Proof you already have), shown in the create and edit forms, passed to researchers and the insight and direction writers, and available to skills as {{market}}, {{differentiators}} and {{proof}}. Empty optional fields are not stored, so existing briefs keep their fingerprint and AI authorisation. The Skill popup lists the new inputs.
+- Not done: the strategy, copy and scoping agents were not part of this audit. Customer-level profile for several products per customer is planned alongside FAC-STO-002.
+- Requirements: FAC-SKL-004 (new). PRD impact: added.
+- Tests: optional-field fingerprint, grade, findings, profile, gaps and ordering for the insight writer added to the synthesis test; factory suite passing.
+
+## CHG-0077 - 2026-11-16 - Storage gauge and safe trimming; record split logged as planned
+- What/why: a project lives in one stored record, and all projects of one account must fit together under about 700 KB (less 80 KB per running paid task); a save beyond that fails with "Workspace storage limit reached". New: a storage line on the producer Overview and a Storage section in diagnostics (this project's size, the account total against the limit, and the biggest lists); automatic trimming when a save would pass the limit; and a "Trim old run copies" button. Trimming removes only the frozen brief and context copies on old finished runs (the newest 10 keep theirs); run records, hashes, usage, cost and the audit trail are kept, and the audit records each manual trim. The larger change, splitting the project into separate records, is logged as planned FAC-STO-002 and deliberately not started. It does not change what any AI agent receives, so agent skills and variables are unaffected.
+- Requirements: FAC-STO-001 (new), FAC-STO-002 (new, PLANNED). PRD impact: both added.
+- Tests: new storage test (gauge, trimming rules, automatic trim on save, refusal when trimming cannot help); factory suite passing.
+
+## CHG-0076 - 2026-11-16 - Reviewer skills can only use variables from their own walled-garden view
+- What/why: reviewers are deliberately limited to their own slice of the project (for example the insight reviewer sees only the business name and the draft insights). Skill variables now respect that: a reviewer skill may use only the variables in its view (scope reviewer: business, description, objective, audience, competitors, channels, businessType; source reviewer: business, objective; insight reviewer: business; direction reviewer: business, objective, audience, channels), and the popup lists each reviewer's exact input fields. A disallowed variable cannot be saved.
+- Requirements: FAC-SKL-001..003, FAC-HAR-012 (walled-garden reviewers). PRD impact: none.
+- Tests: reviewer variable restriction added; factory suite passing.
+
+## CHG-0075 - 2026-11-16 - Skills can name the business explicitly with variables, and show what each agent receives
+- What/why: a skill could only refer to project data implicitly. Skills can now use {{business}}, {{website}}, {{description}}, {{objective}}, {{audience}}, {{competitors}}, {{inspiration}}, {{channels}}, {{businessType}}, {{adFormats}} and {{strapline}}. Each is replaced with the project's own value just before the call, as a clipped, quoted string with line breaks removed, so a value can never read as an instruction. A skill using an unknown variable cannot be saved. The Skill popup now lists the variables (press to insert while editing) and the other data the agent receives as named fields. Built-in brand, customer and competitor skills now name the business explicitly; skills already saved by an admin are unchanged.
+- Requirements: FAC-SKL-001..003. PRD impact: none.
+- Tests: variable rendering, quoting, unknown-name refusal and the popup data added to the skills test; factory suite passing.
+
 ## CHG-0074 - 2026-11-15 - The portal refreshes itself, so approvals show up for other people
 - What/why: after the account owner approved the direction, the producer's Run progress still said "Waiting for approval" because the page only loaded data when opened or when the refresh icon was pressed. The portal now refreshes every 20 seconds while the tab is visible and again when you return to the tab.
 - Requirements: FAC-OBS-001 (run tracker). PRD impact: none.
