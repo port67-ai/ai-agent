@@ -102,6 +102,10 @@ async function main() {
   const calls: { segment: string; guidance: string }[] = [];
   registerResearchRunner(async (_a, _id, segment, guidance) => { calls.push({ segment, guidance }); });
   assert.deepEqual(planNext(p0, true), { step: "reResearch" });
+  // A person who bulk-accepted the sources has decided: the agent must not send segments back behind them.
+  const human = structuredClone(p0);
+  human.audit.push({ id: "b", at: "2999-01-01T00:00:00.000Z", actor: "producer", role: "operator", action: "sources_bulk_accepted", detail: "2 sources accepted" });
+  assert.notDeepEqual(planNext(human, true), { step: "reResearch" }, "no re-run after a person accepted the sources");
   const dir = await mkdtemp(join(tmpdir(), "port67-evidence-"));
   try {
     const repo = new LocalRepository(join(dir, "db.json"));
