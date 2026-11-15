@@ -58,7 +58,7 @@ The repository contains an existing appointment-booking Next.js application. Fac
 | FAC-HAR-002 | Imported proposed baseline | IN_PROGRESS (partial) | OpenAI, Gemini, Anthropic and DeepSeek adapters tested with stubbed transport (see FAC-HAR-004); xAI/Grok not supported; no live compatibility smoke test |
 | FAC-HAR-003 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
 | FAC-OBS-001 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
-| FAC-OBS-002 | Imported proposed baseline | IN_PROGRESS (partial) | Run records hold timing, usage, model and error; the Diagnostics timeline shows them (tests/factory-observability.test.ts, factory-scope.test.ts); attempts and error classification are basic |
+| FAC-OBS-002 | Owner-requested 2026-11-15 (CHG-0063, CHG-0066) | PARTIAL | Built (CHG-0066): more space between agent nodes, research split into two clear rows, every AI agent node shows the same four facts (calls and cost, health, failed and unknown). Not built: connector lines to the LLM providers for the two campaign plan agents, and a customer-safe run view.
 | FAC-OBS-003 | Imported proposed baseline | IN_PROGRESS (partial) | Project audit trail separate from technical logs: actor, role, action, time, including producer reviewer verdicts and approvals made on a customer's behalf in test mode; authorisation-decision detail partial |
 | FAC-OBS-004 | Imported proposed baseline | IN_PROGRESS (partial) | Prompts and raw model replies are not stored; the ledger keeps usage counters only; no automated log-redaction test |
 | FAC-OBS-005 | Imported proposed baseline | NOT_VERIFIED | No Factory acceptance evidence; audit before promotion |
