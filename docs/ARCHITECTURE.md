@@ -16,3 +16,7 @@ Only the service reads private records. Customer projection strips internal draf
 Live-foundation modules: config.ts supplies secret-free readiness and production gates; synthesis.ts validates bounded reviewed-context model responses; synthesis-run.ts reserves/meter/validates/applies drafts. Research and synthesis share invocation limits. See RENDER_ACTIVATION.md and ADR-0002.
 
 CHG-0009: verified Firebase identity -> server-derived account scope -> account/project repository. All managed model dispatches pass metering.ts before fixed-endpoint providers.ts; costs live in separate admin namespaces. New account Firestore documents use v2 layout; legacy snapshots unchanged. See ACCOUNTS_PROVIDERS_COSTS.md and ADR-0003.
+
+
+## CHG-0062 — native research intelligence
+Research roles now include adjacent, trends and video in the existing single-active-run project execution path. research-catalog.ts provides scoped discovery/source routing and legacy coverage; public-video.ts validates YouTube references; video-intelligence.ts validates native Gemini observations. service.ts authorises/reserves/meter/completes direct video through the research path and pins full public context. External page/video data remains untrusted, and outputs remain unreviewed. No separate Python service, queue or social firehose was introduced. See RESEARCH_INTELLIGENCE.md.

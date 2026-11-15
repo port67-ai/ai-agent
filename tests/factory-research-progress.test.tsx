@@ -17,18 +17,18 @@ p.runs.push(
 );
 p.sources.push({ id: 's1', segment: 'brand', title: 't', url: 'https://example.com', excerpt: 'e', kind: 'public_source', status: 'unreviewed', collectedAt: at, method: 'm' });
 const prog = researchProgress(p);
-assert.deepEqual(prog.map(r => r.status), ['completed', 'failed', 'running', 'idle']);
+assert.deepEqual(prog.map(r => r.status), ['completed', 'failed', 'running', 'idle', 'idle', 'idle', 'idle']);
 assert.equal(prog[0].sources, 1);
 
 // Customers follow progress but never see run internals.
 const view = projectView(p, cust);
 assert.deepEqual(view.runs, [], 'run internals stay hidden from customers');
-assert.deepEqual(view.researchProgress?.map(r => r.status), ['completed', 'failed', 'running', 'idle']);
+assert.deepEqual(view.researchProgress?.map(r => r.status), ['completed', 'failed', 'running', 'idle', 'idle', 'idle', 'idle']);
 assert.ok(!JSON.stringify(view).includes('SECRET provider detail'));
 
 const base = { onRefresh: () => undefined };
 const customerHtml = renderToStaticMarkup(<ResearchProgress p={{ ...view, researchRequest: { at, by: 'c', channels: ['linkedin'] }, channels: ['linkedin'] }} operator={false} {...base} />);
-assert.equal((customerHtml.match(/class="f-agent /g) || []).length, 4, 'four researchers');
+assert.equal((customerHtml.match(/class="f-agent /g) || []).length, 7, 'seven researchers');
 assert.ok(customerHtml.includes('Done: 1 source found'));
 assert.ok(customerHtml.includes('Researching now'));
 assert.ok(customerHtml.includes('Queued'), 'requested but not started shows as queued');

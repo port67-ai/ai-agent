@@ -7,8 +7,12 @@ export const researchLabels: Record<Segment, string> = {
   customer: "Customer insight",
   competitor: "Competitor intelligence",
   creative: "Creative research",
+  adjacent: "Adjacent businesses", trends: "Social trends", video: "Video language",
 };
 export const researchNotes: Record<Segment, string> = {
+  adjacent: "Learn from complementary businesses and parallel categories serving the same audience or occasion.",
+  trends: "Investigate recent channel-specific patterns, dates, comparable examples and uncertainty about performance.",
+  video: "Study style, lighting, motion, graphics, pace, duration and audio. Search descriptions are not direct video analysis.",
   brand: "Understand the offer, brand voice and facts we can stand behind.",
   customer:
     "Find motivations, objections and the language customers actually use.",

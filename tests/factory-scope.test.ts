@@ -91,13 +91,13 @@ try{
 const customer=await login('customer');
 async function createAndRun(brief:Record<string,string>){await login('customer');const created=(await(await req('projects',{objective:'Grow enquiries this season',contact:'fake@example.test',...brief})).json()).project;const route='projects/'+created.id;await req(route,{type:'setChannels',channels:['instagram']});await req(route,{type:'requestResearch'});
 await login('producer');await req('accounts',{accountId:customer.accountId});
-for(let i=0;i<80&&(await(await req(route)).json()).project.runs.filter((r:{stage:string;status:string})=>r.stage==='research'&&r.status!=='running').length<4;i++)await new Promise(r=>setTimeout(r,100));
+for(let i=0;i<80&&(await(await req(route)).json()).project.runs.filter((r:{stage:string;status:string})=>r.stage==='research'&&r.status!=='running').length<7;i++)await new Promise(r=>setTimeout(r,100));
 return route;}
 // 1. The scoping agent classifies, saves to the project, and the researchers use it.
 const route=await createAndRun({business:'Rosie Blooms',description:'Independent family-run florist in Bath selling bouquets and wedding flowers to local customers.',website:'https://rosie.example'});
 let view=await(await req(route+'/scope')).json();
 assert.equal(view.stored,true);assert.equal(view.current,true);assert.equal(view.scope.source,'ai');assert.equal(view.scope.provider,'openai');assert.equal(view.scope.classification.businessType,'Independent florist');assert.equal(view.scope.version,1);assert.equal(scopeCalls,1,'one scoping call per brief, not one per researcher');
-const research=researchInputs.filter((x)=>/pageBudget/.test(x.input));assert.equal(research.length,4,'all four researchers received the scope');
+const research=researchInputs.filter((x)=>/pageBudget/.test(x.input));assert.equal(research.length,7,'all seven researchers received the scope');
 const brand=JSON.parse(research[0].input);assert.equal(brand.businessProfile.type,'Independent florist');assert.deepEqual(brand.researchQuestions,aiScope.segments.brand.questions);assert.deepEqual(brand.outOfScope,['National chains']);assert.equal(brand.pageBudget,6);assert.deepEqual(brand.preferredSources,['Google reviews']);assert.match(research[0].instructions,/scoping step/);
 const full=(await(await req(route)).json()).project;
 assert.equal(full.scope.classification.category,'local_shop');assert.equal(full.scopeHistory.length,1);assert.ok(full.runs.some((r:{stage:string;status:string})=>r.stage==='scope'&&r.status==='completed'));assert.ok(full.audit.some((x:{action:string})=>x.action==='scope_saved'));
@@ -122,7 +122,7 @@ const re=await(await req(route+'/scope',{action:'classify'})).json();assert.equa
 mode='bad';const before=scopeCalls;
 const route2=await createAndRun({business:'Northwave Telecom',description:'National mobile and broadband operator selling connectivity to enterprises and businesses.'});
 const v2=await(await req(route2+'/scope')).json();assert.equal(scopeCalls,before+1);assert.equal(v2.scope.source,'template');assert.equal(v2.scope.classification.category,'telecom');assert.match(v2.scope.note,/did not return a usable scope/);
-const p2=(await(await req(route2)).json()).project;assert.equal(p2.runs.filter((r:{stage:string;status:string})=>r.stage==='research'&&r.status==='completed').length,4,'research never waits on the scoping agent');assert.ok(p2.runs.some((r:{stage:string;status:string})=>r.stage==='scope'&&r.status==='failed'));
+const p2=(await(await req(route2)).json()).project;assert.equal(p2.runs.filter((r:{stage:string;status:string})=>r.stage==='research'&&r.status==='completed').length,7,'research never waits on the scoping agent');assert.ok(p2.runs.some((r:{stage:string;status:string})=>r.stage==='scope'&&r.status==='failed'));
 // Diagnostics: timestamps, models, full error text and the ledger (admin only).
 const dg=await(await req(route2+'/diagnostics')).json();
 assert.ok(dg.report.failures.some((f:{agent:string;at:string;text:string})=>f.agent==='scope:business'&&/^\d{4}-\d\d-\d\dT/.test(f.at)&&f.text.length>10),'the failed scoping call is listed with a timestamp and its error');

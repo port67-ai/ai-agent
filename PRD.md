@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.24.0  
+**Version:** 1.25.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1445,6 +1445,17 @@ Added 2026-11-15 on the owner's instruction. This is a **separate product track 
 | FAC-VID-011 | Measure the claim. Time and cost per advert (treatment to approved final) are measured per project so the template's "five hour" figure and any unit cost are tested rather than assumed. |
 
 Provenance: the structure comes from a template pasted by the owner, not a primary source the team has verified. Implementation status: phase 1 (planning, Continuity Profile, prompt compiler, no vendor) is built under CHG-0061; later phases are planned. See docs/IMPLEMENTATION_STATUS.md.
+
+## 25.6 Research-led adjacent and social/video intelligence — owner-authorised 15 November 2026
+
+| ID | Priority | Requirement | Acceptance criterion |
+|---|---|---|---|
+| FAC-MKT-024 | P0 | Research the client, customers, direct competitors, creative conventions, adjacent businesses, current social patterns and video language | Seven bounded roles are scoped to the business and chosen channels, independently routed and metered; adjacent research explains shared audience/occasion and transfer limits |
+| FAC-MKT-025 | P0 | Source-led trend and creative learning feeds campaign and commercial production | Research records dated examples, uncertainty and counterexamples; synthesis includes all research areas and reviews evidence before proposing original adaptations; popularity is not conversion proof |
+| FAC-VID-012 | P0 | Explicit direct-video craft analysis with provenance | Producer can submit an existing public YouTube reference for a metered Gemini analysis of style, apparent lighting, motion, graphics, pacing, duration, hook and audio with timecodes; first 120 seconds sampled at 2 fps; unavailable video produces no visual evidence |
+| FAC-CTX-009 | P0 | Freeze complete public research context and reject stale results | Runs pin public brief fields, channels, scope and skill version; changed inputs or withdrawn authority reject late results while paid usage is retained |
+
+Existing customer gates, owner-only cost access and monetary limits remain authoritative. Additional research increases potential calls; defaults allow 20 research/drafting runs per project, explicit configured caps still win. Existing four-role campaigns can finish without forced paid reruns; a new/expanded scope opts into all seven roles. Public search is not a live social firehose. Platform discovery endpoints do not imply authenticated connectors or access to blocked posts. Page budgets remain provider instructions, not a deterministic per-page cap. Private customer upload, generic skill promotion, a durable workflow queue and the rest of the integration design remain separate work.
 
 ## 26. PRD change log
 

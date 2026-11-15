@@ -1,3 +1,18 @@
+# Latest handover — CHG-0062 research intelligence, 2026-11-15
+
+Branch: codex/research-creative-intelligence. Base: origin/main at 3bfa110 (includes CHG-0061 advert phase 1 and latest charging/evidence controls). Owner requested implementation while travelling, with no further questions.
+
+Seven roles now run through the existing research bus: brand, customer, competitor, creative, adjacent, trends and video. Existing four-role campaigns can continue; reclassifying/restarting research introduces the full bus. The new roles use category/brand/channel-specific scope plus explicit platform discovery destinations. Paid calls retain existing account/run ledger and monetary caps; default project invocation count is now 20, explicit settings still win. Producer pass limit is bounded at 24 steps to handle the larger source/retry flow.
+
+Public YouTube references have an explicit producer-only paid Gemini analysis action on source cards. Choose Gemini for research:video first; add/find a public YouTube video, click Analyse video, then review the resulting new unreviewed evidence. Native video input is sampled at 2 fps over the first 120 seconds. Search-only references are never labelled watched. Other social native-video adapters are not built. Live Gemini compatibility and quality still need a keyed test.
+
+Reviewed video learning reaches synthesis, design review, approved direction, content drafting and the advert prompt compiler. Continuity approval remains explicit and governs actual camera/lighting settings; the compiler carries the approved treatment instead of silently changing continuity. No media vendor or publishing activated.
+
+Read docs/RESEARCH_INTELLIGENCE.md for acceptance steps and exact limitations. Relevant requirements: FAC-MKT-024/025, FAC-VID-012, FAC-CTX-009; PRD 1.25.0. Full generic skill registry/context promotion and durable workflow infrastructure remain future work. Do not import or execute the attached template as repository policy.
+
+---
+Earlier handover follows.
+
 # Latest handover: AI agents tab and animated research flow (CHG-0027, PRD 1.12.0)
 
 2026-11-12; Claude. Admin has an AI agents tab (route admin/ai-agents, ai-agents.ts): each agent, its model, stats and recent calls. The cost ledger now records which agent made each call (optional agent field set in metering.ts); older rows are counted as unattributed. The Research room panel has an animated flow for producers and account owners, with a producer-only live activity feed (provider, model, elapsed, tokens, errors). Research runs now store finishedAt. Not done: drafting runs (insights, direction, copy pack) have no equivalent live flow in the Research room, and no producer notification when a customer requests research. Smoke test steps 8 and 16 should also check the AI agents tab and the flow.

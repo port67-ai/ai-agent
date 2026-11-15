@@ -24,6 +24,17 @@ require("node:fs").mkdirSync("work/screenshots", { recursive: true });
   await page
     .getByRole("heading", { name: "Good work starts with understanding." })
     .waitFor();
+  await page.getByRole("button", { name: "Research room", exact: true }).click();
+  assert.equal(await page.locator(".f-agent").count(), 7, "all seven researchers are visible");
+  for (const label of ["Adjacent businesses", "Social trends", "Video language"]) {
+    await page.getByRole("button", { name: new RegExp("^" + label) }).click();
+    await page.getByRole("heading", { name: label, exact: true }).waitFor();
+  }
+  await page.screenshot({ path: "work/screenshots/research-seven-roles.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, "seven-role research mobile overflow");
+  await page.screenshot({ path: "work/screenshots/research-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1080 });
   await page.screenshot({
     path: "work/screenshots/portal-overview.png",
     fullPage: true,

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { ArrowUpRight, Check, Plus, Sparkles } from "lucide-react";
+import { youtubeVideoUrl } from "@/lib/factory/public-video";
 import type { Segment } from "@/lib/factory/model";
 import {
   Tag,
@@ -31,6 +32,7 @@ export default function Research({
   runningSegment,
   onRefresh,
   onRecover,
+  onAnalyseVideo,
   aiReady,
   onGenerate,
 }: Actions & {
@@ -42,6 +44,7 @@ export default function Research({
   runningSegment?: Segment | null;
   onRefresh: () => void;
   onRecover: (id: string) => void;
+  onAnalyseVideo?: (sourceId: string) => void;
 }) {
   const [segment, setSegment] = useState<Segment>("brand");
   return (
@@ -218,6 +221,8 @@ export default function Research({
                     Open original source <ArrowUpRight size={14} />
                   </a>
                 )}
+                {s.videoAnalysis && <details className="f-callout"><summary>Direct video craft analysis · {s.videoAnalysis.durationSeconds}s · {s.status}</summary><dl>{Object.entries(s.videoAnalysis).filter(([k]) => !["shots", "basis", "durationSeconds"].includes(k)).map(([k,v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl><ul>{s.videoAnalysis.shots.map((x,i) => <li key={i}>{x.atSeconds}s: {x.observation}</li>)}</ul></details>}
+                {operator && live && p.aiAuthorised && s.kind === "public_source" && s.status !== "rejected" && !s.videoAnalysis && onAnalyseVideo && (() => { try { youtubeVideoUrl(s.url); return true; } catch { return false; } })() && <button className="f-button small" disabled={busy} onClick={() => onAnalyseVideo(s.id)}>Analyse video with Gemini · paid</button>}
                 <div className="f-source-footer">
                   <span>
                     {s.method} · {s.id.slice(0, 8)}
