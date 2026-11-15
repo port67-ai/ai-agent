@@ -74,6 +74,7 @@ export const capabilityRegistry: readonly CapabilityDefinition[] = [
     approvalRequired: true,
   },
   { id: "analysis.formats", version: "1.0.0", name: "Ad format suggester", kind: "synthesis", inputContract: "Brief objective, launch channels, scope and reviewed Insight[]", outputContract: "Ranked ad format suggestions with reasons (a producer decides)", permissions: ["model-call-public-data"], approvalRequired: true },
+  { id: "analysis.audiences", version: "1.0.0", name: "Strapline and audience suggester", kind: "synthesis", inputContract: "Brief, launch channels, scope, reviewed Insight[] and reviewed Source[]", outputContract: "Strapline options and audience segments with demographics, each tied to reviewed sources (a producer decides)", permissions: ["model-call-public-data"], approvalRequired: true },
   { id: "drafting.ideas", version: "1.0.0", name: "Ad ideas drafter", kind: "synthesis", inputContract: "Current CampaignStrategy/1.0 key messages, chosen formats, audience segments and reviewed Source[]", outputContract: "Proposed ideas for the ideas bank (a producer keeps or drops each)", permissions: ["model-call-public-data"], approvalRequired: true },
   ...(["scope", "sources", "insights", "direction"] as const).map((gate) => ({
     id: "review." + gate,

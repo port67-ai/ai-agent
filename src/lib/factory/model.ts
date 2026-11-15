@@ -199,7 +199,7 @@ export type ResearchRun = {
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas";
+  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -300,7 +300,9 @@ export type Project = {
   /** Ad formats: what the system suggested after the insight review and what a producer chose. Drives direction, copy and the video track. */
   formats?: { suggested: { id: string; score: number; reason: string }[]; suggestedAt: string; suggestedBy?: "ai" | "rules"; selected: string[]; decidedBy?: string; decidedAt?: string };
   /** The strapline (the one message every ad carries) and the demographics the brand is tailored to. */
-  audiences?: { strapline: string; segments: { id: string; name: string; description: string; angle: string }[]; updatedAt: string; updatedBy: string };
+  audiences?: { strapline: string; segments: { id: string; name: string; description: string; angle: string; demographics?: string }[]; updatedAt: string; updatedBy: string };
+  /** What the AI audience agent suggested from the research. A producer reads it and copies what to keep into the strapline and segments; nothing is applied automatically. */
+  audienceSuggestion?: { straplines: { text: string; why: string }[]; segments: { name: string; demographics: string; description: string; angle: string; sourceIds: string[] }[]; suggestedAt: string; by: "ai" };
   /** The ideas bank. */
   ideas?: Idea[];
   /** The weekly research pack, computed for producers when the project is viewed. Never stored. */

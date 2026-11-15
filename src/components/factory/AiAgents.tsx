@@ -14,7 +14,7 @@ type Agent = Overview["agents"][number];
 const icons: Record<string, typeof Bot> = {
   "scope:business": Compass, "review:scope": Compass, "review:sources": Search, "review:insights": Search, "review:direction": Sparkles,
   "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
-  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:ideas": Sparkles, "production.video": Clapperboard,
+  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:audiences": Users, "synthesis:ideas": Sparkles, "production.video": Clapperboard,
 };
 const usd = (micro: number) => "$" + (micro / 1e6).toFixed(micro >= 1e6 ? 2 : 4);
 const ago = (iso?: string) => {

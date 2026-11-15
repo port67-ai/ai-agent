@@ -4,18 +4,20 @@ import { Check, Sparkles } from "lucide-react";
 import { FORMATS } from "@/lib/factory/formats";
 import { Tag, Field, Actions } from "./shared";
 
-const toLines = (segs: { name: string; description: string; angle: string }[] = []) => segs.map((x) => [x.name, x.description, x.angle].join(" | ")).join("\n");
+type Seg = { name: string; demographics?: string; description: string; angle: string };
+const toLines = (segs: Seg[] = []) => segs.map((x) => [x.name, x.demographics || "", x.description, x.angle].join(" | ")).join("\n");
 const fromLines = (t: string) => t.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
-  const [name, description = "", angle = ""] = l.split("|").map((x) => x.trim());
-  return { name, description, angle };
+  const [name, demographics = "", description = "", angle = ""] = l.split("|").map((x) => x.trim());
+  return { name, demographics, description, angle };
 });
 
 /** The two decisions that shape every ad: which formats to make (a producer decides, the system suggests) and the strapline plus audience segments. */
-export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi }: Actions & { aiReady?: boolean; onAi?: () => void }) {
+export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi, onAiAudiences }: Actions & { aiReady?: boolean; onAi?: () => void; onAiAudiences?: () => void }) {
   const f = p.formats;
   const [picked, setPicked] = useState<string[]>(f?.selected || []);
   const [strap, setStrap] = useState(p.audiences?.strapline || "");
   const [segs, setSegs] = useState(toLines(p.audiences?.segments));
+  const sug = p.audienceSuggestion;
   const why = new Map((f?.suggested || []).map((s) => [s.id, s.reason]));
   const insightsReady = p.insights.some((i) => (i.status || "reviewed") !== "draft" && i.status !== "rejected");
   return (
@@ -51,14 +53,36 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
       ) : (
         <p className="f-small">{f?.selected?.length ? FORMATS.filter((x) => f.selected.includes(x.id)).map((x) => x.name).join(", ") : "Your producer is choosing the best ad formats for your channels."}</p>
       )}
-      <h3>Strapline and audiences</h3>
-      <p className="f-small">The strapline is the one message every ad carries, in every format and for every audience. Audience segments change the angle, hook and tone, never the strapline.</p>
+      <h3>Strapline, audience segments and demographics</h3>
+      <p className="f-small">The strapline is the one message every ad carries, in every format and for every audience. Audience segments, with their demographics, change the angle, hook and tone, never the strapline.</p>
+      {operator && aiReady && (
+        <button className="f-button" disabled={busy || !insightsReady} onClick={onAiAudiences}>
+          Suggest strapline and audiences with AI <Sparkles size={14} />
+        </button>
+      )}
+      {operator && sug && (
+        <div className="f-small" style={{ margin: "8px 0" }}>
+          <p>AI suggestions from the accepted research. Nothing is saved until you use it and press save.</p>
+          {sug.straplines.map((s) => (
+            <div key={s.text} style={{ margin: "4px 0" }}>
+              <strong>{s.text}</strong> <em>{s.why}</em>{" "}
+              <button className="f-button secondary" onClick={() => setStrap(s.text)}>Use this strapline</button>
+            </div>
+          ))}
+          {sug.segments.map((s) => (
+            <div key={s.name} style={{ margin: "4px 0" }}>
+              <strong>{s.name}</strong>: {s.demographics}. {s.description} Angle: {s.angle}
+            </div>
+          ))}
+          <button className="f-button secondary" onClick={() => setSegs(toLines(sug.segments))}>Use these segments</button>
+        </div>
+      )}
       <Field label="Strapline"><input value={strap} onChange={(e) => setStrap(e.target.value)} maxLength={120} /></Field>
-      <Field label="Audience segments, one per line: name | who they are | angle that will land (up to six)">
+      <Field label="Audience segments, one per line: name | demographics | who they are | angle that will land (up to six)">
         <textarea value={segs} onChange={(e) => setSegs(e.target.value)} rows={4} />
       </Field>
-      <button className="f-button" disabled={busy} onClick={() => void command({ type: "setAudiences", strapline: strap, segments: fromLines(segs) }, "Strapline and audiences saved.")}>
-        Save strapline and audiences <Check size={14} />
+      <button className="f-button" disabled={busy} onClick={() => void command({ type: "setAudiences", strapline: strap, segments: fromLines(segs) }, "Strapline, segments and demographics saved.")}>
+        Save strapline, segments and demographics <Check size={14} />
       </button>
     </section>
   );

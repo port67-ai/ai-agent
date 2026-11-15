@@ -863,7 +863,7 @@ export async function handleFactory(
           );
         if (data.stage === "content")
           return json({ project: projectView(await runContent(repo(a), a, projectId), a) });
-        if (data.stage === "formats" || data.stage === "ideas")
+        if (data.stage === "formats" || data.stage === "ideas" || data.stage === "audiences")
           return json({ project: projectView(await runAdvisory(repo(a), a, projectId, data.stage), a) });
         if (data.stage !== "insights" && data.stage !== "strategy")
           throw new Error("Unknown AI drafting stage");

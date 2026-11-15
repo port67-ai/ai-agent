@@ -30,6 +30,7 @@ export const SLOTS = [
   { id: "synthesis:strategy", stage: "synthesis", label: "Drafting: campaign direction", hint: "Drafts message, reasoning and creative direction." },
   { id: "synthesis:content", stage: "synthesis", label: "Drafting: copy pack", hint: "Writes channel copy from the approved direction and its evidence." },
   { id: "synthesis:formats", stage: "synthesis", label: "Drafting: ad format suggestions", hint: "Suggests which ad formats fit the channels, objective and insights, with reasons. A producer decides." },
+  { id: "synthesis:audiences", stage: "synthesis", label: "Drafting: strapline, segments and demographics", hint: "Suggests strapline options and audience segments with demographics from the accepted insights and customer research. A producer decides." },
   { id: "synthesis:ideas", stage: "synthesis", label: "Drafting: ad ideas", hint: "Proposes ad ideas from the direction, chosen formats and audience segments. A producer keeps or drops each." },
   { id: "review:scope", stage: "synthesis", label: "Producer: scope review", hint: "Checks the classification and each researcher's questions against the brief. Sees nothing else." },
   { id: "review:sources", stage: "synthesis", label: "Producer: source review", hint: "Accepts or rejects each source. Sees only the sources, the business and its questions." },
@@ -38,7 +39,7 @@ export const SLOTS = [
 ] as const satisfies readonly { id: string; stage: ProviderStage; label: string; hint: string }[];
 export type SlotId = (typeof SLOTS)[number]["id"];
 export const researchSlot = (segment: string) => `research:${segment}` as SlotId;
-export const synthesisSlot = (stage: string) => (stage === "insights" ? "synthesis:insights" : stage === "content" ? "synthesis:content" : stage === "formats" ? "synthesis:formats" : stage === "ideas" ? "synthesis:ideas" : "synthesis:strategy") as SlotId;
+export const synthesisSlot = (stage: string) => (stage === "insights" ? "synthesis:insights" : stage === "content" ? "synthesis:content" : stage === "formats" ? "synthesis:formats" : stage === "ideas" ? "synthesis:ideas" : stage === "audiences" ? "synthesis:audiences" : "synthesis:strategy") as SlotId;
 const MODEL = /^[a-zA-Z0-9._:/-]{1,180}$/;
 const PRICE_KEY = /^(openai|anthropic|deepseek|gemini):[a-zA-Z0-9._:/-]{1,180}$/;
 const MAX_PRICES = 40;

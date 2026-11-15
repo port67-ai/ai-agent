@@ -369,6 +369,7 @@ export function transition(
     delete p.scopeHistory;
     delete p.reviews;
     delete p.ideas;
+    delete p.audienceSuggestion;
     delete p.advert;
     delete p.formats;
     delete p.producerAgent;
@@ -728,7 +729,7 @@ export function transition(
     if (raw.length > 6) throw new Error("Use at most six audience segments");
     const segments = raw.map((v, i) => {
       const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
-      return { id: `a${i + 1}`, name: text(o.name, "segment name", 60, true), description: text(o.description, "segment description", 300), angle: text(o.angle, "segment angle", 300) };
+      return { id: `a${i + 1}`, name: text(o.name, "segment name", 60, true), demographics: text(o.demographics, "segment demographics", 200), description: text(o.description, "segment description", 300), angle: text(o.angle, "segment angle", 300) };
     });
     if (new Set(segments.map((x) => x.name.toLowerCase())).size !== segments.length) throw new Error("Segment names must be different");
     p.audiences = { strapline: text(c.strapline, "strapline", 120), segments, updatedAt: now(), updatedBy: a.subject };
@@ -854,6 +855,7 @@ export function projectView(input: Project, a: Principal): Project {
   delete p.producerAgent;
   delete p.reviews;
   delete p.ideas;
+  delete p.audienceSuggestion;
   if (p.advert && p.advert.status !== "shared" && p.advert.status !== "approved") delete p.advert;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");

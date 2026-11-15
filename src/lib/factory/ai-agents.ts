@@ -19,6 +19,7 @@ const PURPOSE: Record<string, { capability: string; purpose: string }> = {
   "synthesis:strategy": { capability: "drafting.direction", purpose: "Drafts the campaign direction: positioning, key messages with proof, tone, channels and claims to avoid." },
   "synthesis:content": { capability: "drafting.content", purpose: "Writes channel copy from the approved direction and its evidence only; rejected if it invents a figure." },
   "synthesis:formats": { capability: "analysis.formats", purpose: "Suggests which ad formats suit the channels, objective and accepted insights, each with a reason. Suggests only; a producer chooses." },
+  "synthesis:audiences": { capability: "analysis.audiences", purpose: "Suggests strapline options and audience segments with demographics from the accepted insights and customer research, each tied to its evidence. A producer chooses what to keep." },
   "synthesis:ideas": { capability: "drafting.ideas", purpose: "Proposes ad ideas from the direction's key messages, chosen formats and audience segments. A producer keeps or drops each idea." },
   "review:scope": { capability: "review.scope", purpose: "Walled garden: sees only the brief and the stored classification and questions. Checks they fit the business; sends them back once if not." },
   "review:sources": { capability: "review.sources", purpose: "Walled garden: sees only each source, the business and the questions its segment was asked. Accepts or rejects each source; never sees insights or the direction." },

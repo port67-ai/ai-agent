@@ -21,7 +21,7 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
 const COLOR = { input: "#22d3ee", agent: "#a78bfa", producer: "#f97316", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
   "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film,
-  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:ideas": Sparkles,
+  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:audiences": Users, "synthesis:ideas": Sparkles,
   "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
 };
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
@@ -146,7 +146,8 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     "synthesis:strategy": { x: COLS[3], y: 590 },
     "synthesis:content": { x: COLS[1], y: 840 },
     "synthesis:formats": { x: COLS[0], y: 1480 },
-    "synthesis:ideas": { x: COLS[1], y: 1480 },
+    "synthesis:audiences": { x: COLS[1], y: 1480 },
+    "synthesis:ideas": { x: COLS[2], y: 1480 },
   };
   const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video"].includes(id);
   /** The same four facts on every AI agent node: calls and cost, health, and how many failed. */
@@ -241,7 +242,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
   const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
   const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
-  const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:ideas"];
+  const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:audiences", "synthesis:ideas"];
   const S = P.scopes || { classified: 0, ai: 0, template: 0, manual: 0, stale: 0, byCategory: {} };
   const top = Object.entries(S.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(" · ");
   const DY = 150;
@@ -353,6 +354,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           {ids.map(apiLink)}
           <text x="30" y="1466" className="sm-band">8 · CAMPAIGN PLAN AGENTS</text>
           {agentNode("synthesis:formats")}
+          {agentNode("synthesis:audiences")}
           {agentNode("synthesis:ideas")}
           {PROVIDERS.map((p, i) => <Link key={"tel" + p.id} d={`M${PX + PW} ${providerY[p.id] + PH / 2} L${1088 - i * 4} ${providerY[p.id] + PH / 2} L${1088 - i * 4} 1280 L${COLS[1] + 62 + 380} 1280`} color={COLOR.mon} dim />)}
 
