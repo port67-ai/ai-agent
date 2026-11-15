@@ -4,7 +4,7 @@ import type { Project, Segment } from "./model";
 // project, never stored. `tab` names the page where the person acts (the portal turns it into a link).
 export type StepState = "done" | "running" | "paused" | "waiting_approval" | "pending";
 export type AiStage = "insights" | "formats" | "audiences" | "strategy" | "content";
-export type StepAct = "share_direction" | "approve_direction";
+export type StepAct = "share_direction" | "approve_direction" | "review_sources" | "review_insights";
 /** `ai` names an AI generation a producer can start from the row; `act` names a human decision (share or approve) the row can take. */
 export type TrackStep = { id: string; label: string; state: StepState; detail: string; tab?: "research" | "direction" | "assets" | "advert"; ai?: AiStage; act?: StepAct };
 const SEGS: Segment[] = ["brand", "customer", "competitor", "creative", "adjacent", "trends", "video"];
@@ -29,11 +29,11 @@ export function runTracker(p: Project): TrackStep[] {
   const anyPublic = p.sources.some((s) => s.kind === "public_source");
   const srcHold = st?.hold?.gate === "sources";
   step("sources", "Source review", runningStage("review") && unreviewed ? "running" : !anyPublic ? "pending" : srcHold ? "paused" : unreviewed ? "paused" : "done",
-    srcHold ? st!.hold!.notes : unreviewed ? `${unreviewed} sources await review` : anyPublic ? "All sources decided" : "Waiting for research", "research");
+    srcHold ? st!.hold!.notes : unreviewed ? `${unreviewed} sources await review` : anyPublic ? "All sources decided" : "Waiting for research", "research", unreviewed ? { act: "review_sources" } : {});
   const drafts = p.insights.filter((i) => i.status === "draft").length;
   const reviewed = p.insights.filter((i) => (i.status || "reviewed") === "reviewed").length;
   step("insights", "Insight review", runningStage("insights") ? "running" : reviewed && !drafts ? "done" : st?.hold?.gate === "insights" ? "paused" : drafts ? "paused" : "pending",
-    st?.hold?.gate === "insights" ? st.hold.notes : drafts ? `${drafts} draft insights await review` : reviewed ? `${reviewed} accepted` : "Not drafted yet", "research", !p.insights.length && anyPublic && !unreviewed ? { ai: "insights" } : {});
+    st?.hold?.gate === "insights" ? st.hold.notes : drafts ? `${drafts} draft insights await review` : reviewed ? `${reviewed} accepted` : "Not drafted yet", "research", drafts ? { act: "review_insights" } : !p.insights.length && anyPublic && !unreviewed ? { ai: "insights" } : {});
   step("formats", "Ad formats", p.formats?.decidedAt ? "done" : reviewed ? "paused" : "pending", p.formats?.decidedAt ? `${p.formats.selected.length} chosen` : reviewed ? "A producer must choose the formats" : "After the insight review", "direction", reviewed && !p.formats?.decidedAt ? { ai: "formats" } : {});
   step("audiences", "Strapline and audiences", p.audiences?.strapline ? "done" : p.formats?.decidedAt ? "paused" : "pending", p.audiences?.strapline ? `${p.audiences.segments.length} segments saved` : p.formats?.decidedAt ? "Choose a strapline and audience segments" : "After the ad formats", "direction", p.formats?.decidedAt && !p.audiences?.strapline ? { ai: "audiences" } : {});
   const d = p.strategies.at(-1);
