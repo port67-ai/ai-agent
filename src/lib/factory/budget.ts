@@ -41,7 +41,7 @@ export type BudgetStatus = {
   remainingMicroUsd: number;
 };
 export const DEFAULT_MONTHLY_BUDGET_USD = "25";
-export const DEFAULT_CALL_HOLD_USD = "1";
+export const DEFAULT_CALL_HOLD_USD = "0.1";
 type Env = Record<string, string | undefined>;
 function microUsd(name: string, raw: string): number {
   if (!/^\d{1,7}(\.\d{1,6})?$/.test(raw))

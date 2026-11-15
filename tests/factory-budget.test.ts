@@ -11,7 +11,7 @@ const reset = () => { for (const k of ['PORT67_MONTHLY_BUDGET_USD', 'PORT67_PROJ
 
 async function main() {
   // Configuration: default $25 per month, $1 hold, no project cap; invalid values throw instead of lifting the cap.
-  assert.deepEqual(budgetConfig({}), { monthlyMicroUsd: 25_000_000, holdMicroUsd: 1_000_000 });
+  assert.deepEqual(budgetConfig({}), { monthlyMicroUsd: 25_000_000, holdMicroUsd: 100_000 });
   assert.deepEqual(budgetConfig({ PORT67_MONTHLY_BUDGET_USD: '  ', PORT67_PROJECT_BUDGET_USD: '2.5', PORT67_CALL_HOLD_USD: '0.25' }), { monthlyMicroUsd: 25_000_000, projectMicroUsd: 2_500_000, holdMicroUsd: 250_000 });
   assert.equal(budgetConfig({ PORT67_MONTHLY_BUDGET_USD: '0' }).monthlyMicroUsd, 0);
   for (const bad of ['-5', 'abc', '1e3', '$25', '25.1234567', 'Infinity', '10000000000']) assert.throws(() => budgetConfig({ PORT67_MONTHLY_BUDGET_USD: bad }), /PORT67_MONTHLY_BUDGET_USD/, bad);
@@ -29,7 +29,7 @@ async function main() {
     { ...at('2026-12-01T00:00:00Z'), estimatedMicroUsd: 99_000_000 },
     { createdAt: 'not-a-date', projectId: 'p' },
   ];
-  const config = budgetConfig({});
+  const config = budgetConfig({ PORT67_CALL_HOLD_USD: '1' });
   const status = budgetStatus(rows, config, now);
   assert.equal(status.committedMicroUsd, 5_000_000);
   assert.equal(status.heldMicroUsd, 2_000_000);
@@ -41,7 +41,7 @@ async function main() {
   assert.throws(() => assertWithinBudget([{ ...at('2026-11-05T00:00:00Z'), estimatedMicroUsd: 24_500_000 }], config, 'p', now), /Monthly AI spend cap reached/);
   assert.doesNotThrow(() => assertWithinBudget([{ ...at('2026-11-05T00:00:00Z'), estimatedMicroUsd: 24_000_000 }], config, 'p', now));
   // Per-project cap is separate from the workspace cap.
-  const projectCap = budgetConfig({ PORT67_PROJECT_BUDGET_USD: '3' });
+  const projectCap = budgetConfig({ PORT67_PROJECT_BUDGET_USD: '3', PORT67_CALL_HOLD_USD: '1' });
   const projectRows = [{ ...at('2026-11-05T00:00:00Z'), estimatedMicroUsd: 2_500_000 }, { createdAt: '2026-11-05T00:00:00Z', projectId: 'other', estimatedMicroUsd: 5_000_000 }];
   assert.throws(() => assertWithinBudget(projectRows, projectCap, 'p', now), /Project AI spend cap reached/);
   assert.throws(() => assertWithinBudget(projectRows, projectCap, 'other', now), /Project AI spend cap reached/, 'each project is judged on its own spend');
@@ -51,6 +51,7 @@ async function main() {
   // Enforcement at reservation, with a real ledger. In-flight calls are held at $1 each against a $2.01 cap.
   reset();
   process.env.PORT67_MONTHLY_BUDGET_USD = '2.01';
+  process.env.PORT67_CALL_HOLD_USD = '1';
   process.env.PORT67_MODEL_PRICING_JSON = JSON.stringify({ 'test:model': { updatedAt: '2026-11-12', inputPerMillion: 2, outputPerMillion: 4 } });
   const repo = new LocalRepository(await mkdtemp(join(tmpdir(), 'budget-')));
   const first = await reserveApiCall(repo, input);
@@ -71,6 +72,7 @@ async function main() {
   // Archiving a batch must not hide its spend from the cap.
   reset();
   process.env.PORT67_MONTHLY_BUDGET_USD = '2';
+  process.env.PORT67_CALL_HOLD_USD = '1';
   const archRepo = new LocalRepository(await mkdtemp(join(tmpdir(), 'budget-archive-')));
   const a1 = await reserveApiCall(archRepo, input);
   await finishApiCall(archRepo, a1, { status: 'failed' });
@@ -88,11 +90,12 @@ async function main() {
   assert.ok('error' in badReport.budget);
   assert.equal(badReport.summary.callCount, 0);
 
-  // Default applies when nothing is set: $25 allows 25 unpriced calls, refuses the 26th.
+  // Default applies when nothing is set: a $2.50 cap at the $0.10 default hold allows 25 unpriced calls, refuses the 26th.
   reset();
+  process.env.PORT67_MONTHLY_BUDGET_USD = '2.5';
   const defRepo = new LocalRepository(await mkdtemp(join(tmpdir(), 'budget-default-')));
   for (let i = 0; i < 25; i++) await reserveApiCall(defRepo, { ...input, runId: 'r' + i });
-  await assert.rejects(reserveApiCall(defRepo, input), /Monthly AI spend cap reached.*\$25\.00 used or held of \$25\.00/);
+  await assert.rejects(reserveApiCall(defRepo, input), /Monthly AI spend cap reached.*\$2\.50 used or held of \$2\.50/);
   reset();
   console.log('Factory spend caps passed');
 }
