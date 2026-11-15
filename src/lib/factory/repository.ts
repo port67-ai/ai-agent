@@ -7,21 +7,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import type { Database } from "./model";
+import { storageLimit, trimDatabase } from "./storage-gauge";
 export interface Repository {
   read(workspace: string): Promise<Database>;
   mutate<T>(workspace: string, fn: (db: Database) => T): Promise<T>;
 }
-// Reserve 80KB per active paid task so validation failures/completions can still persist usage.
-function snapshotLimit(db: Database) {
-  return (
-    700_000 -
-    db.projects.reduce(
-      (n, p) => n + p.runs.filter((r) => r.status === "running").length,
-      0,
-    ) *
-      80_000
-  );
-}
+// The limit (less 80KB per active paid task) lives in storage-gauge.ts.
+const snapshotLimit = storageLimit;
 const empty = (): Database => ({
   schemaVersion: 1,
   projects: [],
@@ -58,7 +50,8 @@ export class LocalRepository implements Repository {
         const db = await this.read(workspace);
         const result = fn(db);
         db.projects = db.projects.map(linkProjectOwnership);
-        const serialized = JSON.stringify(db);
+        let serialized = JSON.stringify(db);
+        if (Buffer.byteLength(serialized) > snapshotLimit(db) && trimDatabase(db)) serialized = JSON.stringify(db);
         if (Buffer.byteLength(serialized) > snapshotLimit(db))
           throw new Error(
             "Workspace storage limit reached; export and archive completed projects",
@@ -104,7 +97,8 @@ export class FirebaseRepository implements Repository {
       const before=new Map(db.projects.map(p=>[p.id,JSON.stringify(p)]));
       const result=fn(db);
       db.projects=db.projects.map(linkProjectOwnership);
-      const serialized=JSON.stringify(db);
+      let serialized=JSON.stringify(db);
+      if(Buffer.byteLength(serialized)>snapshotLimit(db) && trimDatabase(db)) serialized=JSON.stringify(db);
       if(Buffer.byteLength(serialized)>snapshotLimit(db)) throw Error("Workspace storage limit reached");
       if(workspace.startsWith("acct_")) {
         const stored=serializeAccount(workspace,db);

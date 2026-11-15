@@ -37,6 +37,12 @@ export type Brief = {
   inspiration: string;
   brandColor: string;
   logoData?: string;
+  /** Optional. Where the business operates or sells. Only stored when filled in. */
+  market?: string;
+  /** Optional. What makes the offer different. */
+  differentiators?: string;
+  /** Optional. Proof the business already has: reviews, awards, case studies, numbers it can stand behind. */
+  proof?: string;
 };
 /** The four walled-garden producer reviewers. Each sees only its own inputs. */
 export type ReviewGate = "scope" | "sources" | "insights" | "direction";
@@ -302,6 +308,8 @@ export type Project = {
   /** The strapline (the one message every ad carries) and the demographics the brand is tailored to. */
   audiences?: { strapline: string; segments: { id: string; name: string; description: string; angle: string; demographics?: string }[]; updatedAt: string; updatedBy: string };
   /** What the AI audience agent suggested from the research. A producer reads it and copies what to keep into the strapline and segments; nothing is applied automatically. */
+  /** Operator view only: this project's stored size in bytes and its biggest parts. */
+  storage?: { bytes: number; limitBytes: number; parts: { name: string; bytes: number; count?: number }[] };
   audienceSuggestion?: { straplines: { text: string; why: string }[]; segments: { name: string; demographics: string; description: string; angle: string; sourceIds: string[] }[]; suggestedAt: string; by: "ai" };
   /** The ideas bank. */
   ideas?: Idea[];

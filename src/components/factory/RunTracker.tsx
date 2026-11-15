@@ -9,8 +9,8 @@ const TONE: Record<StepState, string> = { done: "#34d399", running: "#60a5fa", p
 
 /** One line per stage of the run: what has run, what is running, what is paused and what waits for a person. Waiting steps link to the page with the button. */
 const AI_LABEL: Record<AiStage, string> = { insights: "Draft insights with AI", formats: "Suggest formats with AI", audiences: "Suggest strapline and audiences with AI", strategy: "Draft direction with AI", content: "Draft copy pack with AI" };
-type Props = { p: Project; go: (tab: "research" | "direction" | "assets" | "advert") => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; canApproveForCustomer?: boolean };
-export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canApproveForCustomer }: Props) {
+type Props = { p: Project; go: (tab: "research" | "direction" | "assets" | "advert") => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
+export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
   const steps = runTracker(p);
   return (
     <section className="f-panel" aria-label="Run progress">
@@ -41,6 +41,14 @@ export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canAppro
           );
         })}
       </ol>
+      {p.storage && (
+        <p className="f-small" style={{ marginTop: 10 }} data-testid="storage-gauge">
+          Storage: this project {Math.round(p.storage.bytes / 1024)} KB
+          {accountBytes !== undefined ? `; this account ${Math.round(accountBytes / 1024)} KB of about ${Math.round(p.storage.limitBytes / 1024)} KB (${Math.round((accountBytes / p.storage.limitBytes) * 100)}%)` : ""}.
+          {" "}Biggest: {p.storage.parts.slice(0, 3).map((x) => `${x.name} ${Math.round(x.bytes / 1024)} KB`).join(", ")}.
+          {onTrim && <> <button type="button" className="f-button secondary small" disabled={busy} onClick={onTrim}>Trim old run copies</button></>}
+        </p>
+      )}
     </section>
   );
 }

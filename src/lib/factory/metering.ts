@@ -1,7 +1,7 @@
 import { reserveApiCall, finishApiCall, normalizeApiUsage } from './costs';
 import type { Principal, Project, ResearchRun } from './model';
 import type { Repository } from './repository';
-import { getSkill, withSkill } from './skills';
+import { getSkill, renderSkill, withSkill } from './skills';
 export function agentOf(run:ResearchRun):string {
  const stage=run.stage||'research';
  if(stage==='scope') return 'scope:business';
@@ -15,7 +15,7 @@ export async function meteredModelCall<T extends Result>(repo:Repository,a:Princ
  const callId=await reserveApiCall(repo,{accountId:p.accountId||p.workspaceId,workspaceId:p.workspaceId,projectId:p.id,runId:run.id,stage:run.stage||'research',agent:agentOf(run),provider:run.provider,model:run.model,actor:a.subject});
  let result:T;
  const skill=await getSkill(repo,agentOf(run)).catch(()=>null);
- try { result=await withSkill(skill?{agent:agentOf(run),version:skill.version,body:skill.body}:null,invoke); }
+ try { result=await withSkill(skill?{agent:agentOf(run),version:skill.version,body:renderSkill(skill.body,p,agentOf(run))}:null,invoke); }
  catch(error) { await finishApiCall(repo,callId,{status:'unknown'}); throw error; }
  await finishApiCall(repo,callId,{status:result.error?'failed':'completed',usage:normalizeApiUsage(result.usage),rawUsage:result.rawUsage && typeof result.rawUsage === "object" && !Array.isArray(result.rawUsage) ? result.rawUsage as Record<string,unknown> : undefined,providerRequestId:result.providerRequestId});
  return result;

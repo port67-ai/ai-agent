@@ -1,4 +1,5 @@
 import { proposeIdeas, researchPack } from "./ideas";
+import { STORAGE_LIMIT_BYTES, projectParts, trimRunSnapshots } from "./storage-gauge";
 import { suggestFormats, validFormats, hasVideoFormat } from "./formats";
 import { buildAdvert, advertIssues, planHash, validateContinuity, MAX_SHOT_SEC } from "./advert";
 import { allSegmentEvidence, gradeContext, gradeSource } from "./evidence";
@@ -129,6 +130,11 @@ export function createProject(
     inspiration: text(input.inspiration, "inspiration", 2000),
     brandColor: text(input.brandColor, "brandColor", 7) || "#ec663c",
   };
+  // Optional fields are stored only when filled in, so a brief without them keeps its fingerprint and existing AI authorisation.
+  for (const [key, max] of [["market", 300], ["differentiators", 1000], ["proof", 1500]] as const) {
+    const value = text(input[key], key, max);
+    if (value) brief[key] = value;
+  }
   if (input.logoData) {
     const logo = text(input.logoData, "logo", 45000);
     if (
@@ -347,6 +353,9 @@ export function transition(
     );
     p.brief = checked.brief;
     delete p.aiConsent;
+  } else if (type === "trimHistory") {
+    const n = trimRunSnapshots(p);
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "history_trimmed", detail: `${n} old run copies of the brief removed; run records, usage and the audit trail kept` });
   } else if (type === "resetProject") {
     // Admin only. Keeps the brief (and logo), the account and the project id so nothing has to be typed again, and removes everything
     // produced after it so the whole journey can be run from the start. The audit trail is kept and records what was removed; the cost
@@ -844,6 +853,7 @@ export function projectView(input: Project, a: Principal): Project {
     p.sources = p.sources.map((s) => (s.kind === "public_source" ? { ...s, grade: gradeSource(s, gradeContext(p, s.segment)) } : s));
     p.evidence = { segments: allSegmentEvidence(p) };
     p.researchPack = researchPack(p, p.evidence.segments);
+    { const g = projectParts(p); p.storage = { bytes: g.bytes, limitBytes: STORAGE_LIMIT_BYTES, parts: g.parts }; }
     p.producerApprovals = producerApprovalsOn();
     p.aiAuthorised = hasProviderConsent(p);
     return p;
