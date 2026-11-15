@@ -33,8 +33,10 @@ export function runTracker(p: Project): TrackStep[] {
     st?.hold?.gate === "insights" ? st.hold.notes : drafts ? `${drafts} draft insights await review` : reviewed ? `${reviewed} accepted` : "Not drafted yet", "research");
   step("formats", "Ad formats", p.formats?.decidedAt ? "done" : reviewed ? "paused" : "pending", p.formats?.decidedAt ? `${p.formats.selected.length} chosen` : reviewed ? "A producer must choose the formats" : "After the insight review", "direction");
   const d = p.strategies.at(-1);
-  step("direction", "Campaign direction", runningStage("strategy") ? "running" : !d ? "pending" : d.status === "draft" ? (st?.hold?.gate === "direction" ? "paused" : "running") : d.status === "changes_requested" ? "paused" : "done",
-    !d ? "Not drafted yet" : d.status === "draft" ? (st?.hold?.gate === "direction" ? st.hold.notes : "Draft in producer review") : d.status === "changes_requested" ? "Customer asked for changes" : `Version ${d.version} ${d.status}`, "direction");
+  const strategyFail = runs.filter((r) => r.stage === "strategy").at(-1);
+  const failedDraft = !d && strategyFail?.status === "failed";
+  step("direction", "Campaign direction", runningStage("strategy") ? "running" : failedDraft ? "paused" : !d ? "pending" : d.status === "draft" ? (st?.hold?.gate === "direction" ? "paused" : "running") : d.status === "changes_requested" ? "paused" : "done",
+    failedDraft ? `Last draft failed: ${(strategyFail!.error || "no reason recorded").slice(0, 160)}` : !d ? "Not drafted yet" : d.status === "draft" ? (st?.hold?.gate === "direction" ? st.hold.notes : "Draft in producer review") : d.status === "changes_requested" ? "Customer asked for changes" : `Version ${d.version} ${d.status}`, "direction");
   step("direction-approval", "Direction approval", d?.status === "approved" ? "done" : d?.status === "shared" ? "waiting_approval" : "pending",
     d?.status === "shared" ? "Waiting for the account owner to approve" : d?.status === "approved" ? `Approved by ${d.approvedBy || "the account owner"}` : "Not shared yet", "direction");
   const mine = d ? p.assets.filter((x) => x.strategyHash === d.hash) : [];

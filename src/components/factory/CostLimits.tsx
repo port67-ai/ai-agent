@@ -48,7 +48,7 @@ export default function CostLimits({ limits, known, baseline, onSaved }: { limit
         {field("Monthly total (all models)", monthly, setMonthly, limits.env.monthlyUsd ? `Render: ${limits.env.monthlyUsd}` : "Default: 25")}
         {field("Per project, per month", project, setProject, limits.env.projectUsd ? `Render: ${limits.env.projectUsd}` : "No limit")}
         {field("Per run", run, setRun, "No limit")}
-        {field("Held per call with unknown cost", hold, setHold, limits.env.callHoldUsd ? `Render: ${limits.env.callHoldUsd}` : "Default: 1")}
+        {field("Held per call with unknown cost", hold, setHold, limits.env.callHoldUsd ? `Render: ${limits.env.callHoldUsd}` : "Default: 0.10")}
       </div>
       <div>
         <h4 className="font-semibold">Per model, per month</h4>

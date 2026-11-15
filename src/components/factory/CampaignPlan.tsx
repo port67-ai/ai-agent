@@ -18,6 +18,8 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
   const [strap, setStrap] = useState(p.audiences?.strapline || "");
   const [segs, setSegs] = useState(toLines(p.audiences?.segments));
   const sug = p.audienceSuggestion;
+  const lastOf = (stage: string) => p.runs.filter((r) => r.stage === stage).at(-1);
+  const failure = (stage: string) => { const r = lastOf(stage); return r?.status === "failed" && r.error ? r.error : ""; };
   const why = new Map((f?.suggested || []).map((s) => [s.id, s.reason]));
   const insightsReady = p.insights.some((i) => (i.status || "reviewed") !== "draft" && i.status !== "rejected");
   return (
@@ -32,6 +34,7 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
               Suggest with AI <Sparkles size={14} />
             </button>
           )}
+          {failure("formats") && <p className="f-small" style={{ color: "#b42318" }}>The last AI suggestion failed: {failure("formats")}</p>}
           {f?.suggestedBy === "ai" && <p className="f-small">These suggestions were written by the AI format agent. You still decide.</p>}
           {!f?.suggested?.length && (
             <button className="f-button secondary" disabled={busy || !insightsReady} onClick={() => void command({ type: "suggestFormats" }, "Formats suggested.")}>
@@ -60,6 +63,7 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
           Suggest strapline and audiences with AI <Sparkles size={14} />
         </button>
       )}
+      {operator && failure("audiences") && <p className="f-small" style={{ color: "#b42318" }}>The last AI suggestion failed: {failure("audiences")}</p>}
       {operator && sug && (
         <div className="f-small" style={{ margin: "8px 0" }}>
           <p>AI suggestions from the accepted research. Nothing is saved until you use it and press save.</p>

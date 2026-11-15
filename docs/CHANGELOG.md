@@ -500,6 +500,11 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0071 - 2026-11-15 - Unknown-cost calls hold $0.10, and AI failures are shown
+- What/why: the project hit its spend cap ($29.12 of $30.00) although real spend was about $0.28, because every call with unknown cost was held at $1. The default hold is now $0.10, which suits gpt-5.4-mini class calls; an admin-saved or Render value still overrides it, and slow, search-heavy models can be given a larger hold. Run progress now shows "Last draft failed: reason" for the campaign direction, and the Direction tab shows the last failure reason under the AI format and audiences buttons, so a cap or contract rejection is no longer silent.
+- Requirements: FAC-CST-003 (default refined). PRD impact: none.
+- Tests: budget default test updated; factory suite passing.
+
 ## CHG-0070 - 2026-11-15 - Direction draft no longer fails when the model leaves the format line blank
 - What/why: with ad formats chosen, the direction draft was rejected ("format is required") because the model left the legacy format field empty, which stopped the run at the direction step. A blank format now falls back to the chosen ad format names, and the instruction tells the model to fill it. Segment demographics are also passed to the direction draft.
 - Requirements: FAC-FMT-002 (behaviour refined). PRD impact: none.

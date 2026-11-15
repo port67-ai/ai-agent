@@ -112,13 +112,13 @@ async function main() {
   const repo = new LocalRepository(join(await mkdtemp(join(tmpdir(), 'port67-series-')), 'db.json'));
   const input = { accountId: 'a', workspaceId: 'w', projectId: 'p', runId: 'r', stage: 'research', provider: 'test', model: 'model', actor: 'owner' };
   delete process.env.PORT67_MONTHLY_BUDGET_USD;
-  await saveBudgetSettings(repo, { monthlyUsd: 2.01 }, 'owner');
+  await saveBudgetSettings(repo, { monthlyUsd: 2.01, callHoldUsd: 1 }, 'owner');
   await reserveApiCall(repo, input);
   await reserveApiCall(repo, { ...input, runId: 'r2' });
   await assert.rejects(reserveApiCall(repo, { ...input, runId: 'r3' }), /Monthly AI spend cap reached/, 'the cap saved in the portal is enforced');
   const report = await adminCostReport(repo);
   assert.equal(report.limits.saved.monthlyUsd, 2.01);
-  await saveBudgetSettings(repo, { monthlyUsd: 100, runUsd: 1 }, 'owner');
+  await saveBudgetSettings(repo, { monthlyUsd: 100, runUsd: 1, callHoldUsd: 1 }, 'owner');
   await assert.rejects(reserveApiCall(repo, input), /Per-run AI spend cap reached/, 'two held calls already use the run cap');
   await reserveApiCall(repo, { ...input, runId: 'fresh' });
   await assert.rejects(saveBudgetSettings(repo, { monthlyUsd: 'lots' }, 'owner'), /plain USD amount/);
@@ -143,7 +143,7 @@ async function main() {
   assert.equal(after.summary.unknownCount, 0);
   assert.equal(after.summary.estimatedMicroUsd, Math.ceil(100_000 * 0.75 + 10_000 * 4.5 + 5 * 0.01 * 1e6));
   // ---- fresh measurement: earlier spend stays in the ledger but stops counting towards the caps
-  await saveBudgetSettings(repo2, { monthlyUsd: 1.5 }, 'owner');
+  await saveBudgetSettings(repo2, { monthlyUsd: 1.5, callHoldUsd: 1 }, 'owner');
   await reserveApiCall(repo2, { ...base, runId: 'r2' });
   await assert.rejects(reserveApiCall(repo2, { ...base, runId: 'r3' }), /Monthly AI spend cap reached/, 'the cap is reached before the reset');
   await new Promise((r) => setTimeout(r, 15));
