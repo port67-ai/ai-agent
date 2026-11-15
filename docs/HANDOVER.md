@@ -171,3 +171,4 @@ Queue agreed with the owner: spend caps (done), team access (done), live researc
 2026-11-15; Claude; CHG-0071: default per-call hold for unknown cost is now $0.10 (was $1). If you saved a hold under Private API costs or set PORT67_CALL_HOLD_USD, that still wins; clear or lower it.
 2026-11-15; Claude; CHG-0072: to approve the direction, sign in as the account owner (jpell@me.com) and use Approve direction at the top banner area; or set PORT67_PRODUCER_APPROVALS=true so producer/admin get Approve (on behalf). Green disabled buttons mean the step is done.
 2026-11-15; Claude; CHG-0073: Overview Run progress rows now hold the AI generate, share and approve buttons; account owners get a Waiting for you card.
+2026-11-15; Claude; CHG-0074: portal auto-refreshes every 20 seconds while visible; the producer view no longer shows a stale Waiting for approval.

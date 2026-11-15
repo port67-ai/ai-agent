@@ -131,6 +131,13 @@ export default function Portal() {
       else setAccounts([]);
     } else setProjects([]);
   }, []);
+  // Pick up decisions made in another session (for example the account owner approving) without a manual refresh.
+  useEffect(() => {
+    const again = () => { if (document.visibilityState === "visible") void refresh().catch(() => undefined); };
+    const timer = window.setInterval(again, 20000);
+    document.addEventListener("visibilitychange", again);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", again); };
+  }, [refresh]);
   useEffect(() => {
     let active = true;
     void (async () => {

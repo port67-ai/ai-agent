@@ -500,6 +500,11 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0074 - 2026-11-15 - The portal refreshes itself, so approvals show up for other people
+- What/why: after the account owner approved the direction, the producer's Run progress still said "Waiting for approval" because the page only loaded data when opened or when the refresh icon was pressed. The portal now refreshes every 20 seconds while the tab is visible and again when you return to the tab.
+- Requirements: FAC-OBS-001 (run tracker). PRD impact: none.
+- Tests: type check and factory suite passing.
+
 ## CHG-0073 - 2026-11-15 - Run progress is the one place to see status and act
 - What/why: status and decisions were spread over several tabs. Each Run progress row on the producer Overview now carries its action: the matching AI generation (insights, formats, strapline and audiences, direction, copy pack), Share with customer, and Approve (on behalf) when test mode is on, plus Go to approval or Go to step. A new Strapline and audiences row was added. The account owner's Overview gets a "Waiting for you" card with Review and approve buttons for the direction and for shared assets.
 - Requirements: FAC-OBS-001 (run tracker), FAC-HAR-012. PRD impact: none.
