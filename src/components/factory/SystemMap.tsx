@@ -138,6 +138,10 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     "research:adjacent": { x: COLS[0], y: R2 },
     "research:trends": { x: COLS[1], y: R2 },
     "research:video": { x: COLS[2], y: R2 },
+    "review:scope": { x: COLS[3], y: 150 },
+    "review:sources": { x: COLS[0], y: 590 },
+    "review:insights": { x: COLS[2], y: 590 },
+    "review:direction": { x: COLS[0], y: 840 },
     "synthesis:insights": { x: COLS[1], y: 590 },
     "synthesis:strategy": { x: COLS[3], y: 590 },
     "synthesis:content": { x: COLS[1], y: 840 },
@@ -191,7 +195,9 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const stat = a.stats!;
     const idx = (lane[id] = k++);
     const x0 = pos.x + 34;
-    const y0 = pos.y + AH - (pos.y < 480 ? SH : 0);
+    // Connectors leave the bottom edge of the node. Items above the sources bar are drawn before the downward shift, so their start moves up by it.
+    const upper = id === "scope:business" || id === "review:scope" || researchIds.includes(id);
+    const y0 = pos.y + AH - (upper ? SH : 0);
     const ly = y0 + 14 + (idx % 4) * 8;
     const gx = 868 + idx * 4;
     const ty = py + 18 + (idx % 4) * 11;
@@ -235,7 +241,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
   const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
   const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
-  const ids = ["scope:business", ...researchIds, "synthesis:insights", "synthesis:strategy", "synthesis:content"];
+  const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:ideas"];
   const S = P.scopes || { classified: 0, ai: 0, template: 0, manual: 0, stale: 0, byCategory: {} };
   const top = Object.entries(S.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(" · ");
   const DY = 150;
