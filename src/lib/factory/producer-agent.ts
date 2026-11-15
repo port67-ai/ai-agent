@@ -82,7 +82,13 @@ export function progressFingerprint(p: Project): string {
 let researchRunner: ((a: Principal, projectId: string, segment: Segment, guidance: string) => Promise<void>) | undefined;
 /** The service registers how to run one researcher; the orchestrator never imports the research path directly. */
 export const registerResearchRunner = (fn: typeof researchRunner) => { researchRunner = fn; };
-const weakSegment = (p: Project, st: Project["producerAgent"]) => requiredResearchSegments(p).map((k) => segmentEvidence(p, k)).find((e) => e.weak && (st?.researchRetries?.[e.segment] || 0) < 1);
+/** A person who accepted the sources after a segment's latest run has made the call; the agent does not re-run that segment behind them. */
+const acceptedByPerson = (p: Project, seg: Segment) => {
+  const bulk = (p.audit || []).filter((x) => x.action === "sources_bulk_accepted").map((x) => x.at).sort().at(-1);
+  const last = p.runs.filter((r) => (r.stage || "research") === "research" && r.segment === seg).map((r) => r.at).sort().at(-1);
+  return !!bulk && (!last || bulk >= last);
+};
+const weakSegment = (p: Project, st: Project["producerAgent"]) => requiredResearchSegments(p).map((k) => segmentEvidence(p, k)).find((e) => e.weak && (st?.researchRetries?.[e.segment] || 0) < 1 && !acceptedByPerson(p, e.segment));
 const wait = (kind: Stop["kind"], reason: string): Plan => ({ stop: { kind, reason } });
 const unreviewedIds = (p: Project) => p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").map((s) => s.id);
 const draftsReady = (p: Project) => p.insights.filter((i) => (i.status || "reviewed") === "draft" && i.sourceIds.every((e) => p.sources.some((s) => s.id === e && s.status === "supported")));
