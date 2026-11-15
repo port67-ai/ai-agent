@@ -1,3 +1,4 @@
+import { applySkill } from './skills';
 import { youtubeVideoUrl } from "./public-video";
 export type Provider = 'openai' | 'anthropic' | 'deepseek' | 'gemini';
 export type ProviderStage = 'research' | 'synthesis';
@@ -23,7 +24,8 @@ export type ProviderResult={text:string;usage:Record<string,number>;rawUsage?:un
 // Provider error text is kept so a failure can be diagnosed, with anything that looks like a credential removed.
 const redact = (v: unknown) => String(v ?? '').replace(/(sk-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{20,}|Bearer\s+\S+|key=\S+)/g, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 220);
 const detail = (d: { error?: { message?: unknown; status?: unknown } | string; message?: unknown } | undefined) => redact(typeof d?.error === 'string' ? d.error : d?.error?.message ?? d?.error?.status ?? d?.message);
-export async function invokeProvider(s:ProviderSelection,request:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean;videoUrl?:string}):Promise<ProviderResult>{
+export async function invokeProvider(s:ProviderSelection,request0:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean;videoUrl?:string}):Promise<ProviderResult>{
+ const request={...request0,instructions:applySkill(request0.instructions)};
  if(request.videoUrl && s.provider !== 'gemini') throw new Error('Direct video requires Gemini');
  if(request.videoUrl) youtubeVideoUrl(request.videoUrl);
  const {provider,model,key}=s;const headers:Record<string,string>={'content-type':'application/json'};let url:string;let body:Record<string,unknown>;

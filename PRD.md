@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.25.0  
+**Version:** 1.26.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1457,9 +1457,31 @@ Provenance: the structure comes from a template pasted by the owner, not a prima
 
 Existing customer gates, owner-only cost access and monetary limits remain authoritative. Additional research increases potential calls; defaults allow 20 research/drafting runs per project, explicit configured caps still win. Existing four-role campaigns can finish without forced paid reruns; a new/expanded scope opts into all seven roles. Public search is not a live social firehose. Platform discovery endpoints do not imply authenticated connectors or access to blocked posts. Page budgets remain provider instructions, not a deterministic per-page cap. Private customer upload, generic skill promotion, a durable workflow queue and the rest of the integration design remain separate work.
 
+## 25.7 Creative pipeline: skills, ad formats, strapline, audiences, ideas bank - owner-requested
+
+Inspired by a public talk on an AI creative research pipeline (research feeds a weekly pack, a human selects the best ideas into an ideas bank, then execution). The source is a video the owner shared, not a primary source the team has verified; its tools (Parker, Frame.io), its creator-sourcing automation (Apify, outreach and negotiation) and its numbers are evaluation candidates only and are not adopted. The principle adopted is that AI presents the data and ranked options and a human decides.
+
+**Flow:** research, source review, insight review, then **ad format decision**, then direction (written for the chosen formats, with the strapline and audience segments), then ideas bank, then production per format. The video track (25.5) applies only when a video format was chosen. UGC video is a creator-style format: native vertical, handheld, casual captions, testimonial or demo, with a brief for a real customer or hired creator; synthetic generation of UGC must be labelled and never impersonate a real person.
+
+| ID | Requirement |
+|---|---|
+| FAC-SKL-001 | Every AI agent has one skill: editable guidance on method and quality, seeded with a built-in default. The fixed rules (untrusted input, no invented figures, cited sources only, output schema) stay in code and a skill is appended after them and cannot remove them. |
+| FAC-SKL-002 | The agent always runs the latest saved skill. Every save creates a new version kept in the database with who saved it, when and an optional note; history is reviewable. Only the owner admin can edit. |
+| FAC-SKL-003 | Each agent on the system map has a clickable Skill control beside the model control. It opens a popup with the agent's purpose, the skill now running, an Edit button, version history and a way to reload the built-in default. |
+| FAC-FMT-001 | After the insight review a producer chooses the ad formats to make: static, short-form video, long-form video, UGC video, motion graphics, written ad, blog or white paper. The destination channels come from the customer. |
+| FAC-FMT-002 | The system suggests formats from the chosen channels, the objective and the accepted insights, each with a reason. Two sources exist: a free rules-based suggestion and an AI format agent (own skill, model slot, metering and strict contract: known formats only, a whole-number score from 1 to 10, reasons with no invented figures). The producer always decides, and the producer agent stops for the decision before drafting the direction.
+| FAC-FMT-003 | The chosen formats are passed to the direction drafter. The video advert track requires a chosen video format. |
+| FAC-AUD-001 | A project holds one strapline: the single message every ad carries. When set, it is the direction's message and cannot be altered by the drafter. |
+| FAC-AUD-002 | A project holds up to six audience segments (name, who, angle). The direction is written with an angle per segment; every AI copy item names exactly one segment; the strapline is unchanged across segments. |
+| FAC-IDE-001 | A research pack summarises what the project holds: evidence rating per segment, customer voice roundup, competitor and creative findings, accepted insights, and ranked next actions. It states plainly when no performance metrics exist. It is computed, never stored, and shown to producers only. |
+| FAC-IDE-002 | An ideas bank proposes up to ten ideas from key messages, chosen formats and segments, each with hook, angle, judging criteria and production notes. Two sources exist: free rules-based ideas and an AI ideas agent (own skill, model slot, metering and strict contract: chosen formats and named segments only, one key message by index, sources only from that message, no invented figures, no duplicates; it needs chosen formats). A producer keeps or drops each idea and sets its priority; AI ideas are labelled as AI.
+| FAC-OBS-001 | A run progress view shows every stage as done, running, paused (with the reason), waiting for approval or not started; waiting and paused steps link to the page where the person acts. The orchestrator on the AI agents map shows on hover which project is held, where and why. |
+| FAC-OBS-002 | The AI agents map gives agent nodes more space so lines and labels do not overlap, and a customer-safe version of the run view is offered. Not built. |
+| FAC-IDE-003 | Ad account metrics, creator sourcing and outreach are not built. Each needs a tool adoption review first (section 23.1: licence and terms, data-class decision, cost model, capability registry entry, owner approval), because they touch personal data of creators, third-party platform terms and automated outreach on the owner's behalf. Per-format production beyond the existing storyboard, copy pack and video advert tracks is also not built and will be specified separately.
+
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, CHG-0029 for 1.14.0, CHG-0030 for 1.15.0, CHG-0031 for 1.16.0, CHG-0034 for 1.17.0, CHG-0035 for 1.18.0, CHG-0036 for 1.19.0, CHG-0037 for 1.20.0, CHG-0038 for 1.21.0, CHG-0039 for 1.22.0, CHG-0040 for 1.23.0, and CHG-0060 for 1.24.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, CHG-0029 for 1.14.0, CHG-0030 for 1.15.0, CHG-0031 for 1.16.0, CHG-0034 for 1.17.0, CHG-0035 for 1.18.0, CHG-0036 for 1.19.0, CHG-0037 for 1.20.0, CHG-0038 for 1.21.0, CHG-0039 for 1.22.0, CHG-0040 for 1.23.0, CHG-0060 for 1.24.0, CHG-0062 for 1.25.0, and CHG-0063 to CHG-0065 for 1.26.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

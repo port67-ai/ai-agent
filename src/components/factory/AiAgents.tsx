@@ -7,13 +7,14 @@ import type { Pricing } from "@/lib/factory/costs";
 import SystemMap from "./SystemMap";
 import FlowHealth from "./FlowHealth";
 import ModelDialog from "./ModelDialog";
+import SkillDialog from "./SkillDialog";
 import { post, type Routing, type Suggest } from "./agent-client";
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
 type Agent = Overview["agents"][number];
 const icons: Record<string, typeof Bot> = {
   "scope:business": Compass, "review:scope": Compass, "review:sources": Search, "review:insights": Search, "review:direction": Sparkles,
   "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
-  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "production.video": Clapperboard,
+  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:ideas": Sparkles, "production.video": Clapperboard,
 };
 const usd = (micro: number) => "$" + (micro / 1e6).toFixed(micro >= 1e6 ? 2 : 4);
 const ago = (iso?: string) => {
@@ -35,6 +36,8 @@ export default function AiAgents() {
   const [routing, setRouting] = useState<Routing | null>(null);
   const [suggest, setSuggest] = useState<Suggest | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
+  const [skillFor, setSkillFor] = useState<string | null>(null);
+  const closeSkill = useCallback(() => setSkillFor(null), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -155,7 +158,7 @@ export default function AiAgents() {
         {notice && <p className="f-team-ok" role="status">{notice}</p>}
         {data.ledgerError && <p className="f-team-error" role="alert">{data.ledgerError}</p>}
       </section>
-      <SystemMap agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} />
+      <SystemMap agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} />
       <FlowHealth flow={data.flow} />
       {groups.map((g) => (
         <section className="f-panel" key={g.id}>
@@ -192,6 +195,7 @@ export default function AiAgents() {
                       </span>
                       {data.flow.errors?.[a.id] && <span className="f-team-error">Last error: {data.flow.errors[a.id].message}</span>}
                       <span className="f-small">Change this agent&apos;s model by clicking it on the map above.</span>
+                      <button type="button" className="f-button small secondary" onClick={() => setSkillFor(a.id)}>Skill</button>
                     </>
                   ) : (
                     <span className="f-agent-state">
@@ -242,6 +246,10 @@ export default function AiAgents() {
         )}
         {data.totals.unattributed > 0 && <p className="f-small">{data.totals.unattributed} earlier call{data.totals.unattributed === 1 ? "" : "s"} were recorded before agents were named and are not counted per agent.</p>}
       </section>
+      {skillFor && (() => {
+        const ag = data.agents.find((x) => x.id === skillFor);
+        return ag ? <SkillDialog agentId={ag.id} agentName={ag.name} purpose={ag.purpose} onClose={closeSkill} /> : null;
+      })()}
       {picking && routing && (() => {
         const ag = data.agents.find((x) => x.id === picking);
         return ag ? (

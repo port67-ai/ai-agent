@@ -21,14 +21,14 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
 const COLOR = { input: "#22d3ee", agent: "#a78bfa", producer: "#f97316", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
   "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film,
-  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine,
+  "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:ideas": Sparkles,
   "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
 };
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const secs = (ms?: number) => (ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
-type NodeProps = { x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
-function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint }: NodeProps) {
+type NodeProps = { onSkill?: () => void; x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
+function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint, onSkill }: NodeProps) {
   const stroke = state === "failed" ? COLOR.bad : state === "blocked" ? COLOR.gate : color;
   return (
     <g
@@ -44,7 +44,15 @@ function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state 
     >
       <rect x={x} y={y} width={w} height={h} rx={14} className="sm-box" stroke={stroke} fill={stroke} strokeDasharray={dashed || state === "idle" ? "5 4" : undefined} />
       <I size={20} x={x + 12} y={y + 10} color={stroke} strokeWidth={1.8} />
-      <text x={x + 40} y={y + 25} className="sm-title">{short(title, Math.floor((w - 50) / 7.2))}</text>
+      <text x={x + 40} y={y + 25} className="sm-title">{short(title, Math.floor((w - (onSkill ? 104 : 50)) / 7.2))}</text>
+      {onSkill && (
+        <g className="sm-skill" role="button" tabIndex={0} aria-label={`${title}: view or edit skill`} data-skill={id}
+          onClick={(e) => { e.stopPropagation(); onSkill(); }}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onSkill(); } }}>
+          <rect x={x + w - 56} y={y + 8} width={46} height={18} rx={9} fill="#0b1220" stroke="#fbbf24" />
+          <text x={x + w - 33} y={y + 21} textAnchor="middle" className="sm-pilltext" fill="#fbbf24">Skill</text>
+        </g>
+      )}
       {pill && (
         <g>
           <rect x={x + 12} y={y + 38} width={w - 24} height={20} rx={10} className="sm-pill" stroke={pill.color} />
@@ -82,7 +90,7 @@ function Link({ d, color, live = false, dim = false, hot = false, label, lx, ly,
   );
 }
 
-export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Agent[]; flow: Flow; onSelectAgent?: (id: string) => void }) {
+export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { agents: Agent[]; flow: Flow; onSelectAgent?: (id: string) => void; onSkill?: (id: string) => void }) {
   const byId = new Map(agents.map((a) => [a.id, a]));
   const wrap = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -92,6 +100,17 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
     setHover({ id, x: Math.max(4, Math.min(clientX - r.left + 14, r.width - 296)), y: Math.max(4, clientY - r.top + 14) });
   };
   const tipFor = (id: string): Tip | null => {
+    if (id === "producer-orchestrator") {
+      const pr = flow.pipeline.producer;
+      const held = pr?.holdDetails || [];
+      return {
+        title: "Producer orchestrator",
+        summary: held.length ? `${held.length} held for a person` : "Not holding anything",
+        rows: held.length
+          ? held.flatMap((h) => [{ label: "Project", value: h.project }, { label: "Held at", value: h.where, warn: true }, { label: "Why", value: h.notes, warn: true }, { label: "What to do", value: "Open the project, go to the Research room and read the producer panel, then decide or run the producer agent again." }])
+          : [{ label: "Status", value: `${pr?.passes || 0} passes, ${pr?.reviews || 0} verdicts. It stops only at customer gates or when a reviewer needs a person.` }],
+      };
+    }
     const a = byId.get(id);
     return a ? edgeTip(a.name, a.model?.model ? { provider: String(a.model.provider), model: a.model.model } : undefined, flow.edges.filter((e) => e.agent === id), flow.errors?.[id]) : null;
   };
@@ -117,6 +136,8 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
     "synthesis:insights": { x: COLS[1], y: 590 },
     "synthesis:strategy": { x: COLS[3], y: 590 },
     "synthesis:content": { x: COLS[1], y: 840 },
+    "synthesis:formats": { x: PX, y: 1070 },
+    "synthesis:ideas": { x: PX, y: 1190 },
   };
   const AH = 104;
   const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video"].includes(id);
@@ -140,7 +161,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
         lines={supplemental(id) ? [] : [stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${unpriced ? "cost unknown" : usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `Last call failed (${earlier} in total)` : stat.calls ? (earlier ? `Healthy now · ${earlier} earlier failed` : "Healthy") : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
         state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
-        onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
+        onSkill={onSkill ? () => onSkill(id) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(id, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
     );
   };
@@ -182,7 +203,7 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
         lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${edgesFor(rid).some((e) => e.unpriced > 0) ? "cost unknown" : usd(stat.estimatedMicroUsd)}` : "Sees only its own inputs", ...(h > 90 && extra ? [extra] : [])]}
         state={running ? "running" : failed ? "failed" : waiting > 0 ? "blocked" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : waiting > 0 ? `${waiting} WAITING` : undefined}
-        onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
+        onSkill={onSkill ? () => onSkill(rid) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(rid, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
     );
   };
@@ -293,7 +314,8 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
           <text x={PX} y={136} className="sm-band">PRODUCER AGENT</text>
           <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.producer} icon={Bot} title="Orchestrator"
             lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "Stops at customer gates"]}
-            state={PR.holds ? "blocked" : ""} badge={PR.holds ? `${PR.holds} HELD` : undefined} />
+            state={PR.holds ? "blocked" : ""} badge={PR.holds ? `${PR.holds} HELD` : undefined}
+            onHover={(e) => showAt("producer-orchestrator", e.clientX, e.clientY)} onLeave={() => setHover(null)} />
 
           {/* LLM providers: each connector from an agent is one API call path. */}
           <text x={PX} y={586} className="sm-band">LLM APIS (CALLS OUT)</text>
@@ -305,6 +327,9 @@ export default function SystemMap({ agents, flow, onSelectAgent }: { agents: Age
             return <Node key={p.id} id={"provider-" + p.id} x={PX} y={providerY[p.id]} w={PW} h={PH} color={p.color} icon={Cloud} title={p.label} lines={[`${users} agent${users === 1 ? "" : "s"} · ${c} calls`, usd(cost)]} state={users === 0 ? "idle" : ""} />;
           })}
           {ids.map(apiLink)}
+          <text x={PX} y={1056} className="sm-band">CAMPAIGN PLAN AGENTS</text>
+          {agentNode("synthesis:formats")}
+          {agentNode("synthesis:ideas")}
           {PROVIDERS.map((p, i) => <Link key={"tel" + p.id} d={`M${PX + PW} ${providerY[p.id] + PH / 2} L${1088 - i * 4} ${providerY[p.id] + PH / 2} L${1088 - i * 4} 1280 L${COLS[1] + 62 + 380} 1280`} color={COLOR.mon} dim />)}
 
           <text x="30" y="1236" className="sm-band">7 · MONITORING</text>

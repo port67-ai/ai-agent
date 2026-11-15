@@ -11,6 +11,8 @@ import { adminCostReport, reconcileApiCall, archiveApiCalls, exportApiCalls, sav
 import { safeProviderConfiguration } from "./providers";
 import { runContent } from "./content-run";
 import { promptPack } from "./advert";
+import { runAdvisory } from "./advisory-run";
+import { saveSkill, skillsOverview } from "./skills";
 import { agentsOverview } from "./ai-agents";
 import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
@@ -590,6 +592,12 @@ export async function handleFactory(
       if(request.method==="POST") await saveApprovalMode(repository,data.mode,a.subject);
       return json(await approvalOverview(repository));
     }
+    if (route === "admin/skills") {
+      // Owner only. Each AI agent has one editable skill; saving makes a new version, which the agent runs from its next call.
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      if(request.method==="POST") await saveSkill(repository,data.agent,data.body,a.subject,data.note);
+      return json({ skills: await skillsOverview(repository) });
+    }
     if (route === "admin/ai-routing") {
       // Owner only. Chooses provider and model per job and holds prices; API keys stay in Render.
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
@@ -855,6 +863,8 @@ export async function handleFactory(
           );
         if (data.stage === "content")
           return json({ project: projectView(await runContent(repo(a), a, projectId), a) });
+        if (data.stage === "formats" || data.stage === "ideas")
+          return json({ project: projectView(await runAdvisory(repo(a), a, projectId, data.stage), a) });
         if (data.stage !== "insights" && data.stage !== "strategy")
           throw new Error("Unknown AI drafting stage");
         return json({

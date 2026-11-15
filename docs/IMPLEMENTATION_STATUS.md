@@ -225,8 +225,6 @@ CHG-0059 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Search fee priced,
 | FAC-VID-009 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Rights, consent and claims checks. |
 | FAC-VID-010 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Vendor evaluation under section 23.1. |
 | FAC-VID-011 | Owner-requested 2026-11-15 (CHG-0060) | PLANNED | Not started; see PRD 25.5. Measure time and cost per advert. |
-
-
 ## CHG-0062 — adjacent, social-trend and video research (2026-11-15)
 
 | Requirement | Intent | Delivery | Evidence / remaining verification |
@@ -237,3 +235,17 @@ CHG-0059 / FAC-CST-003: IN_PROGRESS, bounded subset extended. Search fee priced,
 | FAC-CTX-009 | Owner-authorised | IN_PROGRESS (implemented bounded subset) | Full public research snapshot and hash, capability v2, changed channels/scope rejection and legacy continuation tests. This does not complete immutable master-client context or generic skill registry requirements. |
 
 Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. No deployment or live provider success is implied by fixture tests.
+
+| FAC-SKL-001 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): `skills.ts`; defaults for all 12 AI agents; skill appended after fixed rules via the metered call wrapper and provider boundary. |
+| FAC-SKL-002 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): versioned saves in the database, latest runs on the next call, history with editor, time and note, admin-only route `admin/skills`. |
+| FAC-SKL-003 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): Skill chip on every agent node on the map plus a Skill button on each agent card; popup with purpose, edit, history and default reload. |
+| FAC-FMT-001 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): seven formats in `formats.ts`; producer confirms in the Campaign plan panel on the Campaign direction tab. |
+| FAC-FMT-002 | Owner-requested 2026-11-15 (CHG-0063, CHG-0065) | IMPLEMENTED | Built: rules-based suggestions (CHG-0063) and the AI format agent (CHG-0065, slot `synthesis:formats`, skill-backed, strict contract, metered). The producer always decides.
+| FAC-FMT-003 | Owner-requested 2026-11-15 (CHG-0063) | PARTIAL | Built (CHG-0063): formats go into the direction prompt and the advert track requires a video format. Per-format production beyond the existing storyboard, copy and advert tracks is not built. |
+| FAC-AUD-001 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): strapline stored on the project and forced as the direction message. |
+| FAC-AUD-002 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): up to six segments; passed to direction and copy; AI copy items must name a segment and the pack shows it. |
+| FAC-IDE-001 | Owner-requested 2026-11-15 (CHG-0063) | IMPLEMENTED | Built (CHG-0063): `researchPack` computed for producers; performance metrics honestly absent. |
+| FAC-IDE-002 | Owner-requested 2026-11-15 (CHG-0063, CHG-0065) | IMPLEMENTED | Built: rules-based ideas (CHG-0063) and the AI ideas agent (CHG-0065, slot `synthesis:ideas`, skill-backed, strict contract, metered); producer keeps, drops and prioritises.
+| FAC-IDE-003 | Owner-requested 2026-11-15 (CHG-0063) | PLANNED | Not started: ad account metrics, creator sourcing and outreach need a tool adoption review first (section 23.1). Per-format production beyond storyboard, copy pack and advert is also not started.
+| FAC-OBS-001 | Owner-requested 2026-11-15 (CHG-0064) | IMPLEMENTED | Run progress panel with approval links and orchestrator hold hover. Producers only. |
+| FAC-OBS-002 | Owner-requested 2026-11-15 (CHG-0064) | PLANNED | Not started: more space between agent nodes on the AI agents map so lines and labels do not overlap; customer-safe tracker. |

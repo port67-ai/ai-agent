@@ -93,7 +93,7 @@ export type PipelineStats = {
   scopes: { classified: number; ai: number; template: number; manual: number; stale: number; byCategory: Record<string, number> };
   waiting: { producerStart: number; sourceReview: number; insightReview: number; directionApproval: number; assetApproval: number };
   /** The producer orchestrator and its four reviewers, counted over every project. */
-  producer?: { passes: number; reviews: number; byAi: number; byRules: number; holds: number; pending: number; approvesDirection?: boolean };
+  producer?: { passes: number; reviews: number; byAi: number; byRules: number; holds: number; pending: number; approvesDirection?: boolean; holdDetails?: { project: string; where: string; notes: string }[] };
 };
 export function pipelineStats(projects: Project[]): PipelineStats {
   const sum = (f: (p: Project) => number) => projects.reduce((n, p) => n + f(p), 0);
@@ -149,6 +149,7 @@ export function pipelineStats(projects: Project[]): PipelineStats {
       byAi: sum((p) => (p.reviews || []).filter((r) => r.by === "ai").length),
       byRules: sum((p) => (p.reviews || []).filter((r) => r.by === "rules").length),
       holds: count((p) => !!p.producerAgent?.hold),
+      holdDetails: projects.filter((p) => p.producerAgent?.hold).slice(0, 5).map((p) => ({ project: p.brief.business, where: ({ scope: "Scope review", sources: "Source review", insights: "Insight review", direction: "Direction review" } as Record<string, string>)[p.producerAgent!.hold!.gate] || p.producerAgent!.hold!.gate, notes: p.producerAgent!.hold!.notes.slice(0, 400) })),
       pending: count((p) => !!p.producerAgent?.pending),
       /** True when the AI producer gives the customer's direction approval (Render switch on and the admin switch set to AI). */
       approvesDirection: producerApprovalsOn(),
@@ -207,7 +208,7 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
   return out;
 }
 export type AgentError = { at: string; message: string; provider: string; model: string };
-const agentOfRun = (r: Project["runs"][number]) => r.stage === "scope" ? "scope:business" : r.stage === "review" ? "review:" + String(r.capabilityId || "").replace("review.", "") : ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : "content") : "");
+const agentOfRun = (r: Project["runs"][number]) => r.stage === "scope" ? "scope:business" : r.stage === "review" ? "review:" + String(r.capabilityId || "").replace("review.", "") : ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : r.stage === "formats" ? "formats" : r.stage === "ideas" ? "ideas" : "content") : "");
 /** The most recent failure message per agent, read from run records. */
 export function lastErrors(projects: Project[]): Record<string, AgentError> {
   const out: Record<string, AgentError> = {};

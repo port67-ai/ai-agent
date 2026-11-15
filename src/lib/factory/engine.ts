@@ -1,3 +1,5 @@
+import { proposeIdeas, researchPack } from "./ideas";
+import { suggestFormats, validFormats, hasVideoFormat } from "./formats";
 import { buildAdvert, advertIssues, planHash, validateContinuity, MAX_SHOT_SEC } from "./advert";
 import { allSegmentEvidence, gradeContext, gradeSource } from "./evidence";
 import { producerApprovalsOn } from "./approval-mode";
@@ -294,7 +296,7 @@ export function transition(
     "approveAdvert",
     "requestAdvertChanges",
   ];
-  if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch"].includes(type)) operator(a);
+  if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch", "setAudiences"].includes(type)) operator(a);
   // Test mode only (PORT67_PRODUCER_APPROVALS=true, off by default): a producer may press the customer's approval buttons so the
   // journey can be clicked through. Every such approval is recorded as given on the customer's behalf.
   const onBehalf = customerActions.includes(type) && a.role === "operator" && producerApprovalsOn();
@@ -366,6 +368,9 @@ export function transition(
     delete p.scope;
     delete p.scopeHistory;
     delete p.reviews;
+    delete p.ideas;
+    delete p.advert;
+    delete p.formats;
     delete p.producerAgent;
     p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "project_reset", detail: `Restarted from the brief; removed ${removed}` });
   } else if (type === "addSource") {
@@ -517,7 +522,7 @@ export function transition(
       audience:
         text(c.audience, "audience", 1200) || old?.audience || p.brief.audience,
       message:
-        text(c.message, "message", 600) || old?.message || p.brief.objective,
+        p.audiences?.strapline || text(c.message, "message", 600) || old?.message || p.brief.objective,
       rationale:
         text(c.rationale, "rationale", 6000) ||
         old?.rationale ||
@@ -700,7 +705,35 @@ export function transition(
         asset.approvedAt = now();
       }
     }
+  } else if (type === "generateIdeas") {
+    const fresh = proposeIdeas(p, id, now());
+    if (!fresh.length) throw new Error("No new ideas to propose; keep or drop the current ones, or change formats and audiences");
+    p.ideas = [...(p.ideas || []).filter((i) => i.status !== "proposed"), ...fresh];
+  } else if (type === "keepIdea" || type === "dropIdea" || type === "setIdeaPriority") {
+    const idea = (p.ideas || []).find((i) => i.id === c.id);
+    if (!idea) throw new Error("Idea not found");
+    if (type === "setIdeaPriority") {
+      if (!["high", "medium", "low"].includes(c.priority as string)) throw new Error("Priority must be high, medium or low");
+      idea.priority = c.priority as "high";
+    } else {
+      idea.status = type === "keepIdea" ? "kept" : "dropped";
+      idea.decidedBy = a.subject;
+    }
+  } else if (type === "suggestFormats") {
+    p.formats = { ...(p.formats || { selected: [] }), suggested: suggestFormats(p.channels, p.brief.objective), suggestedAt: now() };
+  } else if (type === "selectFormats") {
+    p.formats = { ...(p.formats || { suggested: suggestFormats(p.channels, p.brief.objective), suggestedAt: now() }), selected: validFormats(c.formats), decidedBy: a.subject, decidedAt: now() };
+  } else if (type === "setAudiences") {
+    const raw = Array.isArray(c.segments) ? c.segments : [];
+    if (raw.length > 6) throw new Error("Use at most six audience segments");
+    const segments = raw.map((v, i) => {
+      const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+      return { id: `a${i + 1}`, name: text(o.name, "segment name", 60, true), description: text(o.description, "segment description", 300), angle: text(o.angle, "segment angle", 300) };
+    });
+    if (new Set(segments.map((x) => x.name.toLowerCase())).size !== segments.length) throw new Error("Segment names must be different");
+    p.audiences = { strapline: text(c.strapline, "strapline", 120), segments, updatedAt: now(), updatedBy: a.subject };
   } else if (type === "draftAdvert") {
+    if (p.formats?.decidedAt && !hasVideoFormat(p.formats.selected)) throw new Error("No video format was chosen for this campaign; choose short-form, long-form or UGC video first");
     const s = approved(p);
     if (p.advert && p.advert.strategyHash === s.hash && (p.advert.status === "shared" || p.advert.status === "approved"))
       throw new Error("This advert plan is already with the customer or approved; ask for changes first");
@@ -809,6 +842,7 @@ export function projectView(input: Project, a: Principal): Project {
   if (a.role === "operator") {
     p.sources = p.sources.map((s) => (s.kind === "public_source" ? { ...s, grade: gradeSource(s, gradeContext(p, s.segment)) } : s));
     p.evidence = { segments: allSegmentEvidence(p) };
+    p.researchPack = researchPack(p, p.evidence.segments);
     p.producerApprovals = producerApprovalsOn();
     p.aiAuthorised = hasProviderConsent(p);
     return p;
@@ -819,6 +853,7 @@ export function projectView(input: Project, a: Principal): Project {
   delete p.scopeHistory;
   delete p.producerAgent;
   delete p.reviews;
+  delete p.ideas;
   if (p.advert && p.advert.status !== "shared" && p.advert.status !== "approved") delete p.advert;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");

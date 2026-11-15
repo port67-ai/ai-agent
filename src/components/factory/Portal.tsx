@@ -34,8 +34,11 @@ import AdminCosts from "./AdminCosts";
 import Team from "./Team";
 import AiAgents from "./AiAgents";
 import Direction from "./Direction";
+import CampaignPlan from "./CampaignPlan";
 import Assets from "./Assets";
 import Advert from "./Advert";
+import Ideas from "./Ideas";
+import RunTracker from "./RunTracker";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
 import { LogoField } from "./BriefEditor";
@@ -54,6 +57,7 @@ type Tab =
   | "research"
   | "direction"
   | "production"
+  | "ideas"
   | "advert"
   | "assets"
   | "learning"
@@ -68,6 +72,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "research", label: "Research room", icon: Search },
   { id: "direction", label: "Campaign direction", icon: Compass },
   { id: "production", label: "Production", icon: Clapperboard },
+  { id: "ideas", label: "Ideas bank", icon: Sparkles },
   { id: "advert", label: "Video advert", icon: Clapperboard },
   { id: "assets", label: "Asset library", icon: FolderOpen },
   { id: "learning", label: "Performance learning", icon: ChartNoAxesCombined },
@@ -259,7 +264,7 @@ export default function Portal() {
             .filter(
               (n) =>
                 n.id === "admin" || n.id === "team" || n.id === "agents" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
-                !["production", "capabilities", "setup"].includes(n.id),
+                !["production", "capabilities", "setup", "ideas"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
               <button
@@ -483,6 +488,7 @@ export default function Portal() {
             <>
               {tab === "overview" && (
                 <>
+                  {operator && <RunTracker p={p} go={(t) => go(t)} />}
                   <div className="f-hero-panel">
                     <div>
                       <Tag tone="light">{stage}</Tag>
@@ -827,6 +833,7 @@ export default function Portal() {
                   }
                 />
               )}
+              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} />}
               {tab === "direction" && (
                 <Direction
                   p={p}
@@ -958,6 +965,7 @@ export default function Portal() {
                   )}
                 </>
               )}
+              {tab === "ideas" && operator && <Ideas p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "ideas" }), "AI ideas added to the bank. Keep the best and drop the rest.")} />}
               {tab === "advert" && <Advert p={p} operator={operator} busy={busy} command={command} />}
               {tab === "assets" && (
                 <Assets
