@@ -1767,3 +1767,32 @@
 .f-source-footer button.f-source-reject{background:#fff;color:#b91c1c;border-color:#fca5a5}
 .f-source-footer button.f-source-reject:hover:not(:disabled){background:#fef2f2}
 .f-source-footer button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Skill editor: the text box is clearly an editing area, and variables in use are highlighted. */
+.f-skill-text {
+  background: #fff8e1;
+  border: 2px solid #e97651;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 220px;
+  color: #1f2a30;
+}
+.f-skill-text:focus {
+  outline: 3px solid rgba(233, 118, 81, 0.35);
+}
+.f-button.f-var-used,
+.f-button.f-var-used:disabled {
+  background: #e3f4ea;
+  border-color: #2e8b57;
+  color: #1c5b38 !important;
+  opacity: 1;
+  font-weight: 700;
+}
+.f-var-used-row {
+  background: #e3f4ea;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+}

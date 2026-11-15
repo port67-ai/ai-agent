@@ -15,6 +15,11 @@ export default function SkillDialog({ agentId, agentName, purpose, onClose }: { 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const names = (t: string) => [...new Set([...t.matchAll(/\{\{\s*([A-Za-z]+)\s*\}\}/g)].map((m) => m[1]))];
+  const shown = row ? (editing ? body : row.latest.body) : "";
+  const used = new Set(names(shown));
+  const usedList = [...used];
+  const unknownUsed = row ? usedList.filter((n) => !row.variables.some((v) => v.name === n)) : [];
   const insert = (name: string) => setBody((b) => `${b}${b && !/\s$/.test(b) ? " " : ""}{{${name}}}`);
   useEffect(() => {
     post<{ skills: SkillRow[] }>("skills").then((r) => setRow(r.skills.find((s) => s.agent === agentId) || null)).catch((e) => setError((e as Error).message));
@@ -47,20 +52,9 @@ export default function SkillDialog({ agentId, agentName, purpose, onClose }: { 
             <p className="f-small">
               Running now: {row.latest.version === 0 ? "built-in default" : `version ${row.latest.version}, saved by ${row.latest.editedBy} on ${row.latest.at.slice(0, 16).replace("T", " ")}`}. The skill is guidance on method and quality. The fixed rules (untrusted input, no invented figures, cited sources only, output format) stay in code and a skill cannot remove them.
             </p>
-            <details open={editing}>
-              <summary className="f-small"><strong>Data this agent receives and variables you can use</strong></summary>
-              <p className="f-small">Write <code>{"{{business}}"}</code> in the skill to name the business explicitly. It is replaced with the project's value, in quotes, just before the call. Press a variable while editing to add it.</p>
-              <div className="f-actions" style={{ flexWrap: "wrap" }}>
-                {row.variables.map((v) => (
-                  <button key={v.name} type="button" className="f-button secondary small" disabled={!editing} title={v.meaning} onClick={() => insert(v.name)}>{`{{${v.name}}}`}</button>
-                ))}
-              </div>
-              <p className="f-small">{row.variables.map((v) => `{{${v.name}}}: ${v.meaning}`).join(" · ")}</p>
-              <p className="f-small"><strong>Also supplied as data (refer to it by name, it is not pasted in):</strong> {row.inputs.length ? row.inputs.join("; ") : "none"}.</p>
-              <p className="f-small">The fixed rules in the code still apply after the skill: input is untrusted, no invented figures, cite only supplied sources, follow the output format.</p>
-            </details>
             {editing ? (
               <>
+                <label className="f-small"><strong>Skill text (editing)</strong></label>
                 <textarea className="f-skill-text" value={body} onChange={(e) => setBody(e.target.value)} rows={12} maxLength={6000} aria-label="Skill text" style={{ width: "100%" }} />
                 <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="What changed and why (optional)" aria-label="Change note" style={{ width: "100%" }} />
                 <div className="f-actions">
@@ -77,6 +71,23 @@ export default function SkillDialog({ agentId, agentName, purpose, onClose }: { 
                 </div>
               </>
             )}
+            <details open={editing || undefined}>
+              <summary className="f-small"><strong>Data this agent receives and variables you can use</strong>{usedList.length ? ` (${usedList.length} used in this skill)` : ""}</summary>
+              <p className="f-small">Write <code>{"{{business}}"}</code> in the skill to name the business explicitly. It is replaced with the project's value, in quotes, just before the call. While editing, press a variable to add it. Variables in green are used in the skill shown above.</p>
+              <div className="f-actions" style={{ flexWrap: "wrap" }}>
+                {row.variables.map((v) => (
+                  <button key={v.name} type="button" className={"f-button secondary small" + (used.has(v.name) ? " f-var-used" : "")} disabled={!editing} title={v.meaning} onClick={() => insert(v.name)}>{used.has(v.name) ? "✓ " : ""}{`{{${v.name}}}`}</button>
+                ))}
+              </div>
+              {unknownUsed.length > 0 && <p className="f-team-error" role="alert">Not available to this agent: {unknownUsed.map((n) => `{{${n}}}`).join(", ")}. It cannot be saved until removed.</p>}
+              <ul className="f-small" style={{ paddingLeft: 18 }}>
+                {row.variables.map((v) => (
+                  <li key={v.name} className={used.has(v.name) ? "f-var-used-row" : undefined}>{`{{${v.name}}}`}: {v.meaning}{used.has(v.name) ? " (used)" : ""}</li>
+                ))}
+              </ul>
+              <p className="f-small"><strong>Also supplied as data (refer to it by name, it is not pasted in):</strong> {row.inputs.length ? row.inputs.join("; ") : "none"}.</p>
+              <p className="f-small">The fixed rules in the code still apply after the skill: input is untrusted, no invented figures, cite only supplied sources, follow the output format.</p>
+            </details>
             {row.history.length > 0 && (
               <details>
                 <summary className="f-small">Version history ({row.history.length})</summary>

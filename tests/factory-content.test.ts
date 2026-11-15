@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { LocalRepository } from "../src/lib/factory/repository";
-import { createProject, transition, keyMessagesInput, strategyHash } from "../src/lib/factory/engine";
+import { createProject, transition, keyMessagesInput, strategyHash, digest } from "../src/lib/factory/engine";
 import { runContent } from "../src/lib/factory/content-run";
 import { validateContent, prepareContent } from "../src/lib/factory/content";
 async function main() {
@@ -45,6 +45,23 @@ async function main() {
   ] };
   const ctx = prepareContent((await repo.read("work")).projects[0]);
   assert.equal(validateContent(good, ctx).length, 3);
+  // richer inputs: full brief, formats, kept ideas, graded sources, earlier change requests
+  {
+    const base = (await repo.read("work")).projects[0];
+    const q = structuredClone(base);
+    q.brief.market = "Kent"; q.brief.proof = "Four hundred reviews"; q.aiConsent = { ...q.aiConsent!, briefHash: digest(JSON.stringify(q.brief)) };
+    q.formats = { selected: ["video_ugc"], suggested: [], suggestedAt: "" } as never;
+    q.ideas = [{ id: "i1", title: "Workshop reveal", format: "video_ugc", keyMessage: 0, hook: "Watch the stitch", angle: "Craft", criteria: [], productionNotes: "", sourceIds: [], rank: 1, status: "kept", priority: "high", createdAt: "" }, { id: "i2", title: "Dropped idea", format: "static", keyMessage: 0, hook: "x", angle: "y", criteria: [], productionNotes: "", sourceIds: [], rank: 2, status: "dropped", priority: "low", createdAt: "" }] as never;
+    q.assets.push({ id: "c2", version: 1, kind: "copy", title: "Earlier copy", strategyId: "s1", strategyHash: hash, taskId: "t2", evidenceIds: [sid], status: "changes_requested", content: "", hash: "h2", createdAt: "", feedback: "Too   pushy\nsoften it" } as never);
+    const pay = prepareContent(q).payload as unknown as Record<string, unknown> & { brief: Record<string, unknown>; sources: { grade?: { score: number } }[]; keptIdeas: { title: string }[]; changesRequestedOnEarlierCopy: { feedback: string }[] };
+    assert.equal(pay.brief.market, "Kent");
+    assert.equal(pay.brief.proofTheBusinessHas, "Four hundred reviews");
+    assert.ok(Array.isArray(pay.adFormats) && (pay.adFormats as string[]).length === 1);
+    assert.deepEqual(pay.keptIdeas.map((i) => i.title), ["Workshop reveal"], "only kept ideas");
+    assert.equal(pay.changesRequestedOnEarlierCopy[0].feedback, "Too pushy soften it", "feedback is collapsed to one line");
+    assert.equal(typeof pay.sources[0].grade?.score, "number");
+    assert.ok(Array.isArray(pay.channelPlaybooks));
+  }
   const mutate = (f: (i: Record<string, unknown>) => void) => { const c = structuredClone(good); f(c.items[0]); return c; };
   for (const [label, bad] of [
     ["unknown key message", mutate((i) => (i.keyMessage = "Invented message"))],
