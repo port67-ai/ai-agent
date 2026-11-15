@@ -13,6 +13,7 @@ import {
   Actions,
 } from "./shared";
 import InsightEditor from "./InsightEditor";
+import ReviewQueue from "./ReviewQueue";
 import ChannelPicker from "./ChannelPicker";
 import ResearchProgress from "./ResearchProgress";
 import { ResearchPrep, ResearchDossier } from "./ResearchPrep";
@@ -47,6 +48,7 @@ export default function Research({
   onAnalyseVideo?: (sourceId: string) => void;
 }) {
   const [segment, setSegment] = useState<Segment>("brand");
+  const [queue, setQueue] = useState(false);
   return (
     <>
       <ChannelPicker p={p} operator={operator} busy={busy} live={live} command={command} onRunAll={onRunAll} />
@@ -67,10 +69,6 @@ export default function Research({
           </button>
         </section>
       )}
-      {operator && <ScopePanel p={p} operator />}
-      <ResearchPrep p={p} operator={operator} />
-      <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />
-      <ResearchDossier p={p} />
       {operator && p.sources.some((s) => s.kind === "public_source" && s.status === "unreviewed") && (
         <section className="f-panel f-callout" role="status">
           <strong>Gate 1: {p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").length} sources are waiting for your review.</strong>
@@ -97,9 +95,15 @@ export default function Research({
             }}
           >
             Go to source review
-          </button>
+          </button>{" "}
+          <button type="button" className="f-button small" onClick={() => setQueue(true)}>Review one by one</button>
         </section>
       )}
+      {operator && queue && <ReviewQueue p={p} kind="sources" busy={busy} command={command} onClose={() => setQueue(false)} />}
+      {operator && <ScopePanel p={p} operator />}
+      <ResearchPrep p={p} operator={operator} />
+      <ResearchProgress p={p} operator={operator} runningSegment={runningSegment} onRefresh={onRefresh} />
+      <ResearchDossier p={p} />
       {operator && <DiagnosticsPanel p={p} />}
       {operator && (
         <section className="f-panel f-ai-consent">

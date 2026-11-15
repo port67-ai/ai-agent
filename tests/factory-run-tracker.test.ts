@@ -52,3 +52,12 @@ console.log("Run tracker: running, done, paused with reason, and waiting-for-app
   assert.equal(by(approved, "production").ai, "content");
   console.log("Run tracker row actions passed");
 }
+
+// review actions sit on the row: sources and draft insights can be reviewed one by one from Run progress
+{
+  const mk = (sourceStatus: string, insightStatus: string) => ({ runs: [], sources: [{ id: "s", kind: "public_source", status: sourceStatus, segment: "brand" }], insights: [{ id: "i", status: insightStatus }], assets: [], strategies: [] }) as unknown as Project;
+  assert.equal(by(mk("unreviewed", "draft"), "sources").act, "review_sources");
+  assert.equal(by(mk("supported", "draft"), "insights").act, "review_insights");
+  assert.equal(by(mk("supported", "reviewed"), "sources").act, undefined);
+  console.log("Run tracker review actions passed");
+}

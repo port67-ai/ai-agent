@@ -40,6 +40,7 @@ import Advert from "./Advert";
 import Ideas from "./Ideas";
 import CustomerApprovals from "./CustomerApprovals";
 import RunTracker from "./RunTracker";
+import ReviewQueue from "./ReviewQueue";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
 import { LogoField } from "./BriefEditor";
@@ -120,6 +121,7 @@ export default function Portal() {
   const [signedOut, setSignedOut] = useState(false);
   const p = projects.find((x) => x.id === selected) || projects[0];
   const operator = principal?.role === "operator";
+  const [queue, setQueue] = useState<"sources" | "insights" | null>(null);
   const refresh = useCallback(async () => {
     const session = await api("session");
     setPrincipal(session.principal);
@@ -507,6 +509,8 @@ export default function Portal() {
                       onTrim={() => void command({ type: "trimHistory" }, "Old run copies removed. Run records, usage and the audit trail are kept.")}
                       onAi={(stage) => void run(() => api("projects/" + p.id + "/synthesis", { stage }), "AI draft ready. Review it in the matching tab.")}
                       onAct={(act) => {
+                        if (act === "review_sources") return setQueue("sources");
+                        if (act === "review_insights") return setQueue("insights");
                         const s = p.strategies.at(-1);
                         if (!s) return;
                         if (act === "share_direction") void command({ type: "shareStrategy" }, "Direction shared for customer review");
@@ -514,6 +518,7 @@ export default function Portal() {
                       }}
                     />
                   )}
+                  {operator && queue && <ReviewQueue p={p} kind={queue} busy={busy} command={command} onClose={() => setQueue(null)} />}
                   {!operator && <CustomerApprovals p={p} go={(t) => go(t)} />}
                   <div className="f-hero-panel">
                     <div>

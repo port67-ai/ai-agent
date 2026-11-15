@@ -27,6 +27,9 @@ export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canAppro
               {s.ai && aiReady && onAi && (
                 <button type="button" className="f-button small" disabled={busy} onClick={() => onAi(s.ai!)}>{AI_LABEL[s.ai]}</button>
               )}
+              {(s.act === "review_sources" || s.act === "review_insights") && onAct && (
+                <button type="button" className="f-button small" disabled={busy} onClick={() => onAct(s.act!)}>{s.act === "review_sources" ? "Review sources" : "Review insights"}</button>
+              )}
               {s.act === "share_direction" && onAct && (
                 <button type="button" className="f-button small" disabled={busy} onClick={() => onAct("share_direction")}>Share with customer</button>
               )}
@@ -34,7 +37,7 @@ export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canAppro
                 <button type="button" className="f-button small" disabled={busy} onClick={() => onAct("approve_direction")}>Approve (on behalf)</button>
               )}
               {s.state === "done" && s.id === "direction-approval" && <span className="f-button small done" aria-label="Approved">Approved</span>}
-              {s.tab && (s.state === "waiting_approval" || s.state === "paused") && (
+              {s.tab && !(s.act === "review_sources" || s.act === "review_insights") && (s.state === "waiting_approval" || s.state === "paused") && (
                 <button type="button" className="f-button small" onClick={() => { go(s.tab!); if (s.state === "waiting_approval") setTimeout(() => document.getElementById("approval-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150); }}>{s.state === "waiting_approval" ? "Go to approval" : "Go to step"}</button>
               )}
             </li>
