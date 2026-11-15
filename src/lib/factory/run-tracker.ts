@@ -4,7 +4,8 @@ import type { Project, Segment } from "./model";
 // project, never stored. `tab` names the page where the person acts (the portal turns it into a link).
 export type StepState = "done" | "running" | "paused" | "waiting_approval" | "pending";
 export type TrackStep = { id: string; label: string; state: StepState; detail: string; tab?: "research" | "direction" | "assets" | "advert" };
-const SEGS: Segment[] = ["brand", "customer", "competitor", "creative"];
+const SEGS: Segment[] = ["brand", "customer", "competitor", "creative", "adjacent", "trends", "video"];
+const CORE = new Set<Segment>(["brand", "customer", "competitor", "creative"]);
 
 export function runTracker(p: Project): TrackStep[] {
   const out: TrackStep[] = [];
@@ -15,6 +16,7 @@ export function runTracker(p: Project): TrackStep[] {
 
   step("scope", "Scoping", runningStage("scope") ? "running" : p.scope ? "done" : "pending", p.scope ? `Classified as ${p.scope.classification.category}` : "Not classified yet");
   for (const seg of SEGS) {
+    if (!CORE.has(seg) && !runs.some((r) => (r.stage || "research") === "research" && r.segment === seg)) continue;
     const last = runs.filter((r) => (r.stage || "research") === "research" && r.segment === seg).at(-1);
     const n = p.sources.filter((s) => s.segment === seg && s.kind === "public_source").length;
     step("research:" + seg, `Research: ${seg}`, runningStage("research", seg) ? "running" : last?.status === "completed" ? "done" : last?.status === "failed" ? "paused" : "pending",

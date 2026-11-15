@@ -815,7 +815,7 @@ export default function Portal() {
                         setRunningSegment(null);
                         await refresh();
                       }
-                    }, "Research finished for all four areas. Review the sources and gaps before drafting insights.")
+                    }, "Research finished for all seven areas. Review the sources and gaps before drafting insights.")
                   }
                   onRecover={(id) =>
                     void run(
@@ -824,6 +824,7 @@ export default function Portal() {
                       "Interrupted research recovered. Review provider billing before another invocation.",
                     )
                   }
+                  onAnalyseVideo={(sourceId) => void run(() => api("projects/" + p.id + "/video-analysis", { sourceId }), "Video analysis saved as unreviewed evidence. Review it before using its craft observations.")}
                   onRun={(segment) =>
                     void run(
                       () => api("projects/" + p.id + "/research", { segment }),

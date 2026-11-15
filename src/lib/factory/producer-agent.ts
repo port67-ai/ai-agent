@@ -1,3 +1,4 @@
+import { requiredResearchSegments } from "./research-catalog";
 import { loadApprovalMode, producerApprovalsOn } from "./approval-mode";
 import { access, digest, id, operator, transition } from "./engine";
 import { runContent } from "./content-run";
@@ -6,7 +7,7 @@ import { ensureScope } from "./scope-run";
 import { reviewGate, saveReview } from "./producer-review-run";
 import { GATE_LABEL, MIN_ACCEPTED_PER_SEGMENT, PRODUCER_AGENT } from "./producer-reviews";
 import { stageReady } from "./ai-routing";
-import { segments, type Principal, type Project, type ReviewGate, type Segment } from "./model";
+import { type Principal, type Project, type ReviewGate, type Segment } from "./model";
 import { insightEvidence, researchGuidance, segmentEvidence } from "./evidence";
 import type { Repository } from "./repository";
 
@@ -25,7 +26,7 @@ const INSIGHT_RULES = "Rules for the redraft: every insight must cite at least t
 /** Evidence the producer is unhappy with. Recomputed on every pass so it never goes stale. Warnings inform people; they never block. */
 export function evidenceWarnings(p: Project, at: string): { at: string; gate: string; text: string }[] {
   const out: { at: string; gate: string; text: string }[] = [];
-  for (const e of segments.map((k) => segmentEvidence(p, k))) {
+  for (const e of requiredResearchSegments(p).map((k) => segmentEvidence(p, k))) {
     if (e.weak && p.sources.some((s) => s.segment === e.segment)) out.push({ at, gate: "research", text: `${e.segment} research evidence is ${e.rating} (${e.score}/100)${p.producerAgent?.researchRetries?.[e.segment] ? ", after one re-run" : ""}: ${e.reasons.join(" ")}` });
   }
   const live = p.insights.filter((i) => (i.status || "reviewed") === "reviewed");
@@ -38,7 +39,7 @@ export function evidenceWarnings(p: Project, at: string): { at: string; gate: st
   }
   return out.slice(0, 12);
 }
-const MAX_STEPS = 14;
+const MAX_STEPS = 24;
 const MAX_PASSES = 30;
 const MAX_LOG = 40;
 const MAX_REWORKS = 1;
@@ -81,7 +82,7 @@ export function progressFingerprint(p: Project): string {
 let researchRunner: ((a: Principal, projectId: string, segment: Segment, guidance: string) => Promise<void>) | undefined;
 /** The service registers how to run one researcher; the orchestrator never imports the research path directly. */
 export const registerResearchRunner = (fn: typeof researchRunner) => { researchRunner = fn; };
-const weakSegment = (p: Project, st: Project["producerAgent"]) => segments.map((k) => segmentEvidence(p, k)).find((e) => e.weak && (st?.researchRetries?.[e.segment] || 0) < 1);
+const weakSegment = (p: Project, st: Project["producerAgent"]) => requiredResearchSegments(p).map((k) => segmentEvidence(p, k)).find((e) => e.weak && (st?.researchRetries?.[e.segment] || 0) < 1);
 const wait = (kind: Stop["kind"], reason: string): Plan => ({ stop: { kind, reason } });
 const unreviewedIds = (p: Project) => p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").map((s) => s.id);
 const draftsReady = (p: Project) => p.insights.filter((i) => (i.status || "reviewed") === "draft" && i.sourceIds.every((e) => p.sources.some((s) => s.id === e && s.status === "supported")));
@@ -93,7 +94,7 @@ export function planNext(p: Project, aiReady: boolean): Plan {
   if (p.runs.some((r) => r.status === "running")) return wait("blocked", "A provider task is still running; the agent continues when it finishes.");
   if (p.scope && (st?.reworks?.scope || 0) < 1 && !(p.reviews || []).some((r) => r.gate === "scope" && r.subject === "v" + p.scope!.version)) return { step: "reviewScope" };
   if (!p.sources.some((s) => s.kind === "public_source")) return wait("waiting_human", "No research sources yet: start research first.");
-  for (const seg of segments) {
+  for (const seg of requiredResearchSegments(p)) {
     const run = p.runs.filter((r) => (r.stage || "research") === "research" && r.segment === seg).at(-1);
     if (!run) return wait("waiting_human", `The ${seg} research has not run yet.`);
     if (run.status !== "completed") return wait("waiting_human", `The ${seg} research ${run.status === "failed" ? "failed: re-run it" : "is not finished"}.`);
@@ -268,7 +269,7 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
     await saveReview(repo, op, projectId, rec);
     const after = await current();
     const left = unreviewedIds(after);
-    const short = segments.filter((k) => after.sources.filter((s) => s.segment === k && s.kind === "public_source" && s.status === "supported").length < MIN_ACCEPTED_PER_SEGMENT);
+    const short = requiredResearchSegments(after).filter((k) => after.sources.filter((s) => s.segment === k && s.kind === "public_source" && s.status === "supported").length < MIN_ACCEPTED_PER_SEGMENT);
     if (left.length) await patchAgent(repo, op, projectId, (s) => { s.hold = { gate: "sources", subject: holdSubject(left), notes: `The source producer left ${left.length} of ${waiting.length} sources undecided: review them by hand.` }; });
     else if (short.length) await patchAgent(repo, op, projectId, (s) => { s.hold = { gate: "sources", subject: holdSubject([]), notes: `Fewer than ${MIN_ACCEPTED_PER_SEGMENT} accepted sources for ${short.join(", ")}: re-run that research or add sources by hand, then run the agent again.` }; });
     return `${rec.summary} (${rec.by})`;

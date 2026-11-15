@@ -20,10 +20,10 @@ export const capabilityRegistry: readonly CapabilityDefinition[] = [
     permissions: ["model-call-public-data"],
     approvalRequired: false,
   },
-  ...(["brand", "customer", "competitor", "creative"] as const).map(
+  ...(["brand", "customer", "competitor", "creative", "adjacent", "trends", "video"] as const).map(
     (segment) => ({
       id: `research.${segment}`,
-      version: "1.0.0",
+      version: "2.0.0",
       name: `${segment[0].toUpperCase() + segment.slice(1)} researcher`,
       kind: "research" as const,
       inputContract: "Scoped ProjectBrief/1.0; no sibling outputs",

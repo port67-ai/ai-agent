@@ -8,19 +8,20 @@ export const MAX_IDEAS = 10;
 
 export type ResearchPack = { generatedAt: string; sections: { title: string; items: string[] }[]; actions: { rank: number; text: string }[] };
 const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1).trimEnd() + "…");
-const SEG: Record<Segment, string> = { brand: "Business and brand", customer: "Customer insight", competitor: "Competitor intelligence", creative: "Creative research" };
+const SEG: Record<Segment, string> = { brand: "Business and brand", customer: "Customer insight", competitor: "Competitor intelligence", creative: "Creative research", adjacent: "Adjacent businesses", trends: "Social trends", video: "Video language" };
 
 export function researchPack(p: Project, evidence: SegmentEvidence[] = [], now = new Date().toISOString()): ResearchPack {
   const ok = p.sources.filter((s) => s.kind === "public_source" && s.status === "supported");
   const of = (seg: Segment) => ok.filter((s) => s.segment === seg);
   const sections: ResearchPack["sections"] = [
-    { title: "What the evidence says", items: (["brand", "customer", "competitor", "creative"] as Segment[]).map((seg) => {
+    { title: "What the evidence says", items: (["brand", "customer", "competitor", "creative", "adjacent", "trends", "video"] as Segment[]).filter((seg) => ["brand", "customer", "competitor", "creative"].includes(seg) || of(seg).length > 0).map((seg) => {
       const e = evidence.find((x) => x.segment === seg);
       return `${SEG[seg]}: ${of(seg).length} accepted source${of(seg).length === 1 ? "" : "s"}${e ? `, evidence rated ${e.rating}${e.weak ? " (weak)" : ""}` : ""}`;
     }) },
     { title: "Customer voice roundup", items: of("customer").slice(0, 6).map((s) => `${clip(s.excerpt.replace(/\s+/g, " "), 180)} (${s.title})`) },
     { title: "Competitor deep dive", items: of("competitor").slice(0, 6).map((s) => `${s.title}: ${clip(s.excerpt.replace(/\s+/g, " "), 140)}`) },
     { title: "Creative and format findings", items: of("creative").slice(0, 6).map((s) => `${s.title}: ${clip(s.excerpt.replace(/\s+/g, " "), 140)}`) },
+    { title: "Adjacent, trend and video findings", items: (["adjacent", "trends", "video"] as Segment[]).flatMap((seg) => of(seg).slice(0, 3).map((s) => `${SEG[seg]}: ${s.title}: ${clip(s.excerpt.replace(/\s+/g, " "), 120)}`)) },
     { title: "Accepted insights", items: p.insights.filter((i) => (i.status || "reviewed") === "reviewed").map((i) => `${i.title} (${i.confidence})`) },
     { title: "Performance metrics", items: ["No ad account is connected yet, so there are no measured results to rank winning and failing patterns. Until one is, treat every idea as a hypothesis to test."] },
   ];

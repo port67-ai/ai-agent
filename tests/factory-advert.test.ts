@@ -19,6 +19,7 @@ assert.throws(() => compileShot(a, a.shots[0]), /Continuity Profile/);
 a.continuity.approved = true;
 a.shots[0].refs = [{ kind: "prop", label: "Mug" }, { kind: "character", label: "Owner" }, { kind: "location", label: "Shop" }];
 const c = compileShot(a, a.shots[0]);
+assert.match(c.prompt, /Approved creative treatment: Calm/);
 assert.deepEqual(c.refs.map((r) => r.tag + r.kind), ["@Ref1character", "@Ref2location", "@Ref3prop"], "characters, then locations, then props");
 assert.match(c.prompt, /^@Ref1 = character: Owner\n@Ref2 = location: Shop\n@Ref3 = prop: Mug\nScene:/);
 assert.match(c.prompt, /Format: 16:9, \d+s, 480p draft tier/);

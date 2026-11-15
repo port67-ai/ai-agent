@@ -20,7 +20,7 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
 ];
 const COLOR = { input: "#22d3ee", agent: "#a78bfa", producer: "#f97316", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
-  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette,
+  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:ideas": Sparkles,
   "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
 };
@@ -130,6 +130,9 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     "research:customer": { x: COLS[1], y: 300 },
     "research:competitor": { x: COLS[2], y: 300 },
     "research:creative": { x: COLS[3], y: 300 },
+    "research:adjacent": { x: COLS[0], y: 420 },
+    "research:trends": { x: COLS[1], y: 420 },
+    "research:video": { x: COLS[2], y: 420 },
     "synthesis:insights": { x: COLS[1], y: 590 },
     "synthesis:strategy": { x: COLS[3], y: 590 },
     "synthesis:content": { x: COLS[1], y: 840 },
@@ -137,6 +140,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     "synthesis:ideas": { x: PX, y: 1190 },
   };
   const AH = 104;
+  const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video"].includes(id);
   const lane: Record<string, number> = {};
   let k = 0;
   const agentNode = (id: string) => {
@@ -153,9 +157,9 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const lat = es.map((e) => e.avgLatencyMs).filter((n): n is number => n !== undefined);
     const avg = lat.length ? Math.round(lat.reduce((x, y) => x + y, 0) / lat.length) : undefined;
     return (
-      <Node key={id} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
+      <Node key={id} id={id} x={pos.x} y={pos.y} h={supplemental(id) ? 76 : AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
-        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${unpriced ? "cost unknown" : usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `Last call failed (${earlier} in total)` : stat.calls ? (earlier ? `Healthy now · ${earlier} earlier failed` : "Healthy") : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
+        lines={supplemental(id) ? [] : [stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${unpriced ? "cost unknown" : usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `Last call failed (${earlier} in total)` : stat.calls ? (earlier ? `Healthy now · ${earlier} earlier failed` : "Healthy") : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
         state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
         onSkill={onSkill ? () => onSkill(id) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(id, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
@@ -172,7 +176,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const stat = a.stats!;
     const idx = (lane[id] = k++);
     const x0 = pos.x + 34;
-    const y0 = pos.y + AH;
+    const y0 = pos.y + (supplemental(id) ? 76 : AH);
     const ly = y0 + 14 + (idx % 4) * 8;
     const gx = 868 + idx * 4;
     const ty = py + 18 + (idx % 4) * 11;
@@ -213,7 +217,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
   const insightGate = waiting.insightReview;
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
-  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative"];
+  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
   const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
   const ids = ["scope:business", ...researchIds, "synthesis:insights", "synthesis:strategy", "synthesis:content"];
@@ -263,11 +267,12 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
 
           <text x="30" y="286" className="sm-band">3 · RESEARCH</text>
           {researchIds.map(agentNode)}
-          {COLS.map((x, i) => <Link key={"wr" + i} d={`M${x + NW - 34} ${300 + AH} L${x + NW - 34} 470`} color={COLOR.store} dim={!(byId.get(researchIds[i])?.stats?.calls)} label={i === 0 ? "cited findings" : undefined} lx={x + NW - 26} ly={452} />)}
-          <Bar y={472} title="Firestore · sources and findings" sub={`${P.sources.total} sources · ${P.sources.findings} claim-level findings · ${P.gaps} gaps · ${P.sources.unreviewed} unreviewed`} />
+          {researchIds.map(id => { const pos = place[id]; const x = pos.x + NW - 20; return <Link key={"wr" + id} d={supplemental(id) ? `M${x} ${pos.y + 76} L${x} 498` : `M${pos.x + NW} ${pos.y + 60} L${pos.x + NW + 10} ${pos.y + 60} L${pos.x + NW + 10} 498 L${x} 498`} color={COLOR.store} dim={!byId.get(id)?.stats?.calls} />; })}
+          <Link d="M850 278 L850 412 L125 412" color={COLOR.store} label="scoped adjacent, trend and video questions" lx={60} ly={416} />
+          <Bar y={500} title="Firestore · sources and findings" sub={`${P.sources.total} sources · ${P.sources.findings} claim-level findings · ${P.gaps} gaps · ${P.sources.unreviewed} unreviewed`} />
 
           <text x="30" y="568" className="sm-band">4 · REVIEW</text>
-          <Link d={`M${COLS[0] + NW / 2} 518 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
+          <Link d={`M${COLS[0] + NW / 2} 546 L${COLS[0] + NW / 2} 588`} color={waiting.sourceReview ? COLOR.gate : COLOR.store} dim={!P.sources.total} />
           {reviewNode("review:sources", COLS[0], 590, NW, AH, waiting.sourceReview, `${P.sources.supported} supported · ${P.sources.rejected} rejected`)}
           {verdictLink(COLS[0] + NW / 2, 590 + AH)}
           <Link d={`M${COLS[0] + NW} 642 L${COLS[1] - 2} 642`} color={COLOR.gate} dim={!P.sources.supported} />

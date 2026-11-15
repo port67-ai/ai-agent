@@ -16,6 +16,7 @@ const agents = [
   ai('research:customer', 'research', 'Customer insight researcher', 'gem-b', 'gemini', stats(1, 0, 1)),
   ai('research:competitor', 'research', 'Competitor researcher', 'gpt-a'),
   ai('research:creative', 'research', 'Creative researcher', 'gpt-a', 'openai', { ...stats(3, 0, 1), lastStatus: 'completed' } as never),
+  ...['adjacent','trends','video'].map(s => ai('research:'+s, 'research', s+' researcher', 'gpt-a')),
   ai('synthesis:insights', 'drafting', 'Insights agent', 'claude-c', 'anthropic'),
   ai('synthesis:strategy', 'drafting', 'Direction agent', undefined),
   ai('synthesis:content', 'drafting', 'Copy pack agent', 'gpt-a'),
@@ -42,7 +43,7 @@ assert.match(html, /FAILED/);
 assert.match(html, /2 WAITING/, 'a blocked gate is flagged');
 assert.match(html, /sm-link flow/, 'running call animates');
 assert.match(html, /sm-link dim/, 'idle edges are faint');
-assert.equal((html.match(/data-node="research:/g) || []).length, 4);
+assert.equal((html.match(/data-node="research:/g) || []).length, 7);
 for (const t of ['2 · SCOPING', '3 · RESEARCH', '7 · MONITORING', 'Scoping agent', 'Firestore · classification and scope', 'Scope review', 'Orchestrator', 'Source review', 'Insight review', 'Approve direction', 'data-node="review:scope"', '2 classified · 1 AI · 1 template · 0 edited · 1 stale', 'local shop 1', 'Read by: research agents', 'openai · gpt-s']) assert.match(html, new RegExp(t), t);
 assert.match(html, /data-node="scope:business"/);
 assert.match(html, /data-node="store-scope"/);

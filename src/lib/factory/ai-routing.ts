@@ -25,6 +25,7 @@ export const SLOTS = [
   { id: "research:customer", stage: "research", label: "Research: customer insight", hint: "Customer language, motivations, objections and reviews." },
   { id: "research:competitor", stage: "research", label: "Research: competitor intelligence", hint: "Competitor positioning and public customer reactions." },
   { id: "research:creative", stage: "research", label: "Research: creative conventions", hint: "Creative and channel conventions in the category." },
+  ...(["adjacent", "trends", "video"] as const).map(segment => ({ id: `research:${segment}` as const, stage: "research" as const, label: `Research: ${segment}`, hint: segment === "video" ? "Video craft discovery; Gemini supports explicit public YouTube analysis." : "Adjacent businesses and current channel-specific evidence." })),
   { id: "synthesis:insights", stage: "synthesis", label: "Drafting: insights", hint: "Turns reviewed sources into draft insights." },
   { id: "synthesis:strategy", stage: "synthesis", label: "Drafting: campaign direction", hint: "Drafts message, reasoning and creative direction." },
   { id: "synthesis:content", stage: "synthesis", label: "Drafting: copy pack", hint: "Writes channel copy from the approved direction and its evidence." },

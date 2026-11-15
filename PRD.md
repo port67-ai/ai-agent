@@ -1446,7 +1446,18 @@ Added 2026-11-15 on the owner's instruction. This is a **separate product track 
 
 Provenance: the structure comes from a template pasted by the owner, not a primary source the team has verified. Implementation status: phase 1 (planning, Continuity Profile, prompt compiler, no vendor) is built under CHG-0061; later phases are planned. See docs/IMPLEMENTATION_STATUS.md.
 
-## 25.6 Creative pipeline: skills, ad formats, strapline, audiences, ideas bank - owner-requested
+## 25.6 Research-led adjacent and social/video intelligence — owner-authorised 15 November 2026
+
+| ID | Priority | Requirement | Acceptance criterion |
+|---|---|---|---|
+| FAC-MKT-024 | P0 | Research the client, customers, direct competitors, creative conventions, adjacent businesses, current social patterns and video language | Seven bounded roles are scoped to the business and chosen channels, independently routed and metered; adjacent research explains shared audience/occasion and transfer limits |
+| FAC-MKT-025 | P0 | Source-led trend and creative learning feeds campaign and commercial production | Research records dated examples, uncertainty and counterexamples; synthesis includes all research areas and reviews evidence before proposing original adaptations; popularity is not conversion proof |
+| FAC-VID-012 | P0 | Explicit direct-video craft analysis with provenance | Producer can submit an existing public YouTube reference for a metered Gemini analysis of style, apparent lighting, motion, graphics, pacing, duration, hook and audio with timecodes; first 120 seconds sampled at 2 fps; unavailable video produces no visual evidence |
+| FAC-CTX-009 | P0 | Freeze complete public research context and reject stale results | Runs pin public brief fields, channels, scope and skill version; changed inputs or withdrawn authority reject late results while paid usage is retained |
+
+Existing customer gates, owner-only cost access and monetary limits remain authoritative. Additional research increases potential calls; defaults allow 20 research/drafting runs per project, explicit configured caps still win. Existing four-role campaigns can finish without forced paid reruns; a new/expanded scope opts into all seven roles. Public search is not a live social firehose. Platform discovery endpoints do not imply authenticated connectors or access to blocked posts. Page budgets remain provider instructions, not a deterministic per-page cap. Private customer upload, generic skill promotion, a durable workflow queue and the rest of the integration design remain separate work.
+
+## 25.7 Creative pipeline: skills, ad formats, strapline, audiences, ideas bank - owner-requested
 
 Inspired by a public talk on an AI creative research pipeline (research feeds a weekly pack, a human selects the best ideas into an ideas bank, then execution). The source is a video the owner shared, not a primary source the team has verified; its tools (Parker, Frame.io), its creator-sourcing automation (Apify, outreach and negotiation) and its numbers are evaluation candidates only and are not adopted. The principle adopted is that AI presents the data and ranked options and a human decides.
 
@@ -1470,7 +1481,7 @@ Inspired by a public talk on an AI creative research pipeline (research feeds a 
 
 ## 26. PRD change log
 
-Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, CHG-0029 for 1.14.0, CHG-0030 for 1.15.0, CHG-0031 for 1.16.0, CHG-0034 for 1.17.0, CHG-0035 for 1.18.0, CHG-0036 for 1.19.0, CHG-0037 for 1.20.0, CHG-0038 for 1.21.0, CHG-0039 for 1.22.0, CHG-0040 for 1.23.0, CHG-0060 for 1.24.0, CHG-0062 for 1.25.0, CHG-0063 for 1.25.1, and CHG-0064 for 1.26.0. The table below preserves the imported 1.0.0 baseline record.
+Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-0004 for 1.1.1, CHG-0008 for 1.2.0, CHG-0009 for 1.3.0, CHG-0014 for 1.4.0, CHG-0016 for 1.5.0, CHG-0019 for 1.6.0, CHG-0020 to CHG-0022 for 1.7.0, CHG-0023 for 1.8.0, CHG-0024 for 1.9.0, CHG-0025 for 1.10.0, CHG-0026 for 1.11.0, CHG-0027 for 1.12.0, CHG-0028 for 1.13.0, CHG-0029 for 1.14.0, CHG-0030 for 1.15.0, CHG-0031 for 1.16.0, CHG-0034 for 1.17.0, CHG-0035 for 1.18.0, CHG-0036 for 1.19.0, CHG-0037 for 1.20.0, CHG-0038 for 1.21.0, CHG-0039 for 1.22.0, CHG-0040 for 1.23.0, CHG-0060 for 1.24.0, CHG-0062 for 1.25.0, and CHG-0063 to CHG-0065 for 1.26.0. The table below preserves the imported 1.0.0 baseline record.
 
 | Version | Date | Author | Change | Status |
 |---|---|---|---|---|

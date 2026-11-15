@@ -1,4 +1,5 @@
 import { applySkill } from './skills';
+import { youtubeVideoUrl } from "./public-video";
 export type Provider = 'openai' | 'anthropic' | 'deepseek' | 'gemini';
 export type ProviderStage = 'research' | 'synthesis';
 type Env = Record<string,string|undefined>;
@@ -23,17 +24,19 @@ export type ProviderResult={text:string;usage:Record<string,number>;rawUsage?:un
 // Provider error text is kept so a failure can be diagnosed, with anything that looks like a credential removed.
 const redact = (v: unknown) => String(v ?? '').replace(/(sk-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{20,}|Bearer\s+\S+|key=\S+)/g, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 220);
 const detail = (d: { error?: { message?: unknown; status?: unknown } | string; message?: unknown } | undefined) => redact(typeof d?.error === 'string' ? d.error : d?.error?.message ?? d?.error?.status ?? d?.message);
-export async function invokeProvider(s:ProviderSelection,request0:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean}):Promise<ProviderResult>{
+export async function invokeProvider(s:ProviderSelection,request0:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean;videoUrl?:string}):Promise<ProviderResult>{
  const request={...request0,instructions:applySkill(request0.instructions)};
+ if(request.videoUrl && s.provider !== 'gemini') throw new Error('Direct video requires Gemini');
+ if(request.videoUrl) youtubeVideoUrl(request.videoUrl);
  const {provider,model,key}=s;const headers:Record<string,string>={'content-type':'application/json'};let url:string;let body:Record<string,unknown>;
  if(request.research && provider!=='openai' && provider!=='gemini') throw new Error('Research requires grounded web search');
- if(provider==='openai') {url='https://api.openai.com/v1/responses';headers.authorization=`Bearer ${key}`;body={model,store:false,max_output_tokens:request.research?5000:3000,instructions:request.instructions,input:request.input,...(request.research?{tools:[{type:'web_search',search_context_size:'low'}],include:['web_search_call.action.sources']}:{}),...(request.schema?{text:{format:{type:'json_schema',name:request.name,strict:true,schema:request.schema}}}:{})};}
+ if(provider==='openai') {url='https://api.openai.com/v1/responses';headers.authorization=`Bearer ${key}`;body={model,store:false,max_output_tokens:request.research || request.videoUrl?5000:3000,instructions:request.instructions,input:request.input,...(request.research?{tools:[{type:'web_search',search_context_size:'low'}],include:['web_search_call.action.sources']}:{}),...(request.schema?{text:{format:{type:'json_schema',name:request.name,strict:true,schema:request.schema}}}:{})};}
  else if(provider==='anthropic'){url='https://api.anthropic.com/v1/messages';headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';body={model,max_tokens:3000,system:request.instructions,messages:[{role:'user',content:request.input}],...(request.schema?{output_config:{format:{type:'json_schema',schema:request.schema}}}:{})};}
  else if(provider==='deepseek'){url='https://api.deepseek.com/chat/completions';headers.authorization=`Bearer ${key}`;body={model,max_tokens:3000,messages:[{role:'system',content:request.instructions+(request.schema?' Return a JSON object matching this schema: '+JSON.stringify(request.schema):'')},{role:'user',content:request.input}],...(request.schema?{response_format:{type:'json_object'}}:{})};}
- else{url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;headers['x-goog-api-key']=key;body={systemInstruction:{parts:[{text:request.instructions}]},contents:[{role:'user',parts:[{text:request.input}]}],generationConfig:{maxOutputTokens:request.research?5000:3000,...(request.schema?{responseMimeType:'application/json',responseJsonSchema:request.schema}:{})},...(request.research?{tools:[{google_search:{}}]}:{})};}
+ else{url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;headers['x-goog-api-key']=key;body={systemInstruction:{parts:[{text:request.instructions}]},contents:[{role:'user',parts:[...(request.videoUrl?[{fileData:{fileUri:youtubeVideoUrl(request.videoUrl),mimeType:'video/mp4'},videoMetadata:{startOffset:'0s',endOffset:'120s',fps:2}}]:[]),{text:request.input}]}],generationConfig:{maxOutputTokens:request.research || request.videoUrl?5000:3000,...(request.schema?{responseMimeType:'application/json',responseJsonSchema:request.schema}:{})},...(request.research?{tools:[{google_search:{}}]}:{})};}
  const result:ProviderResult={provider,model,text:'',usage:{}};
  try{
- const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(request.research?100000:60000)});
+ const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(request.research || request.videoUrl?100000:60000)});
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  let data:any={};try{data=await response.json();}catch{if(response.ok)throw new Error('the response was not JSON');}result.providerRequestId=typeof data.id==='string'?data.id:typeof data.responseId==='string'?data.responseId:response.headers.get('x-request-id') || undefined;
  const u=data.usage || data.usageMetadata;result.rawUsage=u;
@@ -49,6 +52,6 @@ export async function invokeProvider(s:ProviderSelection,request0:{instructions:
  if(!response.ok){const why=detail(data);result.error=`AI provider returned ${response.status}${why?': '+why:''}; no output accepted`;return result;}
  result.data=data;
  result.text=provider==='openai'?(data.output || []).flatMap((x:{content?:unknown[]})=>x.content || []).filter((x:{type?:string})=>x.type==='output_text').map((x:{text?:string})=>x.text || '').join(''):provider==='anthropic'?(data.content || []).filter((x:{type?:string})=>x.type==='text').map((x:{text?:string})=>x.text || '').join(''):provider==='deepseek'?data.choices?.[0]?.message?.content || '':(data.candidates?.[0]?.content?.parts || []).map((x:{text?:string})=>x.text || '').join('');
- }catch(e){const timedOut=e instanceof Error&&(e.name==='TimeoutError'||e.name==='AbortError');result.error=timedOut?`AI provider timed out after ${request.research?100:60} seconds; usage unknown unless reported`:`AI provider request failed${/^[A-Z_]{3,30}$/.test(String((e as {cause?:{code?:unknown}})?.cause?.code))?' ('+(e as {cause:{code:string}}).cause.code+')':''}; usage unknown unless reported`;}
+ }catch(e){const timedOut=e instanceof Error&&(e.name==='TimeoutError'||e.name==='AbortError');result.error=timedOut?`AI provider timed out after ${request.research || request.videoUrl?100:60} seconds; usage unknown unless reported`:`AI provider request failed${/^[A-Z_]{3,30}$/.test(String((e as {cause?:{code?:unknown}})?.cause?.code))?' ('+(e as {cause:{code:string}}).cause.code+')':''}; usage unknown unless reported`;}
  return result;
 }

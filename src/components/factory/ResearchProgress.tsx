@@ -6,12 +6,13 @@ import { segments } from "@/lib/factory/model";
 import { channelNames } from "@/lib/factory/channels";
 import { researchLabels, researchNotes } from "./shared";
 
-const icons = { brand: Building2, customer: Users, competitor: Target, creative: Palette } as const;
+const icons = { brand: Building2, customer: Users, competitor: Target, creative: Palette, adjacent: Building2, trends: Megaphone, video: FileSearch } as const;
 const agentName: Record<Segment, string> = {
   brand: "Business and brand researcher",
   customer: "Customer insight researcher",
   competitor: "Competitor researcher",
   creative: "Creative researcher",
+  adjacent: "Adjacent-business researcher", trends: "Social-trend researcher", video: "Video-language researcher",
 };
 function useTick(active: boolean) {
   const [now, setNow] = useState(0);

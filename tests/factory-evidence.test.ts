@@ -82,7 +82,7 @@ assert.ok(guidance.length <= 900);
 
 // ---- producers see grades and ratings; customers never do
 const view = projectView(weak, op);
-assert.ok(view.sources[0].grade && view.evidence?.segments.length === 4);
+assert.ok(view.sources[0].grade && view.evidence?.segments.length === 7);
 const cust = projectView(weak, { role: "customer", workspaceId: "w", subject: "c", identity: "firebase", accountId: "w" });
 assert.ok(cust.sources.every((s) => !s.grade) && cust.evidence === undefined);
 assert.ok(evidenceWarnings(weak, at).some((x) => x.gate === "research" && /brand research evidence is/.test(x.text)));
@@ -107,14 +107,14 @@ async function main() {
     const repo = new LocalRepository(join(dir, "db.json"));
     await repo.mutate("w", (s) => void s.projects.push(structuredClone(p0)));
     const out = await runProducerAgent(repo, op, "loop", { force: true });
-    assert.equal(calls.length, 4, "each weak segment is sent back exactly once");
+    assert.equal(calls.length, 7, "each weak segment is sent back exactly once");
     assert.ok(calls.every((c) => /Rules for this attempt/.test(c.guidance)), "the researcher gets clear rules");
-    assert.deepEqual(Object.values(out.producerAgent!.researchRetries || {}), [1, 1, 1, 1]);
-    assert.ok(out.producerAgent!.log.filter((l) => l.step === "reResearch").length === 4);
+    assert.deepEqual(Object.values(out.producerAgent!.researchRetries || {}), [1, 1, 1, 1, 1, 1, 1]);
+    assert.ok(out.producerAgent!.log.filter((l) => l.step === "reResearch").length === 7);
     assert.ok((out.producerAgent!.warnings || []).some((w) => w.gate === "research" && /after one re-run/.test(w.text)), "still weak afterwards: a warning for people, not a block");
     assert.notEqual(out.producerAgent!.status, "blocked", "weak evidence warns; it does not block");
     const again = await runProducerAgent(repo, op, "loop", { force: true });
-    assert.equal(calls.length, 4, "a second pass does not re-run again");
+    assert.equal(calls.length, 7, "a second pass does not re-run again");
     assert.ok(again.producerAgent!.warnings!.length >= 4);
   } finally {
     registerResearchRunner(undefined);

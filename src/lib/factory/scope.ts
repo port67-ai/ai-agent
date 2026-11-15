@@ -1,3 +1,4 @@
+import { extendedResearchScope } from "./research-catalog";
 import { channelById } from "./channels";
 import { segments, type Project, type Segment } from "./model";
 
@@ -53,15 +54,16 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   other: "General business",
 };
 
+type CoreSegment = "brand" | "customer" | "competitor" | "creative";
 type Ctx = { business: string; channels: string[]; competitors: string[]; audience: string };
 type Pack = {
   match: RegExp;
   regulated: boolean;
   audience: Classification["audienceModel"];
   pages: number;
-  q: Record<Segment, (c: Ctx) => string[]>;
-  sources: Record<Segment, string[]>;
-  avoid: Record<Segment, string[]>;
+  q: Record<CoreSegment, (c: Ctx) => string[]>;
+  sources: Record<CoreSegment, string[]>;
+  avoid: Record<CoreSegment, string[]>;
 };
 const onChannels = (c: Ctx) => (c.channels.length ? ` on ${c.channels.join(", ")}` : "");
 const named = (c: Ctx, fallback: string[]) => (c.competitors.length ? c.competitors.map((x) => `How does ${x} position itself, price and promote, and what do its customers praise or criticise?`).concat(fallback.slice(1)) : fallback);
@@ -211,7 +213,11 @@ export function scopeFromClassification(p: Pick<Project, "brief" | "channels">, 
   const pack = PACKS[classification.category] || PACKS.other;
   const ctx: Ctx = { business: String(raw.business || "the business").trim() || "the business", channels: (p.channels || []).map(channelById).filter((c): c is NonNullable<typeof c> => !!c).map((c) => c.name), competitors: list(String(raw.competitors || "")), audience: String(raw.audience || "").trim() };
   const out = {} as Record<Segment, SegmentScope>;
-  for (const s of segments) out[s] = { questions: pack.q[s](ctx).slice(0, 6), sourceTypes: [...pack.sources[s]], avoid: [...pack.avoid[s]], maxPages: adjustPages(pack.pages, classification.size) };
+  for (const s of segments) {
+    const extra = extendedResearchScope(s, ctx.business, ctx.channels);
+    if (extra) out[s] = extra;
+    else { const core = s as CoreSegment; out[s] = { questions: pack.q[core](ctx).slice(0, 6), sourceTypes: [...pack.sources[core]], avoid: [...pack.avoid[core]], maxPages: adjustPages(pack.pages, classification.size) }; }
+  }
   return { classification, competitorSet: [], segments: out };
 }
 /** Deterministic scope with no AI cost. */
@@ -250,7 +256,7 @@ export function validateScope(raw: unknown): ScopeInput {
   };
   const out = {} as Record<Segment, SegmentScope>;
   for (const s of segments) {
-    const seg = o.segments?.[s];
+    const seg = o.segments?.[s] || extendedResearchScope(s, classification.businessType, []);
     if (!seg || typeof seg !== "object") throw new Error(`Scope for ${s} is missing`);
     const pages = Number(seg.maxPages);
     out[s] = {

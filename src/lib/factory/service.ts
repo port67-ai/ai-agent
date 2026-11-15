@@ -1,3 +1,5 @@
+import { youtubeVideoUrl } from "./public-video";
+import { researchContextHash } from "./research-catalog";
 import { allSegmentEvidence } from "./evidence";
 import { costSeries, type SeriesRange } from "./cost-series";
 import { approvalOverview, loadApprovalMode, saveApprovalMode } from "./approval-mode";
@@ -226,13 +228,14 @@ async function seed(a: Principal) {
     return p;
   });
 }
-async function runResearchSegment(a: Principal, projectId: string, segment: Segment, guidance?: string) {
+async function runResearchSegment(a: Principal, projectId: string, segment: Segment, guidance?: string, videoUrl?: string) {
   requireProviderConsent(find((await repo(a).read(a.workspaceId)).projects, projectId, a));
   // Classify the business once per brief so each researcher gets a narrow, business-specific ask. Never blocks research.
   await ensureScope(repo(a), a, projectId);
   if (producerAgentAuto()) await reviewScopeBeforeResearch(repo(a), a, projectId);
   const p = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
     const selection = await resolveSelection(repo(a), researchSlot(segment));
+    if (videoUrl) { youtubeVideoUrl(videoUrl); if (selection.provider !== "gemini") throw new Error("Direct video viewing requires Gemini"); }
     const run: ResearchRun = {
       id: id(),
       stage: "research",
@@ -242,14 +245,16 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
       provider: selection.provider,
       model: selection.model,
       leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
-      contextHash: digest(JSON.stringify(p.brief)),
+      contextHash: digest(researchContextHash(p)),
+      capabilityId: `research.${segment}`, capabilityVersion: "2.0.0", inputHash: digest(researchContextHash(p)),
       contextSnapshot: structuredClone(p.brief),
+      contextBundle: JSON.parse(researchContextHash(p)),
       usageStatus: "unknown",
     };
     await repo(a).mutate(a.workspaceId, (state) => {
       const current = find(state.projects, projectId, a);
       requireProviderConsent(current);
-      if (digest(JSON.stringify(current.brief)) !== run.contextHash)
+      if (digest(researchContextHash(current)) !== run.contextHash)
         throw new Error(
           "Brief changed before research reservation; refresh and authorise the current context",
         );
@@ -260,9 +265,9 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
           Math.min(
             50,
             Number.parseInt(
-              process.env.PORT67_MAX_RESEARCH_RUNS || "12",
+              process.env.PORT67_MAX_RESEARCH_RUNS || "20",
               10,
-            ) || 12,
+            ) || 20,
           ),
         )
       )
@@ -275,7 +280,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
     });
     let acceptedError = "";
     try {
-      const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection, guidance));
+      const result = await meteredModelCall(repo(a),a,p,run,()=>researchSegment(p, segment, selection, guidance, videoUrl));
       acceptedError = await repo(a).mutate(a.workspaceId, (state) => {
         const current = find(state.projects, projectId, a);
         const record = current.runs.find((r) => r.id === run.id)!;
@@ -289,7 +294,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
           record.status !== "running"
             ? "Research task was recovered or cancelled; no late findings accepted"
             : !hasProviderConsent(current) ||
-                record.contextHash !== digest(JSON.stringify(current.brief))
+                record.contextHash !== digest(researchContextHash(current))
               ? "Research context or authorisation changed; no stale findings accepted"
               : "";
         const error =
@@ -663,7 +668,8 @@ export async function handleFactory(
         // Producers and admins only: customers never see the scoping output. With none stored yet, a free template preview is returned.
         operator(a);
         const stored = !!p.scope;
-        const shown = p.scope || templateScope(p, { briefHash: scopeHash(p), version: 0 });
+        const fallbackScope = templateScope(p, { briefHash: scopeHash(p), version: 0 });
+        const shown = p.scope ? { ...p.scope, segments: { ...fallbackScope.segments, ...p.scope.segments } } : fallbackScope;
         return json({ scope: shown, stored, current: stored && scopeCurrent(p), history: p.scopeHistory || [], scoping: { enabled: scopingEnabled() } });
       }
       if (path[2] === "diagnostics" && request.method === "GET") {
@@ -898,6 +904,18 @@ export async function handleFactory(
             detail: run.id,
           });
         });
+        return json({ ok: true });
+      }
+      if (path[2] === "video-analysis" && request.method === "POST") {
+        operator(a);
+        if (a.demo) throw new Error("Paid video analysis is disabled in the synthetic demo");
+        const project = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
+        const source = project.sources.find(s => s.id === data.sourceId && s.kind === "public_source" && s.status !== "rejected");
+        if (!source) throw new Error("Choose an existing public video source in this project");
+        const url = youtubeVideoUrl(source.url);
+        const selection = await resolveSelection(repo(a), researchSlot("video"));
+        if (selection.provider !== "gemini") throw new Error("Choose Gemini for Video language on the system map to view a video directly");
+        await runResearchSegment(a, projectId, "video", undefined, url);
         return json({ ok: true });
       }
       if (path[2] === "research" && request.method === "POST") {
