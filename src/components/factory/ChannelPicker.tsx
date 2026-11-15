@@ -120,6 +120,23 @@ function Picker({
               <button className="f-button secondary" disabled={busy || !changed} onClick={() => void command({ type: "setChannels", channels: selected }, "Channels saved")}>
                 Save channels
               </button>
+              {!p.aiAuthorised && live && selected.length > 0 && (
+                <>
+                  <button
+                    className="f-button"
+                    disabled={busy}
+                    onClick={async () => {
+                      const ok = await command({ type: "authoriseAI", confirm: true }, "Project brief authorised as PUBLIC data for the configured provider");
+                      if (ok) await saveThen(onRunAll, "setChannels", "Channels saved");
+                    }}
+                  >
+                    <Sparkles size={16} /> Authorise public data and start research
+                  </button>
+                  <p className="f-small" role="status">
+                    Start research is greyed out because this project is not authorised for AI yet (a restart from the brief removes the authorisation). Press the orange button to authorise and start in one step.
+                  </p>
+                </>
+              )}
             </>
           ) : (
             <button

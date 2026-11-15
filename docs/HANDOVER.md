@@ -164,3 +164,5 @@ Queue agreed with the owner: spend caps (done), team access (done), live researc
 2026-11-15; Claude; CHG-0066: AI agents map layout fixed (spacing, two research rows, one four-fact layout for every agent). I rendered the map to an image to check it. Provider connectors now leave the bottom edge of every AI agent (reviewers and campaign plan agents included). Check the live map after deploy.
 
 2026-11-15; Claude; CHG-0067: Accept all sources no longer bounces back to Gate 1. The producer agent had been re-running each weak research area once after the accept, adding new unreviewed sources (up to seven times). A person's bulk accept now stops the re-run for that area. If you want the agent to re-run weak areas first, do it before accepting, or run the research again by hand.
+
+2026-11-15; Claude; CHG-0068: after "Restart from the brief" the AI authorisation is cleared, so Start research is greyed out until the project is authorised. The research tab now has one button that authorises and starts research. The diagnostics for the Harry Fraser project also confirmed the CHG-0067 loop (seven re-runs after one Accept all) before the fix was deployed.
