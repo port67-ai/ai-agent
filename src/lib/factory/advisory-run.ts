@@ -4,11 +4,11 @@ import { access, digest, id, operator } from "./engine";
 import type { Principal, Project, ResearchRun } from "./model";
 import type { Repository } from "./repository";
 import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
-import { generateFormats, generateIdeas, prepareFormats, prepareIdeas } from "./advisory";
+import { generateAudiences, generateFormats, generateIdeas, prepareAudiences, prepareFormats, prepareIdeas } from "./advisory";
 import { MAX_IDEAS } from "./ideas";
 
-type Kind = "formats" | "ideas";
-const CAP = { formats: "analysis.formats", ideas: "drafting.ideas" } as const;
+type Kind = "formats" | "ideas" | "audiences";
+const CAP = { formats: "analysis.formats", ideas: "drafting.ideas", audiences: "analysis.audiences" } as const;
 
 /** Run one advisory agent (format suggester or ideas drafter). Metered and capped like every managed model call; no retry; nothing is chosen or kept automatically. */
 export async function runAdvisory(repo: Repository, a: Principal, projectId: string, kind: Kind): Promise<Project> {
@@ -17,7 +17,7 @@ export async function runAdvisory(repo: Repository, a: Principal, projectId: str
   if (!(await stageReady(repo, "synthesis"))) throw new Error("AI drafting is not configured");
   const selection = await resolveSelection(repo, synthesisSlot(kind));
   const capability = capabilityRegistry.find((c) => c.id === CAP[kind])!;
-  const prepare = (p: Project) => (kind === "formats" ? prepareFormats(p) : prepareIdeas(p));
+  const prepare = (p: Project) => (kind === "formats" ? prepareFormats(p) : kind === "audiences" ? prepareAudiences(p) : prepareIdeas(p));
   const reservation = await repo.mutate(a.workspaceId, (state) => {
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
@@ -37,7 +37,7 @@ export async function runAdvisory(repo: Repository, a: Principal, projectId: str
   });
   let error = "";
   try {
-    const result = await meteredModelCall<Awaited<ReturnType<typeof generateFormats>> | Awaited<ReturnType<typeof generateIdeas>>>(repo, a, reservation.project, reservation.run, () => (kind === "formats" ? generateFormats(reservation.project, selection) : generateIdeas(reservation.project, selection)));
+    const result = await meteredModelCall<Awaited<ReturnType<typeof generateFormats>> | Awaited<ReturnType<typeof generateIdeas>> | Awaited<ReturnType<typeof generateAudiences>>>(repo, a, reservation.project, reservation.run, () => (kind === "formats" ? generateFormats(reservation.project, selection) : kind === "audiences" ? generateAudiences(reservation.project, selection) : generateIdeas(reservation.project, selection)));
     error = await repo.mutate(a.workspaceId, (state) => {
       const current = state.projects.find((p) => p.id === projectId)!;
       access(current, a);
@@ -54,6 +54,8 @@ export async function runAdvisory(repo: Repository, a: Principal, projectId: str
         const at = new Date().toISOString();
         if (kind === "formats") {
           current.formats = { ...(current.formats || { selected: [] }), suggested: result.value as { id: string; score: number; reason: string }[], suggestedAt: at, suggestedBy: "ai" };
+        } else if (kind === "audiences") {
+          current.audienceSuggestion = { ...(result.value as NonNullable<Project["audienceSuggestion"]>), suggestedAt: at, by: "ai" };
         } else {
           const keep = (current.ideas || []).filter((i) => i.status !== "proposed");
           const base = keep.length;

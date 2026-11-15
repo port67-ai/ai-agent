@@ -833,7 +833,7 @@ export default function Portal() {
                   }
                 />
               )}
-              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} />}
+              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} onAiAudiences={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "audiences" }), "AI strapline and audience suggestions ready. Use what fits, then save.")} />}
               {tab === "direction" && (
                 <Direction
                   p={p}

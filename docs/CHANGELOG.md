@@ -500,6 +500,16 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0070 - 2026-11-15 - Direction draft no longer fails when the model leaves the format line blank
+- What/why: with ad formats chosen, the direction draft was rejected ("format is required") because the model left the legacy format field empty, which stopped the run at the direction step. A blank format now falls back to the chosen ad format names, and the instruction tells the model to fill it. Segment demographics are also passed to the direction draft.
+- Requirements: FAC-FMT-002 (behaviour refined). PRD impact: none.
+- Tests: factory suite passing.
+
+## CHG-0069 - 2026-11-15 - AI suggests the strapline, audience segments and demographics from the research
+- What/why: the Strapline and audiences panel was blank hand entry. It is now "Strapline, audience segments and demographics" and a producer can press "Suggest strapline and audiences with AI". A new skill-backed, metered agent (synthesis:audiences, own model slot, skill and map node) reads the accepted insights and supported sources and returns two to five strapline options and two to six segments with demographics. Segments must cite supplied sources, figures not in the material are rejected, nothing is saved until the producer presses Use this strapline or Use these segments and then Save. Segments gain a demographics field (line format name | demographics | who they are | angle) passed to the direction, copy and ideas. Customers do not see the suggestion; a project reset clears it.
+- Requirements: FAC-AUD-003 (new), FAC-AUD-002 (demographics). PRD impact: FAC-AUD-003 added.
+- Tests: advisory contract tests, campaign e2e (agent metered under its own name, calls 9 to 10), AI agents count 6.
+
 ## CHG-0068 - 2026-11-15 - After a restart from the brief, one button authorises and starts research
 - What/why: after the admin restart (CHG-0045 area) the producer's Start research button stayed greyed out and Run producer agent only said no research sources yet. Cause: the restart removes the project's AI authorisation (by design, since the project is a fresh start) and the only way to give it again was a separate Authorise public project data button further down the Research room, so nothing told the producer what was missing. The research tab now shows an orange "Authorise public data and start research" button when the project is not authorised, with a plain explanation of why Start research is greyed out. Customers are unaffected: their Request research button still authorises and starts automatically when test-mode auto-approval is on.
 - Requirements: FAC-HAR-012 (producer test controls, behaviour refined). PRD impact: none.

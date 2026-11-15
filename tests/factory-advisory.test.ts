@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { prepareFormats, validateFormats, prepareIdeas, validateIdeas, formatsSchema, ideasSchema } from "../src/lib/factory/advisory";
+import { prepareFormats, validateFormats, prepareIdeas, validateIdeas, formatsSchema, ideasSchema, prepareAudiences, validateAudiences, audiencesSchema } from "../src/lib/factory/advisory";
 import { digest } from "../src/lib/factory/engine";
 import type { Project } from "../src/lib/factory/model";
 
@@ -50,3 +50,18 @@ assert.throws(() => validateIdeas(three({ hook: "Cuts setup by 45%" }), c), /fig
 assert.throws(() => validateIdeas({ ideas: [idea(), idea(), idea({ title: "C", format: "static" })] }, c), /Duplicate/);
 assert.equal((ideasSchema(c).properties.ideas.items.properties.segment as { enum: string[] }).enum[0], "Parents");
 console.log("AI format suggester and ideas drafter: strict contracts, evidence-only figures, own-message sources, no duplicates");
+
+// audiences
+assert.throws(() => prepareAudiences({ ...p, aiConsent: undefined } as unknown as Project), /Authorise/);
+const ac = prepareAudiences(p);
+const seg = (o: Record<string, unknown> = {}) => ({ name: "Parents", demographics: "Parents of young children", description: "Short on time", angle: "Speed", sourceIds: ["a"], ...o });
+const aud = (o: Record<string, unknown> = {}) => ({ straplines: [{ text: "Made easy", why: "Plain" }, { text: "Start now", why: "Short" }], segments: [seg(), seg({ name: "Gifters", sourceIds: ["b"] })], ...o });
+assert.equal(validateAudiences(aud(), ac).segments.length, 2);
+assert.throws(() => validateAudiences(aud({ straplines: [{ text: "Made easy", why: "x" }] }), ac), /two to five/);
+assert.throws(() => validateAudiences(aud({ segments: [seg()] }), ac), /two to six/);
+assert.throws(() => validateAudiences(aud({ segments: [seg(), seg()] }), ac), /different/);
+assert.throws(() => validateAudiences(aud({ segments: [seg(), seg({ name: "X", sourceIds: ["zzz"] })] }), ac), /cite supplied sources/);
+assert.throws(() => validateAudiences(aud({ segments: [seg(), seg({ name: "X", demographics: "62% of parents" })] }), ac), /figure/);
+assert.throws(() => validateAudiences(aud({ extra: 1 }), ac), /contract/);
+assert.equal((audiencesSchema(ac).properties.segments.items.properties.sourceIds.items as { enum: string[] }).enum.length, 2);
+console.log("AI audiences suggester: strapline and segment contracts, evidence-only figures and sources");

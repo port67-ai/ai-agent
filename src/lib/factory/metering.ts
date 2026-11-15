@@ -6,7 +6,7 @@ export function agentOf(run:ResearchRun):string {
  const stage=run.stage||'research';
  if(stage==='scope') return 'scope:business';
  if(stage==='review') return 'review:'+String(run.capabilityId||'').replace('review.','');
- return stage==='research'?'research:'+(run.segment||'brand'):stage==='insights'?'synthesis:insights':stage==='content'?'synthesis:content':stage==='formats'?'synthesis:formats':stage==='ideas'?'synthesis:ideas':'synthesis:strategy';
+ return stage==='research'?'research:'+(run.segment||'brand'):stage==='insights'?'synthesis:insights':stage==='content'?'synthesis:content':stage==='formats'?'synthesis:formats':stage==='ideas'?'synthesis:ideas':stage==='audiences'?'synthesis:audiences':'synthesis:strategy';
 }
 type Result={usage:Record<string,number>;rawUsage?:unknown;providerRequestId?:string;error?:string};
 // All managed model calls pass here. Reservations fail closed; no automatic retry.
