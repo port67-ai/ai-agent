@@ -64,8 +64,8 @@ function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state 
       ))}
       {badge && (
         <g>
-          <rect x={x + w - 78} y={y - 9} width={72} height={18} rx={9} className={"sm-badge " + state} />
-          <text x={x + w - 42} y={y + 4} textAnchor="middle" className="sm-badgetext">{badge}</text>
+          <rect x={x + 12} y={y - 9} width={72} height={18} rx={9} className={"sm-badge " + state} />
+          <text x={x + 48} y={y + 4} textAnchor="middle" className="sm-badgetext">{badge}</text>
         </g>
       )}
     </g>
@@ -123,24 +123,43 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
   const PW = 170;
   const PH = 74;
 
+  const AH = 124;
+  /** Everything from the sources bar down moves this far so the two research rows have room. */
+  const SH = 204;
+  const R1 = 320;
+  const R2 = 520;
   // Agent positions (each row is a lane of the journey).
   const place: Record<string, { x: number; y: number }> = {
     "scope:business": { x: COLS[0], y: 150 },
-    "research:brand": { x: COLS[0], y: 300 },
-    "research:customer": { x: COLS[1], y: 300 },
-    "research:competitor": { x: COLS[2], y: 300 },
-    "research:creative": { x: COLS[3], y: 300 },
-    "research:adjacent": { x: COLS[0], y: 420 },
-    "research:trends": { x: COLS[1], y: 420 },
-    "research:video": { x: COLS[2], y: 420 },
+    "research:brand": { x: COLS[0], y: R1 },
+    "research:customer": { x: COLS[1], y: R1 },
+    "research:competitor": { x: COLS[2], y: R1 },
+    "research:creative": { x: COLS[3], y: R1 },
+    "research:adjacent": { x: COLS[0], y: R2 },
+    "research:trends": { x: COLS[1], y: R2 },
+    "research:video": { x: COLS[2], y: R2 },
     "synthesis:insights": { x: COLS[1], y: 590 },
     "synthesis:strategy": { x: COLS[3], y: 590 },
     "synthesis:content": { x: COLS[1], y: 840 },
-    "synthesis:formats": { x: PX, y: 1070 },
-    "synthesis:ideas": { x: PX, y: 1190 },
+    "synthesis:formats": { x: COLS[0], y: 1480 },
+    "synthesis:ideas": { x: COLS[1], y: 1480 },
   };
-  const AH = 104;
   const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video"].includes(id);
+  /** The same four facts on every AI agent node: calls and cost, health, and how many failed. */
+  const factLines = (stat: NonNullable<Agent["stats"]>, es: ReturnType<typeof edgesFor>, hasModel: boolean) => {
+    const unpriced = es.some((e) => e.unpriced > 0);
+    const lat = es.map((e) => e.avgLatencyMs).filter((n): n is number => n !== undefined);
+    const avg = lat.length ? Math.round(lat.reduce((x, y) => x + y, 0) / lat.length) : undefined;
+    const running = stat.inFlight > 0;
+    const last = stat.lastStatus;
+    const bad = last === "failed" || last === "unknown";
+    const health = running ? "Running now" : !hasModel ? "No model chosen" : stat.calls === 0 ? "Idle" : bad ? "Last call failed" : stat.failed + stat.unknown > 0 ? "Healthy now" : "Healthy";
+    return [
+      `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${unpriced ? "cost unknown" : usd(stat.estimatedMicroUsd)}`,
+      `Health: ${health}${avg ? " · " + secs(avg) : ""}`,
+      `${stat.failed} failed · ${stat.unknown} unknown`,
+    ];
+  };
   const lane: Record<string, number> = {};
   let k = 0;
   const agentNode = (id: string) => {
@@ -151,15 +170,11 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const stat = a.stats!;
     const running = stat.inFlight > 0;
     const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : stat.failed + stat.unknown > 0;
-    const earlier = stat.failed + stat.unknown;
-    const unpriced = es.some((e) => e.unpriced > 0);
     const state = running ? "running" : failed ? "failed" : !a.model ? "idle" : stat.calls === 0 ? "idle" : "";
-    const lat = es.map((e) => e.avgLatencyMs).filter((n): n is number => n !== undefined);
-    const avg = lat.length ? Math.round(lat.reduce((x, y) => x + y, 0) / lat.length) : undefined;
     return (
-      <Node key={id} id={id} x={pos.x} y={pos.y} h={supplemental(id) ? 76 : AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
+      <Node key={id} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
-        lines={supplemental(id) ? [] : [stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${unpriced ? "cost unknown" : usd(stat.estimatedMicroUsd)}${avg ? " · " + secs(avg) : ""}` : "No calls yet", running ? "Running now" : failed ? `Last call failed (${earlier} in total)` : stat.calls ? (earlier ? `Healthy now · ${earlier} earlier failed` : "Healthy") : a.model ? "Idle: no data has flowed" : onSelectAgent ? "Click to choose a model" : "Cannot run"]}
+        lines={factLines(stat, es, !!a.model)}
         state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
         onSkill={onSkill ? () => onSkill(id) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(id, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
@@ -176,7 +191,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const stat = a.stats!;
     const idx = (lane[id] = k++);
     const x0 = pos.x + 34;
-    const y0 = pos.y + (supplemental(id) ? 76 : AH);
+    const y0 = pos.y + AH - (pos.y < 480 ? SH : 0);
     const ly = y0 + 14 + (idx % 4) * 8;
     const gx = 868 + idx * 4;
     const ty = py + 18 + (idx % 4) * 11;
@@ -192,7 +207,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     );
   };
   // A producer reviewer: purple like every agent, model or free checks, calls and cost, click to choose its model.
-  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, extra = "") => {
+  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, _extra = "") => {
     const a = byId.get(rid);
     if (!a) return null;
     const stat = a.stats!;
@@ -201,18 +216,18 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     return (
       <Node id={rid} x={x} y={y} w={w} h={h} color={COLOR.producer} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
-        lines={[stat.calls ? `${stat.calls} call${stat.calls === 1 ? "" : "s"} · ${edgesFor(rid).some((e) => e.unpriced > 0) ? "cost unknown" : usd(stat.estimatedMicroUsd)}` : "Sees only its own inputs", ...(h > 90 && extra ? [extra] : [])]}
+        lines={factLines(stat, edgesFor(rid), !!a.model)}
         state={running ? "running" : failed ? "failed" : waiting > 0 ? "blocked" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : waiting > 0 ? `${waiting} WAITING` : undefined}
         onSkill={onSkill ? () => onSkill(rid) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(rid, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
     );
   };
   // Verdicts flow from an in-flow reviewer, along the free channel under its row, up the producer bus into the orchestrator.
-  const verdictLink = (x: number, y: number) => <Link d={`M${x} ${y} L${x} 718 L1090 718 L1090 196 L${PX + PW} 196`} color={COLOR.producer} dim={!PR.reviews} />;
+  const verdictLink = (x: number, y: number) => <Link d={`M${x} ${y} L${x} 726 L1090 726 L1090 ${196 - SH} L${PX + PW} ${196 - SH}`} color={COLOR.producer} dim={!PR.reviews} />;
   const total = flow.models.reduce((n, m) => n + m.microUsd, 0);
   const calls = flow.models.reduce((n, m) => n + m.calls, 0);
   const failedCalls = flow.models.reduce((n, m) => n + (m.failed || 0) + (m.unknown || 0), 0);
-  const H = 1590;
+  const H = 1590 + SH + 200;
   const waiting = P.waiting;
   const insightGate = waiting.insightReview;
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
@@ -249,7 +264,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           <Node id="producer-start" x={COLS[3]} y={90} h={64} color={COLOR.gate} icon={UserCheck} title="Producer start" lines={[P.waiting.producerStart ? `${P.waiting.producerStart} waiting` : "Authorise and start"]} state={gateState(P.waiting.producerStart) as NodeProps["state"]} badge={gateBadge(P.waiting.producerStart)} />
           {COLS.map((x, i) => <Link key={"in" + i} d={`M${x + NW / 2} 154 L${x + NW / 2} 196`} color={COLOR.input} />)}
           <Bar y={198} title="Firestore · project record" sub={`${P.projects} projects · ${P.consented} authorised · ${P.researchRequested} research requests · ${S.classified} classified`} />
-          <Link d={`M${COLS[0] + NW / 2} 244 L${COLS[0] + NW / 2} 298`} color={COLOR.store} label="reads brief and channels" lx={COLS[0] + NW / 2 + 8} ly={276} />
+          <Link d={`M${COLS[0] + NW / 2} 244 L${COLS[0] + NW / 2} 318`} color={COLOR.store} label="reads brief and channels" lx={COLS[0] + NW / 2 + 8} ly={276} />
 
           {/* Everything below sits in a group moved down to make room for the scoping band. */}
           <g transform={`translate(0 ${DY})`}>
@@ -262,13 +277,14 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           {reviewNode("review:scope", COLS[3], 150, NW, AH, 0, "Checks scope before research")}
           <Link d={`M${COLS[3] + NW} 198 L${PX - 2} 198`} color={COLOR.producer} dim={!PR.reviews} label="verdicts" lx={COLS[3] + NW + 6} ly={190} />
           <Link d={`M${COLS[0] + NW / 2} ${150 + AH} L${COLS[0] + NW / 2} 298`} color={COLOR.store} dim={!S.classified} />
-          {[1, 2].map((i) => <Link key={"sc" + i} d={`M${COLS[i] + NW / 2} ${150 + AH} L${COLS[i] + NW / 2} 298`} color={COLOR.store} dim={!S.classified} label={i === 1 ? "scoped questions" : undefined} lx={COLS[i] + NW / 2 + 8} ly={286} />)}
-          <Link d={`M${COLS[3] + NW / 2} ${150 + AH} L${COLS[3] + NW / 2} 298`} color={COLOR.producer} dim={!PR.reviews} />
+          {[1, 2].map((i) => <Link key={"sc" + i} d={`M${COLS[i] + NW / 2} ${150 + AH} L${COLS[i] + NW / 2} 318`} color={COLOR.store} dim={!S.classified} label={i === 1 ? "scoped questions" : undefined} lx={COLS[i] + NW / 2 + 8} ly={286} />)}
+          <Link d={`M${COLS[3] + NW / 2} ${150 + AH} L${COLS[3] + NW / 2} 318`} color={COLOR.producer} dim={!PR.reviews} />
 
-          <text x="30" y="286" className="sm-band">3 · RESEARCH</text>
+          <text x="30" y="306" className="sm-band">3 · RESEARCH</text>
           {researchIds.map(agentNode)}
-          {researchIds.map(id => { const pos = place[id]; const x = pos.x + NW - 20; return <Link key={"wr" + id} d={supplemental(id) ? `M${x} ${pos.y + 76} L${x} 498` : `M${pos.x + NW} ${pos.y + 60} L${pos.x + NW + 10} ${pos.y + 60} L${pos.x + NW + 10} 498 L${x} 498`} color={COLOR.store} dim={!byId.get(id)?.stats?.calls} />; })}
-          <Link d="M850 278 L850 412 L125 412" color={COLOR.store} label="scoped adjacent, trend and video questions" lx={60} ly={416} />
+          {researchIds.map((id) => { const pos = place[id]; const x = pos.x + NW - 20; const end = 498 + SH; return <Link key={"wr" + id} d={supplemental(id) ? `M${x} ${pos.y + AH} L${x} ${end}` : `M${pos.x + NW} ${pos.y + 60} L${pos.x + NW + 10} ${pos.y + 60} L${pos.x + NW + 10} ${end} L${x} ${end}`} color={COLOR.store} dim={!byId.get(id)?.stats?.calls} />; })}
+          <Link d={`M866 278 L866 ${R1 + AH + 56} L125 ${R1 + AH + 56}`} color={COLOR.store} label="scoped adjacent, trend and video questions" lx={60} ly={R1 + AH + 50} />
+          <g transform={`translate(0 ${SH})`}>
           <Bar y={500} title="Firestore · sources and findings" sub={`${P.sources.total} sources · ${P.sources.findings} claim-level findings · ${P.gaps} gaps · ${P.sources.unreviewed} unreviewed`} />
 
           <text x="30" y="568" className="sm-band">4 · REVIEW</text>
@@ -290,7 +306,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           <Link d={`M${COLS[0] + NW / 2} 790 L${COLS[0] + NW / 2} 838`} color={waiting.directionApproval ? COLOR.gate : COLOR.store} dim={!P.directions.total} />
           {/* Approve direction is an AI producer agent: it checks the direction against the brief, scope and insights, then approves for the customer or sends it back. */}
           {reviewNode("review:direction", COLS[0], 840, NW, AH, waiting.directionApproval, `${P.directions.approved} approved`)}
-          <Link d={`M${COLS[0] + NW / 2 + 40} ${840 + AH} L${COLS[0] + NW / 2 + 40} 975 L1090 975 L1090 196 L${PX + PW} 196`} color={COLOR.producer} dim={!PR.reviews} />
+          <Link d={`M${COLS[0] + NW / 2 + 40} ${840 + AH} L${COLS[0] + NW / 2 + 40} 975 L1090 975 L1090 ${196 - SH} L${PX + PW} ${196 - SH}`} color={COLOR.producer} dim={!PR.reviews} />
           <Link d={`M${COLS[0] + NW} 892 L${COLS[1] - 2} 892`} color={COLOR.gate} dim={!P.directions.approved} />
           {agentNode("synthesis:content")}
           <Link d={`M${COLS[1] + NW} 892 L${COLS[2] - 2} 892`} color={COLOR.agent} dim={!P.copyPacks} />
@@ -310,6 +326,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           <Link d={`M${COLS[2] + NW} 1140 L${COLS[3] - 2} 1140`} color={COLOR.out} dim={!P.assetsApproved} />
           <Node id="publish" x={COLS[3]} y={1100} h={80} color={COLOR.out} icon={Globe} title="Publish yourself" lines={["Outside Port67", "Port67 never posts"]} dashed />
 
+          </g>
           {/* Producer orchestrator: drawn like an LLM at the top of the LLM column, but it is a rules-only agent that steers its four reviewers. */}
           <text x={PX} y={136} className="sm-band">PRODUCER AGENT</text>
           <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.producer} icon={Bot} title="Orchestrator"
@@ -317,6 +334,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
             state={PR.holds ? "blocked" : ""} badge={PR.holds ? `${PR.holds} HELD` : undefined}
             onHover={(e) => showAt("producer-orchestrator", e.clientX, e.clientY)} onLeave={() => setHover(null)} />
 
+          <g transform={`translate(0 ${SH})`}>
           {/* LLM providers: each connector from an agent is one API call path. */}
           <text x={PX} y={586} className="sm-band">LLM APIS (CALLS OUT)</text>
           {PROVIDERS.map((p) => {
@@ -327,7 +345,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
             return <Node key={p.id} id={"provider-" + p.id} x={PX} y={providerY[p.id]} w={PW} h={PH} color={p.color} icon={Cloud} title={p.label} lines={[`${users} agent${users === 1 ? "" : "s"} · ${c} calls`, usd(cost)]} state={users === 0 ? "idle" : ""} />;
           })}
           {ids.map(apiLink)}
-          <text x={PX} y={1056} className="sm-band">CAMPAIGN PLAN AGENTS</text>
+          <text x="30" y="1466" className="sm-band">8 · CAMPAIGN PLAN AGENTS</text>
           {agentNode("synthesis:formats")}
           {agentNode("synthesis:ideas")}
           {PROVIDERS.map((p, i) => <Link key={"tel" + p.id} d={`M${PX + PW} ${providerY[p.id] + PH / 2} L${1088 - i * 4} ${providerY[p.id] + PH / 2} L${1088 - i * 4} 1280 L${COLS[1] + 62 + 380} 1280`} color={COLOR.mon} dim />)}
@@ -338,6 +356,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           <Node id="out-dash" x={COLS[0]} y={1368} h={56} color={COLOR.mon} icon={LayoutDashboard} title="Dashboards" lines={["Private API costs"]} />
           <Node id="out-alerts" x={COLS[1] + 155} y={1368} h={56} color={flow.blockers.some((b) => b.level !== "idle") ? COLOR.gate : COLOR.mon} icon={Bell} title="Alerts" lines={[`${flow.blockers.filter((b) => b.level !== "idle").length} blocked or failed`]} />
           <Node id="out-trouble" x={COLS[3]} y={1368} h={56} color={COLOR.mon} icon={Search} title="Troubleshooting" lines={["Recent calls, below"]} />
+          </g>
           </g>
         </svg>
       </div>

@@ -34,7 +34,7 @@ const flow = { pipeline, edges, models: modelStats(rows), blockers: findBlockers
 const html = renderToStaticMarkup(React.createElement(SystemMap, { agents, flow, onSelectAgent: () => undefined }));
 assert.match(html, /role="button"[^>]*aria-label="Business and brand: change model"/);
 assert.match(html, /aria-label="Customer insight: choose a model"/);
-assert.match(html, /Click to choose a model/);
+assert.match(html, /Health: No model chosen/, 'an agent without a model says so in the same health line as every other agent');
 assert.match(html, /class="sm-hit"[^>]*aria-label="Business and brand researcher to openai gpt-a: 1 call, \$0\.0020"/);
 const plain = renderToStaticMarkup(React.createElement(SystemMap, { agents, flow }));
 assert.doesNotMatch(plain, /role="button"/, 'no click targets without a handler');
