@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createProject, transition, digest } from "../src/lib/factory/engine";
+import { previousDirection, keptIdeas, channelPlaybooks } from "../src/lib/factory/agent-context";
 import {
   prepareSynthesis,
   validateInsights,
@@ -159,4 +160,17 @@ console.log(
   assert.ok(s.sources.some((x) => x.findings?.length), "claim-level findings are passed");
   assert.deepEqual(s.researchGaps, [{ segment: "customer", gaps: ["No pricing data found"] }]);
   console.log("Richer agent inputs passed");
+}
+
+// Redraft context: previous direction and customer feedback reach the strategy writer; blank-collapsed and clipped
+{
+  const base = createProject({ business: "Brand", objective: "Introduce a consumer product", contact: "a@example.com" }, op);
+  assert.equal(previousDirection(base), null);
+  const withDir = { ...base, channels: ["instagram"], strategies: [{ version: 2, status: "changes_requested", message: "Made by hand", positioning: "p", tone: "Warm", doNotClaim: "d", cta: "Book", keyMessages: [{ message: "m", proof: "pr", sourceIds: [] }], feedback: "Too   formal\nmake it friendlier" }], ideas: [{ title: "A", format: "static", hook: "h", angle: "a", rank: 1, status: "kept" }, { title: "B", format: "static", hook: "h", angle: "a", rank: 2, status: "proposed" }] } as never as typeof base;
+  const prev = previousDirection(withDir)!;
+  assert.equal(prev.customerFeedback, "Too formal make it friendlier");
+  assert.equal(prev.version, 2);
+  assert.deepEqual(keptIdeas(withDir).map((i) => i.title), ["A"]);
+  assert.ok(channelPlaybooks(withDir)[0].nativePlaybook.length > 10);
+  console.log("Strategy and copy context blocks passed");
 }
