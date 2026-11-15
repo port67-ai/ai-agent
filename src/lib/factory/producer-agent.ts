@@ -114,6 +114,7 @@ export function planNext(p: Project, aiReady: boolean): Plan {
   if (!live.some((i) => (i.status || "reviewed") !== "draft")) return wait("waiting_human", "Draft insights lack accepted sources: review the sources first.");
   // Direction
   const direction = p.strategies.at(-1);
+  if (!direction && !p.formats?.decidedAt) return wait("waiting_human", "Choose the ad formats for this campaign (static, video, UGC, motion graphics, written) in the Campaign direction tab. The direction is written for the formats you pick.");
   if (!direction) return aiReady ? { step: "draftDirection" } : wait("waiting_human", "AI drafting is not configured: draft the direction by hand.");
   if (direction.status === "shared" && producerApprovalsOn()) return { step: "approveDirection" };
   if (direction.status === "shared") return wait("waiting_customer", "Direction shared: waiting for the account owner to approve it.");

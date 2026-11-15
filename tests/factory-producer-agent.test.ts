@@ -33,6 +33,8 @@ async function main() {
   p.insights.push(insight("i1", ["brand0"]));
   assert.deepEqual(planNext(p, false), { step: "reviewInsights" });
   p.insights[0].status = "reviewed";
+  assert.match((planNext(p, true) as { stop: { reason: string } }).stop.reason, /Choose the ad formats/, "the producer must choose formats before the direction");
+  p.formats = { suggested: [], suggestedAt: at, selected: ["static"], decidedBy: "producer", decidedAt: at };
   assert.deepEqual(planNext(p, true), { step: "draftDirection" });
   p.runs.push({ id: "busy", stage: "insights", at, status: "running" } as never);
   assert.equal((planNext(p, true) as { stop: { kind: string } }).stop.kind, "blocked", "never overlaps a provider task");

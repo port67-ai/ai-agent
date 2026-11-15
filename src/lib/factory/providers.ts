@@ -1,3 +1,4 @@
+import { applySkill } from './skills';
 export type Provider = 'openai' | 'anthropic' | 'deepseek' | 'gemini';
 export type ProviderStage = 'research' | 'synthesis';
 type Env = Record<string,string|undefined>;
@@ -22,7 +23,8 @@ export type ProviderResult={text:string;usage:Record<string,number>;rawUsage?:un
 // Provider error text is kept so a failure can be diagnosed, with anything that looks like a credential removed.
 const redact = (v: unknown) => String(v ?? '').replace(/(sk-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{20,}|Bearer\s+\S+|key=\S+)/g, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 220);
 const detail = (d: { error?: { message?: unknown; status?: unknown } | string; message?: unknown } | undefined) => redact(typeof d?.error === 'string' ? d.error : d?.error?.message ?? d?.error?.status ?? d?.message);
-export async function invokeProvider(s:ProviderSelection,request:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean}):Promise<ProviderResult>{
+export async function invokeProvider(s:ProviderSelection,request0:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean}):Promise<ProviderResult>{
+ const request={...request0,instructions:applySkill(request0.instructions)};
  const {provider,model,key}=s;const headers:Record<string,string>={'content-type':'application/json'};let url:string;let body:Record<string,unknown>;
  if(request.research && provider!=='openai' && provider!=='gemini') throw new Error('Research requires grounded web search');
  if(provider==='openai') {url='https://api.openai.com/v1/responses';headers.authorization=`Bearer ${key}`;body={model,store:false,max_output_tokens:request.research?5000:3000,instructions:request.instructions,input:request.input,...(request.research?{tools:[{type:'web_search',search_context_size:'low'}],include:['web_search_call.action.sources']}:{}),...(request.schema?{text:{format:{type:'json_schema',name:request.name,strict:true,schema:request.schema}}}:{})};}

@@ -195,7 +195,7 @@ export type ResearchRun = {
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content";
+  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -262,6 +262,12 @@ export type AdvertPlan = {
   approvedBy?: string;
   approvedAt?: string;
 };
+/** An ad idea in the ideas bank. A producer keeps or drops each one. */
+export type Idea = {
+  id: string; title: string; format: string; keyMessage: number; segment?: string; hook: string; angle: string;
+  criteria: string[]; productionNotes: string; sourceIds: string[]; rank: number;
+  by?: "ai" | "rules"; status: "proposed" | "kept" | "dropped"; priority: "high" | "medium" | "low"; createdAt: string; decidedBy?: string;
+};
 export type Project = {
   accountId?: string;
   createdBy?: string;
@@ -285,6 +291,14 @@ export type Project = {
   tasks: ProductionTask[];
   assets: Asset[];
   videos?: Video[];
+  /** Ad formats: what the system suggested after the insight review and what a producer chose. Drives direction, copy and the video track. */
+  formats?: { suggested: { id: string; score: number; reason: string }[]; suggestedAt: string; suggestedBy?: "ai" | "rules"; selected: string[]; decidedBy?: string; decidedAt?: string };
+  /** The strapline (the one message every ad carries) and the demographics the brand is tailored to. */
+  audiences?: { strapline: string; segments: { id: string; name: string; description: string; angle: string }[]; updatedAt: string; updatedBy: string };
+  /** The ideas bank. */
+  ideas?: Idea[];
+  /** The weekly research pack, computed for producers when the project is viewed. Never stored. */
+  researchPack?: { generatedAt: string; sections: { title: string; items: string[] }[]; actions: { rank: number; text: string }[] };
   /** The current video advert plan for the approved direction. Customers see it only once shared. */
   advert?: AdvertPlan;
   /** Launch channels (IDs from channels.ts) chosen for this campaign; they steer research, direction and copy. */
@@ -359,6 +373,7 @@ export type Database = {
   budgetSettings?: BudgetSettings;
   /** Spend before this moment stays in the ledger but no longer counts towards the caps (testing aid). */
   costBaseline?: { at: string; by: string };
+  skills?: Record<string, { version: number; body: string; editedBy: string; at: string; note?: string }[]>;
   approvalMode?: { mode: "ai" | "manual"; updatedAt: string; updatedBy: string };
   team?: TeamMember[];
   teamAudit?: TeamAuditEntry[];
