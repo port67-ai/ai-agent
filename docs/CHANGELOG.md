@@ -500,6 +500,16 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0073 - 2026-11-15 - Run progress is the one place to see status and act
+- What/why: status and decisions were spread over several tabs. Each Run progress row on the producer Overview now carries its action: the matching AI generation (insights, formats, strapline and audiences, direction, copy pack), Share with customer, and Approve (on behalf) when test mode is on, plus Go to approval or Go to step. A new Strapline and audiences row was added. The account owner's Overview gets a "Waiting for you" card with Review and approve buttons for the direction and for shared assets.
+- Requirements: FAC-OBS-001 (run tracker), FAC-HAR-012. PRD impact: none.
+- Tests: run tracker row actions added; factory suite passing.
+
+## CHG-0072 - 2026-11-15 - Direction approval is now at the top, and finished actions turn green
+- What/why: "Go to approval" opened the Direction tab but the approve buttons sat at the bottom of a long page, and producers and admins only see an approve-on-behalf button when PORT67_PRODUCER_APPROVALS is on. The direction card now opens with a banner that says who must approve and what to press, "Go to approval" scrolls to it, and approved or shared states show a green, disabled "Approved" or "Shared with customer" button. Confirm formats and Save strapline, segments and demographics also turn green and disable while nothing has changed since they were saved.
+- Requirements: FAC-HAR-012 (producer approvals), FAC-OBS-001 (run tracker). PRD impact: none.
+- Tests: factory suite passing; type check clean.
+
 ## CHG-0071 - 2026-11-15 - Unknown-cost calls hold $0.10, and AI failures are shown
 - What/why: the project hit its spend cap ($29.12 of $30.00) although real spend was about $0.28, because every call with unknown cost was held at $1. The default hold is now $0.10, which suits gpt-5.4-mini class calls; an admin-saved or Render value still overrides it, and slow, search-heavy models can be given a larger hold. Run progress now shows "Last draft failed: reason" for the campaign direction, and the Direction tab shows the last failure reason under the AI format and audiences buttons, so a cap or contract rejection is no longer silent.
 - Requirements: FAC-CST-003 (default refined). PRD impact: none.

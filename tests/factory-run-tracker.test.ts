@@ -40,3 +40,15 @@ p.insights[0].status = "draft";
 assert.equal(by(p, "insights").state, "paused");
 assert.match(by(p, "insights").detail, /Too few supported/);
 console.log("Run tracker: running, done, paused with reason, and waiting-for-approval steps link to the approval page");
+
+// row actions: AI generation and the human decisions are offered on the row where they belong
+{
+  const base = { runs: [], sources: [{ id: "s", kind: "public_source", status: "supported", segment: "brand" }], insights: [{ id: "i", status: "reviewed" }], assets: [], strategies: [], formats: { selected: ["static"], suggested: [], suggestedAt: "", decidedAt: "x" } } as unknown as Project;
+  assert.equal(by(base, "audiences").ai, "audiences");
+  assert.equal(by(base, "direction").ai, "strategy");
+  const shared = { ...base, audiences: { strapline: "S", segments: [] }, strategies: [{ status: "shared", version: 1, hash: "h" }] } as unknown as Project;
+  assert.equal(by(shared, "direction-approval").act, "approve_direction");
+  const approved = { ...shared, strategies: [{ status: "approved", version: 1, hash: "h" }] } as unknown as Project;
+  assert.equal(by(approved, "production").ai, "content");
+  console.log("Run tracker row actions passed");
+}

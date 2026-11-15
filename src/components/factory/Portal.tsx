@@ -38,6 +38,7 @@ import CampaignPlan from "./CampaignPlan";
 import Assets from "./Assets";
 import Advert from "./Advert";
 import Ideas from "./Ideas";
+import CustomerApprovals from "./CustomerApprovals";
 import RunTracker from "./RunTracker";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
@@ -488,7 +489,23 @@ export default function Portal() {
             <>
               {tab === "overview" && (
                 <>
-                  {operator && <RunTracker p={p} go={(t) => go(t)} />}
+                  {operator && (
+                    <RunTracker
+                      p={p}
+                      go={(t) => go(t)}
+                      busy={busy}
+                      aiReady={!!config?.synthesisReady && !principal.demo}
+                      canApproveForCustomer={!!p.producerApprovals}
+                      onAi={(stage) => void run(() => api("projects/" + p.id + "/synthesis", { stage }), "AI draft ready. Review it in the matching tab.")}
+                      onAct={(act) => {
+                        const s = p.strategies.at(-1);
+                        if (!s) return;
+                        if (act === "share_direction") void command({ type: "shareStrategy" }, "Direction shared for customer review");
+                        else if (window.confirm("Approve this direction on the customer's behalf (test mode)? It is recorded as given by you for the customer.")) void command({ type: "approveStrategy", hash: s.hash, feedback: "" }, "Direction approved on the customer's behalf. Production can start.");
+                      }}
+                    />
+                  )}
+                  {!operator && <CustomerApprovals p={p} go={(t) => go(t)} />}
                   <div className="f-hero-panel">
                     <div>
                       <Tag tone="light">{stage}</Tag>

@@ -189,6 +189,25 @@ export default function Direction({
             Delivery is paused while Port67 prepares the next proposal.
           </div>
         )}
+        <div id="approval-anchor" className={"f-approval-banner" + (s.status === "approved" ? " approved" : "")}>
+          {s.status === "approved" ? (
+            <strong>Direction approved{s.approvedBy ? " by " + s.approvedBy : ""}. Production can start (Production tab).</strong>
+          ) : s.status === "shared" ? (
+            operator ? (
+              p.producerApprovals ? (
+                <strong>Waiting for approval. Test mode is on: use "Approve direction (on behalf)" below.</strong>
+              ) : (
+                <strong>Waiting for the account owner to approve. Sign in as the account owner, who sees "Approve direction" below. Producers and admins can only approve for them when PORT67_PRODUCER_APPROVALS is on.</strong>
+              )
+            ) : (
+              <strong>Your approval is needed. Read the direction, then press "Approve direction" at the bottom of this card, or request changes.</strong>
+            )
+          ) : s.status === "changes_requested" ? (
+            <strong>Changes were requested. Create a new version and share it again.</strong>
+          ) : (
+            <strong>Draft. Not shared with the customer yet.</strong>
+          )}
+        </div>
         <div className="f-section-heading">
           <Tag tone={s.status === "approved" ? "green" : "orange"}>
             {s.status.replaceAll("_", " ")}
@@ -274,6 +293,11 @@ export default function Direction({
         </div>
         {operator ? (
           <div className="f-actions">
+            {s.status !== "draft" && (
+              <button className="f-button done" disabled>
+                Shared with customer <Check size={16} />
+              </button>
+            )}
             {s.status === "draft" && (
               <button
                 className="f-button"
@@ -356,12 +380,13 @@ export default function Direction({
             </div>
           </div>
         ) : (
-          <p className="f-small">
-            {s.status === "approved"
-              ? "Approved " +
-                new Date(s.approvedAt!).toLocaleDateString("en-GB")
-              : "Your feedback is with Port67."}
-          </p>
+          s.status === "approved" ? (
+            <button className="f-button done" disabled>
+              Approved {new Date(s.approvedAt!).toLocaleDateString("en-GB")} <Check size={16} />
+            </button>
+          ) : (
+            <p className="f-small">Your feedback is with Port67.</p>
+          )
         )}
       </section>
       <section className="f-panel f-fit">

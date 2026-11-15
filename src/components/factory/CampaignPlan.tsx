@@ -18,6 +18,8 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
   const [strap, setStrap] = useState(p.audiences?.strapline || "");
   const [segs, setSegs] = useState(toLines(p.audiences?.segments));
   const sug = p.audienceSuggestion;
+  const formatsSaved = !!f?.decidedAt && picked.length === f.selected.length && picked.every((x) => f.selected.includes(x));
+  const audSaved = !!p.audiences && strap === p.audiences.strapline && segs === toLines(p.audiences.segments);
   const lastOf = (stage: string) => p.runs.filter((r) => r.stage === stage).at(-1);
   const failure = (stage: string) => { const r = lastOf(stage); return r?.status === "failed" && r.error ? r.error : ""; };
   const why = new Map((f?.suggested || []).map((s) => [s.id, s.reason]));
@@ -49,8 +51,8 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
               {why.get(x.id) ? <em> Why: {why.get(x.id)}.</em> : null}
             </label>
           ))}
-          <button className="f-button" disabled={busy || !picked.length} onClick={() => void command({ type: "selectFormats", formats: picked }, "Formats chosen. The direction is written for them.")}>
-            Confirm formats <Check size={14} />
+          <button className={"f-button" + (formatsSaved ? " done" : "")} disabled={busy || !picked.length || formatsSaved} onClick={() => void command({ type: "selectFormats", formats: picked }, "Formats chosen. The direction is written for them.")}>
+            {formatsSaved ? "Formats confirmed" : "Confirm formats"} <Check size={14} />
           </button>
         </>
       ) : (
@@ -85,8 +87,8 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
       <Field label="Audience segments, one per line: name | demographics | who they are | angle that will land (up to six)">
         <textarea value={segs} onChange={(e) => setSegs(e.target.value)} rows={4} />
       </Field>
-      <button className="f-button" disabled={busy} onClick={() => void command({ type: "setAudiences", strapline: strap, segments: fromLines(segs) }, "Strapline, segments and demographics saved.")}>
-        Save strapline, segments and demographics <Check size={14} />
+      <button className={"f-button" + (audSaved ? " done" : "")} disabled={busy || audSaved} onClick={() => void command({ type: "setAudiences", strapline: strap, segments: fromLines(segs) }, "Strapline, segments and demographics saved.")}>
+        {audSaved ? "Saved" : "Save strapline, segments and demographics"} <Check size={14} />
       </button>
     </section>
   );
