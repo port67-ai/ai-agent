@@ -61,3 +61,13 @@ console.log("Run tracker: running, done, paused with reason, and waiting-for-app
   assert.equal(by(mk("supported", "reviewed"), "sources").act, undefined);
   console.log("Run tracker review actions passed");
 }
+
+// a stale AI-producer hold must not keep a step paused once a person has decided the sources
+{
+  const mk = (status: string) => ({ runs: [], producerAgent: { hold: { gate: "sources", subject: "x", notes: "The source producer left 1 of 28 sources undecided: review them by hand." } }, sources: [{ id: "s1", kind: "public_source", status, segment: "brand" }, { id: "s2", kind: "public_source", status: "supported", segment: "brand" }, { id: "s3", kind: "public_source", status: "supported", segment: "brand" }], insights: [], assets: [], strategies: [] }) as unknown as Project;
+  assert.equal(by(mk("unreviewed"), "sources").state, "paused");
+  assert.match(by(mk("unreviewed"), "sources").detail, /1 of 3 sources are waiting for you/);
+  assert.equal(by(mk("unreviewed"), "sources").act, "review_sources");
+  assert.equal(by(mk("supported"), "sources").state, "done", "stale hold ignored once nothing is undecided");
+  console.log("Run tracker stale hold passed");
+}

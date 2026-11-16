@@ -1,4 +1,5 @@
 import type { Project, Segment } from "./model";
+import { MIN_ACCEPTED_PER_SEGMENT } from "./producer-reviews";
 
 // Where a project is in its run: what has run, what is running, what is paused and what is waiting for an approval. Computed from the
 // project, never stored. `tab` names the page where the person acts (the portal turns it into a link).
@@ -27,13 +28,15 @@ export function runTracker(p: Project): TrackStep[] {
   }
   const unreviewed = p.sources.filter((s) => s.status === "unreviewed").length;
   const anyPublic = p.sources.some((s) => s.kind === "public_source");
-  const srcHold = st?.hold?.gate === "sources";
+  // A hold is the AI producer's note from an earlier pass. It only counts while what it names is still open: a person may have decided the sources since.
+  const shortSegments = [...CORE].filter((k) => p.sources.filter((s) => s.segment === k && s.kind === "public_source" && s.status === "supported").length < MIN_ACCEPTED_PER_SEGMENT);
+  const srcHold = st?.hold?.gate === "sources" && (unreviewed > 0 || (st.hold.notes.startsWith("Fewer than") && shortSegments.length > 0));
   step("sources", "Source review", runningStage("review") && unreviewed ? "running" : !anyPublic ? "pending" : srcHold ? "paused" : unreviewed ? "paused" : "done",
-    srcHold ? st!.hold!.notes : unreviewed ? `${unreviewed} sources await review` : anyPublic ? "All sources decided" : "Waiting for research", "research", unreviewed ? { act: "review_sources" } : {});
+    srcHold && unreviewed ? `${unreviewed} of ${p.sources.filter((x) => x.kind === "public_source").length} sources are waiting for you (the AI source producer left them undecided)` : srcHold ? st!.hold!.notes : unreviewed ? `${unreviewed} sources await review` : anyPublic ? "All sources decided" : "Waiting for research", "research", unreviewed ? { act: "review_sources" } : {});
   const drafts = p.insights.filter((i) => i.status === "draft").length;
   const reviewed = p.insights.filter((i) => (i.status || "reviewed") === "reviewed").length;
-  step("insights", "Insight review", runningStage("insights") ? "running" : reviewed && !drafts ? "done" : st?.hold?.gate === "insights" ? "paused" : drafts ? "paused" : "pending",
-    st?.hold?.gate === "insights" ? st.hold.notes : drafts ? `${drafts} draft insights await review` : reviewed ? `${reviewed} accepted` : "Not drafted yet", "research", drafts ? { act: "review_insights" } : !p.insights.length && anyPublic && !unreviewed ? { ai: "insights" } : {});
+  step("insights", "Insight review", runningStage("insights") ? "running" : reviewed && !drafts ? "done" : st?.hold?.gate === "insights" && drafts ? "paused" : drafts ? "paused" : "pending",
+    st?.hold?.gate === "insights" && drafts ? st.hold.notes : drafts ? `${drafts} draft insights await review` : reviewed ? `${reviewed} accepted` : "Not drafted yet", "research", drafts ? { act: "review_insights" } : !p.insights.length && anyPublic && !unreviewed ? { ai: "insights" } : {});
   step("formats", "Ad formats", p.formats?.decidedAt ? "done" : reviewed ? "paused" : "pending", p.formats?.decidedAt ? `${p.formats.selected.length} chosen` : reviewed ? "A producer must choose the formats" : "After the insight review", "direction", reviewed && !p.formats?.decidedAt ? { ai: "formats" } : {});
   step("audiences", "Strapline and audiences", p.audiences?.strapline ? "done" : p.formats?.decidedAt ? "paused" : "pending", p.audiences?.strapline ? `${p.audiences.segments.length} segments saved` : p.formats?.decidedAt ? "Choose a strapline and audience segments" : "After the ad formats", "direction", p.formats?.decidedAt && !p.audiences?.strapline ? { ai: "audiences" } : {});
   const d = p.strategies.at(-1);

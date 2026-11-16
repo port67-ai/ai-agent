@@ -73,6 +73,11 @@ export default function Research({
         <section className="f-panel f-callout" role="status">
           <strong>Gate 1: {p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").length} sources are waiting for your review.</strong>
           <p className="f-small">Accept them all in one step while we test, or open each research area and choose Accept evidence or Reject per source (you can still reject any one afterwards). Insights can only use accepted sources. A producer does this; no AI reviews sources yet.</p>
+          <ul className="f-small" style={{ margin: "6px 0 10px", paddingLeft: 18 }}>
+            {p.sources.filter((s) => s.kind === "public_source" && s.status === "unreviewed").slice(0, 6).map((s) => (
+              <li key={s.id}>{researchLabels[s.segment] || s.segment}: {s.title}</li>
+            ))}
+          </ul>
           <button
             type="button"
             className="f-button small"
