@@ -21,4 +21,3 @@ export function noInventedFigures(text: string, payload: unknown) {
 export const textSchema = { type: "string" };
 export const textsSchema = { type: "array", items: textSchema };
 export const strictSchema = (properties: Record<string, unknown>) => ({ type: "object", additionalProperties: false, properties, required: Object.keys(properties) });
-

@@ -19,4 +19,3 @@ export const researchTaskKey = (p: Project, segment: Segment) => {
 export const planningScopeKey = (p: Project) => JSON.stringify(segments.map(segment => [segment, researchTaskKey(p, segment)]));
 export const mediumEvidenceKey = (p: Project) => JSON.stringify({ input: planningInputKey(p), plan: p.researchPlanning?.version || 0, sources: p.sources.filter(s => s.status === "supported" && s.kind === "public_source").map(s => [s.id, s.excerpt, s.findings, s.url]), insights: p.insights.filter(i => (i.status || "reviewed") === "reviewed").map(i => [i.id, i.interpretation, i.sourceIds, i.confidence]) });
 export const mediumCurrent = (p: Project) => p.mediumSelection?.status === "completed" && p.mediumSelection.evidenceKey === mediumEvidenceKey(p);
-

@@ -15,4 +15,3 @@ export const RESEARCH_METHODS = [
 ] as const;
 export type ResearchMethodId = typeof RESEARCH_METHODS[number]["id"];
 export const methodsFor = (segment: Segment) => RESEARCH_METHODS.filter(m => (m.agents as readonly string[]).includes(segment));
-
