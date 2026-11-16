@@ -195,12 +195,12 @@ export default function Direction({
           ) : s.status === "shared" ? (
             operator ? (
               p.producerApprovals ? (
-                <strong>Waiting for approval. Test mode is on: use "Approve direction (on behalf)" below.</strong>
+                <strong>Waiting for approval. Test mode is on: use &quot;Approve direction (on behalf)&quot; below.</strong>
               ) : (
-                <strong>Waiting for the account owner to approve. Sign in as the account owner, who sees "Approve direction" below. Producers and admins can only approve for them when PORT67_PRODUCER_APPROVALS is on.</strong>
+                <strong>Waiting for the account owner to approve. Sign in as the account owner, who sees &quot;Approve direction&quot; below. Producers and admins can only approve for them when PORT67_PRODUCER_APPROVALS is on.</strong>
               )
             ) : (
-              <strong>Your approval is needed. Read the direction, then press "Approve direction" at the bottom of this card, or request changes.</strong>
+              <strong>Your approval is needed. Read the direction, then press &quot;Approve direction&quot; at the bottom of this card, or request changes.</strong>
             )
           ) : s.status === "changes_requested" ? (
             <strong>Changes were requested. Create a new version and share it again.</strong>

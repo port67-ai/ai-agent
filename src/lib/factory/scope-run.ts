@@ -12,6 +12,7 @@ import type { Repository } from "./repository";
 // step (researchers, preparation panel, dossier, GET projects/{id}/scope) reads the same classification.
 // If the agent cannot run for any reason a deterministic template scope is saved instead: research never waits on it.
 const MAX_SCOPE_RUNS = 6;
+const nextScopeVersion = (p: Project) => Math.max(p.scope?.version || 0, ...(p.scopeHistory || []).map(s => s.version)) + 1;
 const MAX_HISTORY = 10;
 export const scopingEnabled = (env: Record<string, string | undefined> = process.env) => env.PORT67_SCOPING_ENABLED !== "false" && env.PORT67_RESEARCH_ENABLED === "true";
 
@@ -90,7 +91,7 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
   const before = find((await repo.read(a.workspaceId)).projects, projectId, a);
   const hash = briefHash(before);
   if (!force && before.scope && before.scope.briefHash === hash) return before.scope;
-  const template = (note?: string) => store(repo, a, projectId, (current) => templateScope(current, { briefHash: briefHash(current), version: (current.scope?.version || 0) + 1, note }));
+  const template = (note?: string) => store(repo, a, projectId, (current) => templateScope(current, { briefHash: briefHash(current), version: nextScopeVersion(current), note }));
   if (a.demo) return template("Synthetic demo: no paid scoping call.");
   if (!scopingEnabled()) return template(process.env.PORT67_SCOPING_ENABLED === "false" ? "Scoping agent switched off (PORT67_SCOPING_ENABLED=false)." : "Research is not switched on, so the template scope was used.");
   if (!hasProviderConsent(before)) return template("The brief is not yet authorised for AI providers, so the template scope was used.");
@@ -148,7 +149,7 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
       const changed = briefHash(current) !== hash;
       const error = changed ? "The brief changed while the scoping agent ran; its answer was not used" : reason;
       stamp(current, error);
-      const base = { version: (current.scope?.version || 0) + 1, briefHash: briefHash(current) };
+      const base = { version: nextScopeVersion(current), briefHash: briefHash(current) };
       if (error || !value) return templateScope(current, { ...base, note: ("Scoping agent did not return a usable scope (" + (error || "no value") + "). The template scope was used.").slice(0, 240) });
       return { version: base.version, source: "ai", at: new Date().toISOString(), briefHash: base.briefHash, provider: selection.provider, model: selection.model, runId: run.id, ...value };
   });
@@ -157,7 +158,7 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
 export async function saveScope(repo: Repository, a: Principal, projectId: string, input: unknown): Promise<ResearchScope> {
   operator(a);
   const valid = validateScope(input);
-  return store(repo, a, projectId, (current) => ({ version: (current.scope?.version || 0) + 1, source: "manual", at: new Date().toISOString(), briefHash: briefHash(current), by: a.subject, ...valid }));
+  return store(repo, a, projectId, (current) => ({ version: nextScopeVersion(current), source: "manual", at: new Date().toISOString(), briefHash: briefHash(current), by: a.subject, ...valid }));
 }
 /** Whether the stored scope still matches the brief. A false value means the brief changed after classification. */
 export const scopeCurrent = (p: Project) => !!p.scope && p.scope.briefHash === briefHash(p);

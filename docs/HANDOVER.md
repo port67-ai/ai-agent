@@ -1,3 +1,28 @@
+# Latest handover — CHG-0082 customer-driven project tasks, 16 November 2026
+
+Branch: `feat/customer-task-planning`. Base: `origin/main` at `9f629cd` (includes the Skill writer). Owner authorised adding task-based architecture to the existing MVP. Implementation is local, not merged or deployed.
+
+New project HTTP intake stores a plan from campaign/research-only work, objective, requested deliverables and channels. `task-plan.ts` selects relevant research agents with reasons, validates dependencies and reconciles persisted task status. Existing records continue their legacy path until a producer creates a plan in Overview. Producer overrides require a reason and expected version. Brief/channel/format edits before direction work replan; historical runs/costs are preserved, stale results rejected, and post-direction scope locks remain.
+
+Overview has the task board, version history, agent selection and Run ready tasks. Research preparation/progress uses selected agents. Research-only work stops after reviewed insights. Confirmed formats select template production tasks: static-only does not run motion or copy. Full unsupported outputs stay visible as producer work with a completion/handoff note; customer asset approvals remain enforced. The global map now shows task manager feeding orchestrator and remains a capability catalogue.
+
+Review corrections: source/insight holds and pending redrafts take precedence over apparent completion; failed paid drafting tasks cannot automatically retry. Task-aware reviewer results are rejected after input/consent changes with usage kept. Scope versions remain monotonic after brief invalidation. New tests reproduce the independent review's findings and the stale reviewer case.
+
+Verification on this branch, 16 November 2026:
+- `npm test` passed (existing suite plus planner/API/UI tests; synthetic provider transport only).
+- `npm run check:factory` passed; `./node_modules/.bin/tsc --noEmit` passed.
+- `npm run build` passed. Existing dynamic file-tracing warnings from video-store remain.
+- `PORT67_TEST_ORIGIN=http://localhost:3100 npm run test:browser` passed, including task-plan selection/version save and desktop/mobile screenshots.
+- `python3 scripts/check_docs_governance.py --base 9f629cd` and `git diff --check` passed.
+- `npm run test:firestore` attempted twice (second with writable temporary cache/config paths) but the emulator JAR could not be downloaded from storage.googleapis.com. No emulator assertions ran; this remains an integration-verification limitation.
+
+Independent whole-feature review found two important defects (hold precedence and implicit failed-draft retry); regression tests failed before fixes and pass afterwards. A further stale-review test also failed before the fix and now passes. No deferred review findings remain.
+
+ No paid provider calls, cloud provisioning or deployment were performed. Planning is deterministic and needs producer review for ambiguous briefs. Durable Cloud Tasks delivery, distributed orchestration leases, external-agent adapters and the storage split remain outside this change. See PRD 1.27.0 section 25.8 and the task-planning design/implementation plan.
+
+---
+Earlier handover follows.
+
 # Latest handover — CHG-0062 research intelligence, 2026-11-15
 
 Branch: codex/research-creative-intelligence. Base: origin/main at 3bfa110 (includes CHG-0061 advert phase 1 and latest charging/evidence controls). Owner requested implementation while travelling, with no further questions.

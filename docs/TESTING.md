@@ -17,3 +17,10 @@ Live-foundation checks and limits: FOUNDATION_VERIFICATION.md. npm run audit:sec
 CHG-0009 tests: npm test includes provider/identity/account/API/storage-schema/metering/campaign/archive contracts. npm run test:firestore uses demo-only Firestore emulator with Java21 and verifies real Admin persistence/transactions and browser-deny rules; CI runs it. npm run test:browser includes synthetic journey plus explicit account/admin UI fixtures. No mock is live acceptance; cloud/provider checks still required. Evidence ACCOUNTS_VERIFICATION.md.
 
 CHG-0010: factory-account-errors.test.ts validates allowlisted diagnostics and no raw-error leaks/unknown-user enumeration. Account browser test reproduces auth-config503 with zero Firebase requests, then a mocked Firebase OPERATION_NOT_ALLOWED response with a specific setup message. Fixtures use fake credentials only and do not establish real sign-up activation.
+
+
+## CHG-0082 customer task plans
+
+`npm test` includes `factory-task-plan.test.ts`, `factory-task-plan-api.test.ts` and `factory-task-plan-ui.test.tsx`. These cover relevance, DAG validation, versioned overrides, role isolation, static-only production, manual task completion, review holds/pending rework, explicit retry boundaries, stale research/reviewer results with retained paid usage and local restart reconstruction. Existing campaign/scoping/auto-start fixtures now assert the selected five-researcher path where appropriate; video campaigns explicitly collect video evidence before drafting.
+
+`npm run test:browser` includes `factory-task-plan-browser.cjs`. With a local app running at `PORT67_TEST_ORIGIN` (default localhost:3000), it uses explicit synthetic API fixtures and the real transition engine to test the task board, agent checkbox edits, reason/version save, history and desktop/mobile rendering. It does not call a paid provider. Screenshots live in ignored `work/screenshots/`.

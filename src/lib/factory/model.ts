@@ -27,6 +27,10 @@ export type Principal = {
   expires?: number;
 };
 export type Brief = {
+  /** Explicit requested journey; omitted on legacy projects. */
+  workRequest?: "campaign" | "research";
+  /** Customer's requested outputs; producer format confirmation remains a later gate. */
+  requestedFormats?: string[];
   business: string;
   objective: string;
   description: string;
@@ -201,6 +205,7 @@ export type Audit = {
   detail: string;
 };
 export type ResearchRun = {
+  taskInputKey?: string;
   accountId?: string;
   projectId?: string;
   capabilityId?: string;
@@ -281,6 +286,9 @@ export type Idea = {
   by?: "ai" | "rules"; status: "proposed" | "kept" | "dropped"; priority: "high" | "medium" | "low"; createdAt: string; decidedBy?: string;
 };
 export type Project = {
+  taskPlan?: import("./task-plan").TaskPlan;
+  /** Customer-safe progress, without agent instructions, private costs or plan history. */
+  taskProgress?: { id: string; title: string; status: string }[];
   accountId?: string;
   createdBy?: string;
   aiConsent?: {

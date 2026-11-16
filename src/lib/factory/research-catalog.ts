@@ -1,4 +1,5 @@
 import type { Project, Segment } from './model';
+import { selectedResearch } from './task-plan';
 import type { SegmentScope } from './scope';
 
 export const RESEARCH_LABELS: Record<Segment, string> = {
@@ -26,6 +27,7 @@ export function researchContextHash(p: Project): string {
 
 /** Existing four-role campaigns may finish; new/expanded scopes require the full bus. */
 export function requiredResearchSegments(p: Project): Segment[] {
+  if (p.taskPlan) return selectedResearch(p);
   const core: Segment[] = ['brand','customer','competitor','creative'];
   const extended: Segment[] = ['adjacent','trends','video'];
   const expanded = extended.some(s => p.scope?.segments[s] || p.runs.some(r => r.segment === s));

@@ -1,3 +1,4 @@
+import { syncTaskPlan, taskResearchCurrent } from "./task-plan";
 import { requiredResearchSegments } from "./research-catalog";
 import { loadApprovalMode, producerApprovalsOn } from "./approval-mode";
 import { access, digest, id, operator, transition } from "./engine";
@@ -44,8 +45,10 @@ const MAX_PASSES = 30;
 const MAX_LOG = 40;
 const MAX_REWORKS = 1;
 
-export type StepId = "reResearch" | "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
+export type StepId = "scope" | "research" | "reResearch" | "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
 export const STEP_LABEL: Record<StepId, string> = {
+  scope: "Scope the customer request",
+  research: "Execute the next selected research task",
   reviewScope: "Scope producer reviews the classification",
   reviewSources: "Source producer reviews the sources",
   draftInsights: "Draft insights with AI",
@@ -67,6 +70,7 @@ export function progressFingerprint(p: Project): string {
   const count = (items: { status?: string }[]) => items.reduce<Record<string, number>>((m, x) => ((m[x.status || "-"] = (m[x.status || "-"] || 0) + 1), m), {});
   const last = p.strategies.at(-1);
   return digest(JSON.stringify({
+    plan: p.taskPlan?.version,
     runs: p.runs.length,
     running: p.runs.filter((r) => r.status === "running").length,
     sources: count(p.sources),
@@ -95,13 +99,42 @@ const draftsReady = (p: Project) => p.insights.filter((i) => (i.status || "revie
 export const holdSubject = (ids: string[]) => (ids.length ? digest(ids.join(",")) : "none");
 
 /** The single next thing the orchestrator would do, or the reason it stops. Pure: no calls, no writes. */
-export function planNext(p: Project, aiReady: boolean): Plan {
+export function planNext(input: Project, aiReady: boolean): Plan {
+  if (!input.taskPlan) return legacyPlanNext(input, aiReady);
+  const p = structuredClone(input);
+  syncTaskPlan(p);
+  if (p.runs.some(r => r.status === "running")) return wait("blocked", "An agent task is still running.");
+  const tasks = p.taskPlan!.tasks;
+  const held = tasks.find(t => t.status === "blocked");
+  if (held) return wait("waiting_human", held.title + ": " + held.detail);
+  if (tasks.find(t => t.id === "scope")?.status !== "done") return { step: "scope" };
+  if (p.scope && !(p.reviews || []).some(r => r.gate === "scope" && r.subject === "v" + p.scope!.version)) return { step: "reviewScope" };
+  const research = tasks.filter(t => t.id.startsWith("research:") && t.status !== "skipped");
+  const failed = research.find(t => t.status === "blocked");
+  if (failed) return wait("waiting_human", failed.title + ": " + failed.detail);
+  if (research.some(t => t.status === "ready")) return researchRunner ? { step: "research" } : wait("blocked", "Research execution is not connected.");
+  if (research.some(t => t.status !== "done")) return wait("blocked", "Waiting for selected research dependencies.");
+  if (p.taskPlan!.mode === "research" && tasks.filter(t => !t.id.startsWith("research:")).every(t => t.status === "done")) return wait("done", "Requested research and insights are reviewed. No creative agents are scheduled.");
+  const plan = legacyPlanNext(p, aiReady);
+  if ("step" in plan) {
+    // Bounded reviewer rework continues through the existing audited commands.
+    if (["reviewScope", "reResearch"].includes(plan.step)) return plan;
+    const task = tasks.find(t => t.id === plan.step);
+    if (!task) return wait("waiting_human", "This action is outside the customer's task plan.");
+    if (task.status === "blocked") return wait("waiting_human", task.title + ": " + task.detail);
+    if (task.status === "pending") return wait("blocked", task.title + ": waiting for task dependencies.");
+  }
+  if ("stop" in plan && plan.stop.kind === "done" && tasks.some(t => t.status === "manual")) return wait("waiting_human", "Producer work remains: " + tasks.filter(t => t.status === "manual").map(t => t.title).join(", "));
+  return plan;
+}
+
+function legacyPlanNext(p: Project, aiReady: boolean): Plan {
   const st = p.producerAgent;
   if (p.runs.some((r) => r.status === "running")) return wait("blocked", "A provider task is still running; the agent continues when it finishes.");
   if (p.scope && (st?.reworks?.scope || 0) < 1 && !(p.reviews || []).some((r) => r.gate === "scope" && r.subject === "v" + p.scope!.version)) return { step: "reviewScope" };
   if (!p.sources.some((s) => s.kind === "public_source")) return wait("waiting_human", "No research sources yet: start research first.");
   for (const seg of requiredResearchSegments(p)) {
-    const run = p.runs.filter((r) => (r.stage || "research") === "research" && r.segment === seg).at(-1);
+    const run = p.runs.filter((r) => (r.stage || "research") === "research" && r.segment === seg && taskResearchCurrent(p, r)).at(-1);
     if (!run) return wait("waiting_human", `The ${seg} research has not run yet.`);
     if (run.status !== "completed") return wait("waiting_human", `The ${seg} research ${run.status === "failed" ? "failed: re-run it" : "is not finished"}.`);
   }
@@ -135,7 +168,7 @@ export function planNext(p: Project, aiReady: boolean): Plan {
   const hash = direction.hash;
   if (!p.tasks.some((t) => t.strategyId === direction.id)) return { step: "produce" };
   const mine = p.assets.filter((x) => x.strategyHash === hash);
-  if (aiReady && direction.keyMessages?.length && !mine.some((x) => x.title === "AI copy pack")) return { step: "draftCopyPack" };
+  if ((!p.taskPlan || p.taskPlan.tasks.some(t => t.id === "draftCopyPack")) && aiReady && direction.keyMessages?.length && !mine.some((x) => x.title === "AI copy pack")) return { step: "draftCopyPack" };
   if (mine.some((x) => x.status === "draft")) return { step: "shareAssets" };
   if (mine.some((x) => x.status === "shared")) return wait("waiting_customer", "Assets shared: waiting for the account owner to approve the storyboard and outline assets.");
   if (mine.some((x) => x.status === "changes_requested")) return wait("waiting_human", "The account owner asked for changes to an asset: a producer decides how to rework it.");
@@ -241,6 +274,18 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
   };
   const current = async () => find((await repo.read(op.workspaceId)).projects, projectId, op);
 
+  if (step === "scope") {
+    await ensureScope(repo, op, projectId);
+    return "Research questions scoped for the customer request";
+  }
+  if (step === "research") {
+    const p = await current();
+    syncTaskPlan(p);
+    const task = p.taskPlan?.tasks.find(t => t.id.startsWith("research:") && t.status === "ready");
+    if (!task || !researchRunner) throw new Error("No selected research task is ready");
+    await researchRunner(op, projectId, task.id.slice(9) as Segment, "");
+    return task.title;
+  }
   if (step === "reviewScope") {
     const first = await reviewGate(repo, op, projectId, "scope");
     await saveReview(repo, op, projectId, first);

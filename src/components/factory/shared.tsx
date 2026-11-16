@@ -21,8 +21,10 @@ export const researchNotes: Record<Segment, string> = {
   creative:
     "Find storytelling principles, design references and channel conventions.",
 };
-export const fields = (form: HTMLFormElement) =>
-  Object.fromEntries(new FormData(form).entries());
+export const fields = (form: HTMLFormElement) => {
+  const data = new FormData(form);
+  return { ...Object.fromEntries(data.entries()), ...(form.querySelector('[name="requestedFormats"]') ? { requestedFormats: data.getAll("requestedFormats") } : {}) };
+};
 export function Tag({
   children,
   tone = "neutral",

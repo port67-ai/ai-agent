@@ -214,7 +214,8 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     );
   };
   // A producer reviewer: purple like every agent, model or free checks, calls and cost, click to choose its model.
-  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, _extra = "") => {
+  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, extra = "") => {
+    void extra;
     const a = byId.get(rid);
     if (!a) return null;
     const stat = a.stats!;
@@ -262,7 +263,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
             <marker id="sm-dim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></marker>
           </defs>
           <rect x="0" y="0" width={W} height={H} className="sm-bg" />
-          <text x={W / 2} y="38" textAnchor="middle" className="sm-heading">Port67 agent system: data in, data out</text>
+          <text x={W / 2} y="38" textAnchor="middle" className="sm-heading">Port67 agent capabilities: data in, data out</text>
 
           <text x="30" y="78" className="sm-band">1 · INPUTS</text>
           <Node id="form-brief" x={COLS[0]} y={90} h={64} color={COLOR.input} icon={FileText} title="Business brief" lines={["Account owner form"]} />
@@ -335,6 +336,8 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
 
           </g>
           {/* Producer orchestrator: drawn like an LLM at the top of the LLM column, but it is a rules-only agent that steers its four reviewers. */}
+          <Node id="task-manager" x={PX} y={20} w={PW} h={92} color={COLOR.store} icon={Database} title="Task manager" lines={["Customer-driven plans", "Select agents · track tasks", "Project plan in Overview"]} />
+          <Link d={`M${PX + PW / 2} 112 L${PX + PW / 2} 148`} color={COLOR.store} />
           <text x={PX} y={136} className="sm-band">PRODUCER AGENT</text>
           <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.producer} icon={Bot} title="Orchestrator"
             lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "Stops at customer gates"]}

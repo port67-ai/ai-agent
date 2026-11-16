@@ -256,3 +256,16 @@ Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. 
 | FAC-REV-001 | Owner-requested 2026-11-16 (CHG-0080) | IMPLEMENTED | Built (CHG-0080): review queue for sources and draft insights, launched from the Source review and Insight review rows and from the Research room. Direction and asset approvals keep their own screens. |
 | FAC-STO-001 | Owner-requested 2026-11-16 (CHG-0077) | IMPLEMENTED | Built (CHG-0077): storage gauge in the producer Overview and diagnostics, automatic trimming of old run copies on save, manual Trim button. |
 | FAC-STO-002 | Owner-requested 2026-11-16 (CHG-0077) | PLANNED | Not started. Split the project record into separate records; trigger is about 60 percent of the limit on the gauge or before several live customers. |
+
+
+## CHG-0082 — task-based MVP evolution (16 November 2026)
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-TSK-001 | IMPLEMENTED locally; not deployed or live-verified | `factory-task-plan.test.ts`: narrow/video/research-only selection, explicit formats, reasons; free deterministic planning needs producer review for ambiguous intent. |
+| FAC-TSK-002 | IMPLEMENTED locally; not deployed or live-verified | Planner DAG and UI tests; API test reconstructs completed status from a new local repository instance; existing Firestore adapter integration still requires environment acceptance. |
+| FAC-TSK-003 | IMPLEMENTED locally; not deployed or live-verified | API tests: excluded agent zero provider calls, dependency guards, research-only completion, existing control regression suite. No durable queue or distributed orchestration lease added. |
+| FAC-TSK-004 | IMPLEMENTED locally; not deployed or live-verified | Version/role checks, plan history, stale paid response usage retention and compatible-result preservation tests; existing post-direction scope locks remain. |
+| FAC-TSK-005 | IMPLEMENTED locally; not deployed or live-verified | Static-only production and individual template-agent tasks; unsupported full outputs remain producer tasks with audited notes. External agent harness interfaces still have no runtime adapters. |
+
+Supports FAC-WFL-001/002 and FAC-AGT-003 with a bounded project graph and persisted state. Does not promote full original workflow requirements to VERIFIED or implement FAC-WFL-003 Cloud Tasks dispatch. Final local unit/API/UI, full regression, browser, typecheck, lint, production build and structural governance checks passed; exact commands are recorded in CHG-0082 and HANDOVER. Firestore emulator assertions did not run because the emulator JAR download failed. No live acceptance or deployment is claimed.

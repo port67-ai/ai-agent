@@ -22,6 +22,7 @@ export async function runAdvisory(repo: Repository, a: Principal, projectId: str
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
     access(current, a);
+    if (current.taskPlan?.mode === "research") throw new Error("Campaign advisory agents are excluded from this research-only task plan");
     const context = prepare(current);
     if (current.runs.some((r) => r.status === "running")) throw new Error("A provider task is already running; wait or recover its expired lease");
     if (current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >= Math.max(1, Math.min(50, Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "12", 10) || 12)))

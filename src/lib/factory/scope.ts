@@ -185,7 +185,7 @@ const words = (s: string) => String(s || "").toLowerCase();
 const list = (s: string) => [...new Set(String(s || "").split(/[\n,;]+/).map((x) => x.trim()).filter((x) => x.length >= 2 && x.length <= 80))].slice(0, 6);
 
 /** Business category from the brief's own words. Deterministic and free; the scoping agent does this better when a model is set. */
-export function classifyByRules(brief: Partial<Record<string, string>>): Classification {
+export function classifyByRules(brief: Partial<Record<string, unknown>>): Classification {
   const text = [brief.business, brief.description, brief.objective, brief.audience].map((x) => String(x ?? "")).join(" . ");
   const order: Category[] = ["telecom", "regulated", "hospitality", "local_shop", "b2b_software", "ecommerce", "professional_services"];
   const category = order.find((c) => PACKS[c].match.test(text)) || "other";
@@ -209,7 +209,7 @@ export function classifyByRules(brief: Partial<Record<string, string>>): Classif
 const adjustPages = (pages: number, size: Classification["size"]) => (size === "micro" || size === "small" ? Math.min(pages, 8) : size === "large" || size === "enterprise" ? Math.max(pages, 14) : pages);
 /** The question pack for a classification: used as the fallback and as the starting point a producer can edit. */
 export function scopeFromClassification(p: Pick<Project, "brief" | "channels">, classification: Classification): Pick<ResearchScope, "classification" | "competitorSet" | "segments"> {
-  const raw = (p.brief || {}) as Partial<Record<string, string>>;
+  const raw = (p.brief || {}) as Partial<Record<string, unknown>>;
   const pack = PACKS[classification.category] || PACKS.other;
   const ctx: Ctx = { business: String(raw.business || "the business").trim() || "the business", channels: (p.channels || []).map(channelById).filter((c): c is NonNullable<typeof c> => !!c).map((c) => c.name), competitors: list(String(raw.competitors || "")), audience: String(raw.audience || "").trim() };
   const out = {} as Record<Segment, SegmentScope>;
@@ -222,7 +222,7 @@ export function scopeFromClassification(p: Pick<Project, "brief" | "channels">, 
 }
 /** Deterministic scope with no AI cost. */
 export function templateScope(p: Pick<Project, "brief" | "channels">, meta: { briefHash: string; version: number; at?: string; note?: string }): ResearchScope {
-  return { version: meta.version, source: "template", at: meta.at || new Date().toISOString(), briefHash: meta.briefHash, ...scopeFromClassification(p, classifyByRules((p.brief || {}) as Partial<Record<string, string>>)), ...(meta.note ? { note: meta.note.slice(0, 240) } : {}) };
+  return { version: meta.version, source: "template", at: meta.at || new Date().toISOString(), briefHash: meta.briefHash, ...scopeFromClassification(p, classifyByRules((p.brief || {}) as Partial<Record<string, unknown>>)), ...(meta.note ? { note: meta.note.slice(0, 240) } : {}) };
 }
 
 // Validation: the same checks run on model output and on a producer's edit. Anything malformed is rejected, never repaired silently.

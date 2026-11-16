@@ -23,7 +23,7 @@ import {
   Users,
   Bot,
 } from "lucide-react";
-import { segments, type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
+import { type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
 import Link from "next/link";
 import { PortalWelcome } from "./Welcome";
@@ -41,6 +41,8 @@ import Advert from "./Advert";
 import Ideas from "./Ideas";
 import CustomerApprovals from "./CustomerApprovals";
 import RunTracker from "./RunTracker";
+import TaskPlanPanel, { WorkRequestField } from "./TaskPlan";
+import { selectedResearch } from "@/lib/factory/task-plan";
 import ReviewQueue from "./ReviewQueue";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
@@ -503,6 +505,7 @@ export default function Portal() {
             <>
               {tab === "overview" && (
                 <>
+                  <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} onRun={operator && !principal.demo ? () => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.") : undefined} />
                   {operator && (
                     <RunTracker
                       p={p}
@@ -842,7 +845,11 @@ export default function Portal() {
                   onRunAll={() =>
                     void run(async () => {
                       try {
-                        for (const seg of segments) {
+                        if (p.taskPlan) {
+                          await api("projects/" + p.id + "/producer-agent", {});
+                          return;
+                        }
+                        for (const seg of selectedResearch(p)) {
                           setRunningSegment(seg);
                           await api("projects/" + p.id + "/research", { segment: seg });
                           await refresh();
@@ -851,7 +858,7 @@ export default function Portal() {
                         setRunningSegment(null);
                         await refresh();
                       }
-                    }, "Research finished for all seven areas. Review the sources and gaps before drafting insights.")
+                    }, "Research finished for the selected areas. Review the sources and gaps before drafting insights.")
                   }
                   onRecover={(id) =>
                     void run(
@@ -1126,6 +1133,7 @@ export default function Portal() {
                   <input name="contact" type="email" required maxLength={180} />
                 </Field>
               </div>
+              <WorkRequestField />
               <Field label="What do you want to achieve? *">
                 <textarea
                   name="objective"

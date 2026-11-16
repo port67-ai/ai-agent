@@ -70,6 +70,7 @@ assert.match(health, /Cost by model/);
 console.log('System map: forms, agents with models, stores, API links, gates, monitoring and blocked/idle states passed');
 assert.doesNotMatch(html, /Producer scope edit/, 'the orange producer scope edit node was replaced by the purple scope producer');
 assert.match(html, /data-node="producer-orchestrator"/, 'the orchestrator sits in the LLM column');
+assert.match(html, /data-node="task-manager"/, 'task manager supplies the orchestrator with project tasks');
 assert.match(html, /Free checks only/, 'a reviewer with no model says it uses the free checks');
 assert.equal((html.match(/data-node="review:/g) || []).length, 4, 'four reviewers: scope in the scoping band, sources, insights and direction approval in the flow');
 assert.match(html, /openai · gpt-r/, 'a reviewer shows its model');

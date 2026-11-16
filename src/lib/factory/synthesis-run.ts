@@ -1,3 +1,4 @@
+import { requirePlannedTask } from "./task-plan";
 import { meteredModelCall } from "./metering";
 import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
 import { capabilityRegistry } from "./registry";
@@ -33,6 +34,7 @@ export async function runSynthesis(
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
     access(current, a);
+    requirePlannedTask(current, stage === "insights" ? "draftInsights" : "draftDirection");
     const context = prepareSynthesis(current, stage);
     if (current.runs.some((r) => r.status === "running"))
       throw new Error(
@@ -58,6 +60,7 @@ export async function runSynthesis(
     const run: ResearchRun = {
       capabilityId: capability.id,
       capabilityVersion: capability.version,
+      ...(current.taskPlan ? { taskInputKey: current.taskPlan.researchKey } : {}),
       id: id(),
       stage,
       at: new Date().toISOString(),
@@ -90,6 +93,7 @@ export async function runSynthesis(
       record.providerRequestId = result.providerRequestId;
       let reason = result.error;
       try {
+        if (current.taskPlan && record.taskInputKey !== current.taskPlan.researchKey) throw new Error("Task plan inputs changed; no stale output accepted");
         if (record.status !== "running")
           throw new Error(
             "Provider task was recovered or cancelled; no late output accepted",
