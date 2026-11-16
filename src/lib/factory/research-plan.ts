@@ -7,7 +7,7 @@ import { CATEGORY_LABEL, type Classification, type ResearchScope } from "./scope
 // Research preparation: decide, before any paid call, whether the brief is good enough, what each research
 // agent will be asked, and what the research will produce. Pure functions, no AI cost, safe on the client.
 export const SEGMENT_LABEL: Record<Segment, string> = RESEARCH_LABELS;
-export const SEGMENT_AGENT: Record<Segment, string> = { brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative", adjacent: "research:adjacent", trends: "research:trends", video: "research:video" };
+export const SEGMENT_AGENT: Record<Segment, string> = { channel: "research:channel", offer: "research:offer", measurement: "research:measurement", brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative", adjacent: "research:adjacent", trends: "research:trends", video: "research:video" };
 export type Check = { id: string; label: string; ok: boolean; level: "required" | "recommended"; fix: string };
 export type SegmentPlan = { segment: Segment; label: string; agent: string; startFrom: string[]; questions: string[]; delivers: string; /** From the stored scope: what this agent skips and how many pages it may open. */ avoid?: string[]; maxPages?: number };
 export type PlanScope = { source: ResearchScope["source"]; version: number; at: string; classification: Classification; competitorSet: string[]; note?: string };
@@ -104,7 +104,7 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels" | "tas
     },
   ];
   // A stored scope replaces the generic questions with ones matched to this kind of business.
-  for (const segment of ["adjacent", "trends", "video"] as const) {
+  for (const segment of ["adjacent", "trends", "video", "channel", "offer", "measurement"] as const) {
     const scope = extendedResearchScope(segment, b.business, channelList)!;
     plans.push({ segment, label: SEGMENT_LABEL[segment], agent: SEGMENT_AGENT[segment], startFrom: [...scope.sourceTypes, ...researchDestinations(segment, p.channels).map(d => d.name)], questions: scope.questions, delivers: segment === "video" ? "Cited video references and craft analysis; direct viewing requires the explicit Gemini action." : "Cited observations, applicability, counterexamples and gaps.", avoid: scope.avoid, maxPages: scope.maxPages });
   }

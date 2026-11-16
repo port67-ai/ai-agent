@@ -22,6 +22,9 @@ export interface ResearchResult {
 }
 export const researchReady = () => providerConfigured("research") && process.env.PORT67_RESEARCH_ENABLED === "true";
 const focus: Record<Segment, string> = {
+  channel: "Investigate dated channel audience behaviour, discovery, buying stage and medium suitability; distinguish organic attention from paid results.",
+  offer: "Investigate product, pricing, proposition, proof, eligibility and purchase friction. Unknown internal economics remain gaps.",
+  measurement: "Investigate objective-aligned KPIs, event definitions, attribution windows, denominators and experiments. Public guidance is not private campaign data.",
   ...RESEARCH_FOCUS,
   brand:
     "The business itself. Read and cite the business website first (offer, pricing, proof, customers served, tone), then independent coverage. Report only product facts the business can stand behind; flag anything the website implies but does not show.",
@@ -64,6 +67,9 @@ const sameUrl = (a: string, b: string) => {
   }
 };
 const channelFocus: Record<Segment, string> = {
+  channel: "Investigate dated channel audience behaviour, discovery, buying stage and medium suitability; distinguish organic attention from paid results.",
+  offer: "Investigate product, pricing, proposition, proof, eligibility and purchase friction. Unknown internal economics remain gaps.",
+  measurement: "Investigate objective-aligned KPIs, event definitions, attribution windows, denominators and experiments. Public guidance is not private campaign data.",
   adjacent: "Select adjacent categories with an explicit shared audience or occasion; inspect their profiles on the launch channels.",
   trends: "Prioritise the launch channels and dated examples from the last 30 days, widening to 90 days only with an explicit gap.",
   video: "Find individual reference videos on the launch channels; distinguish published descriptions from direct viewing.",

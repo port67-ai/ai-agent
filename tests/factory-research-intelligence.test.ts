@@ -7,7 +7,7 @@ import { templateScope } from '../src/lib/factory/scope';
 const op = { role: 'operator' as const, workspaceId: 'w', subject: 'producer' };
 const p = createProject({ business: 'Coast Lodge', objective: 'More direct bookings', description: 'Independent hotel serving weekend travellers.', website: 'https://coast.example', contact: 'a@example.com' }, op, 'p');
 p.channels = ['instagram'];
-assert.deepEqual([...segments], ['brand','customer','competitor','creative','adjacent','trends','video']);
+assert.deepEqual([...segments], ['brand','customer','competitor','creative','adjacent','trends','video','channel','offer','measurement']);
 const scope = templateScope(p, { briefHash: 'test', version: 1 });
 for (const s of ['adjacent','trends','video'] as const) {
   assert.ok(scope.segments[s].questions.length >= 2);

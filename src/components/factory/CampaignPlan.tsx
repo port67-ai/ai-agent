@@ -29,7 +29,7 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
   const why = new Map<string, string>();
   if (p.researchPlanning) {
     if (mediumCurrent(p)) for (const r of p.mediumSelection!.proposal!.recommendations) {
-      const detail = `${channelById(r.channel)?.name || r.channel}: ${r.basis === "evidence" ? "reviewed evidence" : "limited channel prior"}; see the assessment above`;
+      const detail = `${channelById(r.channel)?.name || r.channel}: ${r.basis === "evidence" ? "reviewed evidence" : r.basis === "observed_performance" ? "observed campaign performance" : "limited channel prior"}; see the assessment above`;
       why.set(r.format, why.has(r.format) ? why.get(r.format) + ". " + detail : detail);
     }
   } else for (const suggestion of f?.suggested || []) why.set(suggestion.id, suggestion.reason);

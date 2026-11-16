@@ -96,7 +96,7 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
     if (!force && before.scope?.briefHash === hash && before.scope.planningVersion === before.researchPlanning!.version && before.scope.planningKey === planningScopeKey(before)) return before.scope;
     return store(repo, a, projectId, current => {
       const scope = templateScope(current, { briefHash: briefHash(current), version: nextScopeVersion(current), note: "AI planner questions and methods; business classification uses the free rules baseline." });
-      for (const segment of segments) { const decision = effectiveResearchDecision(current, segment)!; if (decision.selected && decision.questions.length >= 2) scope.segments[segment] = { questions: decision.questions, sourceTypes: decision.sourceTypes, avoid: decision.avoid, maxPages: decision.maxPages }; }
+      for (const segment of segments) { const decision = effectiveResearchDecision(current, segment); if (decision?.selected && decision.questions.length >= 2) scope.segments[segment] = { questions: decision.questions, sourceTypes: decision.sourceTypes, avoid: decision.avoid, maxPages: decision.maxPages }; }
       scope.planningVersion = current.researchPlanning!.version;
       scope.planningKey = planningScopeKey(current);
       return scope;

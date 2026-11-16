@@ -82,7 +82,7 @@ assert.ok(guidance.length <= 900);
 
 // ---- producers see grades and ratings; customers never do
 const view = projectView(weak, op);
-assert.ok(view.sources[0].grade && view.evidence?.segments.length === 7);
+assert.ok(view.sources[0].grade && view.evidence?.segments.length === 10);
 const cust = projectView(weak, { role: "customer", workspaceId: "w", subject: "c", identity: "firebase", accountId: "w" });
 assert.ok(cust.sources.every((s) => !s.grade) && cust.evidence === undefined);
 assert.ok(evidenceWarnings(weak, at).some((x) => x.gate === "research" && /brand research evidence is/.test(x.text)));

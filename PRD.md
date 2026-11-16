@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.28.0  
+**Version:** 1.29.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1528,3 +1528,15 @@ Owner authorises implementation and deployment without further approval pauses. 
 | FAC-PLN-006 | Expand the catalogue selectively through evidence-backed proposals | Planner records missing capability, why existing roles are inadequate and required inputs in the existing proposed-capability backlog. Proposals cannot install agents, grant tools, call vendors or activate workflows. Product/market depth is initially delivered by methods within existing brand/competitor roles. |
 
 Legacy clients/projects retain their existing workflow until AI planning is enabled. New planner slots use explicit route, stage default, inherited configured scoping/format route, then environment; removed keys still fail visibly. No paid model fallback after invocation failure is introduced. No private ad-account connector, fabricated performance history, cross-customer learning, automatic model training, new research vendor or unreviewed agent promotion is introduced. Commercial third-party skill source text was not copied into runtime skills.
+
+
+## 27. Selective specialists and measured feedback — owner requested 16 November 2026
+
+| ID | Requirement | Acceptance |
+|---|---|---|
+| FAC-PLN-007 | Select channel/audience behaviour, product/offer and measurement specialists | Catalogue has three independently routed, metered research agents with distinct approved methods, scoped questions and inclusion/exclusion decisions. Existing seven-role projects continue without compulsory extra calls; new AI plans cover all ten roles. |
+| FAC-FBK-001 | Capture auditable observed campaign results | Producer entry and bounded CSV import record campaign, channel, format, objective, audience, offer, dates, provenance, attribution, currency and optional observed metrics. Pending results need producer review; PUBLIC authorisation is separate. Unknown and zero metrics remain distinct; ratios require positive denominators. |
+| FAC-FBK-002 | Use reviewed history in planning and medium selection | Only accepted, explicitly authorised observations enter metered planning prompts. Research plans cite available record IDs and explain transfer limits. Medium recommendations may cite matching channel/format history as observed_performance, with at most moderate confidence. Observations never establish causal winners or incremental results. New/rejected history invalidates old planning/recommendation context and stale derived hypotheses. |
+| FAC-FBK-003 | Carry history into later campaigns within the same account | Producer explicitly selects a source project. Only accepted authorised records are copied with source provenance; copies start pending and need a new review. Repeated carry cannot duplicate source observations. No account joins by business name and no cross-customer training. Customer views exclude performance records. |
+
+This supersedes the initial FAC-PLN-006 limitation of delivering offer depth only inside brand research. Other catalogue additions remain reviewed proposals. Direct advertising-platform ingestion and cross-project automatic matching are not implemented; the feedback loop uses supplied reports, manual entry and CSV. It improves model context, not model weights. Existing consent, spend limits, customer deliverable requests and approval gates remain.

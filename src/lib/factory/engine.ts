@@ -1,3 +1,4 @@
+import { validatePerformance, parsePerformanceCsv } from "./performance";
 import { planningInputKey, mediumCurrent, mediumEvidenceKey } from "./planning-context";
 import { proposeIdeas, researchPack } from "./ideas";
 import { planProject, syncTaskPlan, selectedResearch, requirePlannedTask, taskResearchCurrent } from "./task-plan";
@@ -323,7 +324,21 @@ export function transition(
     throw new Error("Customer approval identity required");
   const approver = onBehalf ? (a.subject === "port67-producer-agent" ? "AI producer (on behalf of the customer)" : `${a.subject} (on behalf of the customer, test mode)`) : a.subject;
   if (requestId && p.processed.includes(requestId)) return p;
-  if (type === "authoriseAI") {
+  if (type === "recordPerformance" || type === "importPerformance") {
+    if ((p.performance?.length || 0) >= 100) throw new Error("Performance record limit reached");
+    const rows = type === "importPerformance" ? parsePerformanceCsv(String(c.csv || "")) : [validatePerformance(c)];
+    if ((p.performance?.length || 0) + rows.length > 100) throw new Error("Performance record limit reached");
+    p.performance ||= [];
+    for (const row of rows) p.performance.push({ ...row, publicAuthorised: c.publicAuthorised === true, id: id(), status: "pending", createdAt: now(), createdBy: a.subject });
+  } else if (type === "reviewPerformance") {
+    if (c.revision !== p.revision) throw new Error("Project revision changed; reload before reviewing results");
+    if (c.status !== "accepted" && c.status !== "rejected") throw new Error("Unknown performance review status");
+    const row = p.performance?.find(r => r.id === c.id);
+    if (!row) throw new Error("Performance record not found");
+    const reason = text(c.reason, "performance review reason", 600);
+    if (!reason.trim()) throw new Error("Performance review reason is required");
+    row.status = c.status; row.reviewedAt = now(); row.reviewedBy = a.subject; row.reviewReason = reason;
+  } else if (type === "authoriseAI") {
     if (c.confirm !== true)
       throw new Error(
         "Confirm that the brief is authorised PUBLIC data before enabling AI",
@@ -873,7 +888,7 @@ export function transition(
     });
   } else throw new Error("Unsupported command");
   if (requestId) p.processed.push(requestId);
-  if (p.researchPlanning && p.researchPlanning.inputKey && p.researchPlanning.inputKey !== planningInputKey(p)) {
+  if (!p.strategies.length && p.researchPlanning && p.researchPlanning.inputKey && p.researchPlanning.inputKey !== planningInputKey(p)) {
     p.researchPlanning.status = "pending";
     delete p.researchPlanning.error;
   }
@@ -928,6 +943,7 @@ export function projectView(input: Project, a: Principal): Project {
   }
   delete p.aiConsent;
   delete p.taskPlan;
+  delete p.performance;
   delete p.researchPlanning;
   delete p.mediumSelection;
   delete p.mediumDecision;

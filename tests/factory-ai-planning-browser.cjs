@@ -31,9 +31,16 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
       else if (path === "accounts") data = { accounts: [] };
       else if (path === "projects") data = { projects: [projectView(p, principal)] };
       else if (path === "projects/planning-fixture/planning") {
-        const body = request.postDataJSON(); assert.equal(body.kind, "medium");
+        const body = request.postDataJSON();
+        if (body.kind === "research") {
+          p.researchPlanning = { ...p.researchPlanning, status: "completed", inputKey: planningInputKey(p), version: p.researchPlanning.version + 1, proposal: { ...p.researchPlanning.proposal, performanceIds: p.performance.filter(r => r.status === "accepted").map(r => r.id) } }; planProject(p, principal.subject, "Replanned with performance observations"); p.revision++;
+          await route.fulfill({ json: { project: projectView(p, principal) } }); return;
+        }
+        assert.equal(body.kind, "medium");
         const proposal = validateMediumSelection({ summary: "Compare the requested static artwork with a video explanation", recommendations: [{ channel: "instagram", format: "video_short", score: 8, confidence: "moderate", basis: "evidence", sourceIds: ["s"], insightIds: ["i"], reason: "Reviewed customer evidence supports visual explanation", counterargument: "Static artwork may explain the offer sufficiently", uncertainties: ["No measured performance data is connected"] }], gaps: [] }, prepareMediumSelection(p));
-        p.mediumSelection = { status: "completed", version: 1, evidenceKey: mediumEvidenceKey(p), proposal, history: [] }; p.revision++;
+        const history = prepareMediumSelection(p).payload.historicalPerformance;
+        if (history.length) { proposal.recommendations[0] = { ...proposal.recommendations[0], format: "static", basis: "observed_performance", performanceIds: [history[0].id] }; validateMediumSelection(proposal, prepareMediumSelection(p)); }
+        p.mediumSelection = { status: "completed", version: (p.mediumSelection?.version || 0) + 1, evidenceKey: mediumEvidenceKey(p), proposal, history: [] }; p.revision++;
         data = { project: projectView(p, principal) };
       } else if (path === "projects/planning-fixture") {
         if (request.method() === "POST") p = transition(p, request.postDataJSON(), principal);
@@ -60,6 +67,34 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     await page.screenshot({ path: "work/screenshots/ai-medium-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400);
     await page.screenshot({ path: "work/screenshots/ai-medium-mobile.png", fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.getByRole("button", { name: "Overview", exact: true }).click();
+    await page.getByRole("button", { name: "Open performance learning", exact: true }).click();
+    const feedback = page.getByRole("region", { name: "Campaign performance feedback" });
+    await feedback.getByText("Record campaign results", { exact: true }).click();
+    const entry = feedback.locator("details").nth(0);
+    for (const [name, value] of Object.entries({ campaign: "Pilot report", objective: "Purchases", audience: "UK buyers", offer: "Repairable product", provenance: "Account report export", attribution: "Seven day click, observational", start: "2026-10-01", end: "2026-10-31", currency: "GBP", impressions: "1000", clicks: "50", conversions: "5", spend: "100", revenue: "250" })) await entry.locator(`[name=${name}]`).fill(value);
+    await entry.locator("[name=channel]").selectOption("instagram");
+    await entry.locator("[name=format]").selectOption("static");
+    await entry.locator("[name=publicAuthorised]").check();
+    await entry.getByRole("button", { name: "Record results for review", exact: true }).click();
+    const record = feedback.locator("article").first();
+    await record.getByText("Pilot report · instagram / static", { exact: true }).waitFor();
+    assert.equal(p.performance[0].status, "pending");
+    await record.locator("[name=reason]").fill("Report checked; audience and attribution need a comparable test");
+    await record.getByRole("button", { name: "Save result review", exact: true }).click();
+    await record.locator("p").filter({ hasText: "· accepted ·" }).waitFor();
+    assert.equal(p.performance[0].status, "accepted");
+    await page.getByRole("button", { name: "Overview", exact: true }).click();
+    await page.getByRole("button", { name: "Plan research with AI · paid", exact: true }).click();
+    await page.getByRole("button", { name: "Open performance learning", exact: true }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: "work/screenshots/performance-mobile.png", fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.getByRole("button", { name: "Campaign direction", exact: true }).click();
+    await page.getByRole("button", { name: "Recommend media from reviewed evidence · paid", exact: true }).click();
+    await medium.getByText("Observed performance", { exact: false }).first().waitFor();
+    assert.deepEqual(p.mediumSelection.proposal.recommendations[0].performanceIds, [p.performance[0].id]);
     assert.deepEqual(errors, []);
     console.log("AI medium browser fixture: planner hypotheses, capability gaps, evidence alternatives, versioned producer confirmation and unchanged customer request passed");
   } finally { await browser.close(); }

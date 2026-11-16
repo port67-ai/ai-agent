@@ -10,6 +10,9 @@ export const segments = [
   "adjacent",
   "trends",
   "video",
+  "channel",
+  "offer",
+  "measurement",
 ] as const;
 export type Segment = (typeof segments)[number];
 export type Principal = {
@@ -288,6 +291,7 @@ export type Idea = {
   by?: "ai" | "rules"; status: "proposed" | "kept" | "dropped"; priority: "high" | "medium" | "low"; createdAt: string; decidedBy?: string;
 };
 export type Project = {
+  performance?: import("./performance").PerformanceRecord[];
   researchPlanning?: import("./research-planner").ResearchPlanning;
   mediumSelection?: import("./medium-selection").MediumSelection;
   mediumDecision?: { at: string; by: string; rationale: string; recommendationVersion?: number; formats: string[]; requestedFormats: string[] };
