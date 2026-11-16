@@ -12,6 +12,8 @@ p.sources=[{id:'s',segment:'channel',title:'Audience research',url:'https://exam
 p.insights=[{id:'i',title:'Visual evidence',interpretation:'Test visual explanation',sourceIds:['s'],status:'reviewed',confidence:'limited',createdAt:'2026-11-01'}];
 const empty=prepareMediumSelection(p);
 const initialPlanningKey = prepareResearchPlanning(p).inputKey;
+const legacyEvidenceKey = JSON.parse(empty.evidenceKey); delete legacyEvidenceKey.performance;
+assert.equal(empty.evidenceKey, JSON.stringify(legacyEvidenceKey), "Adding feedback support must not stale legacy media when no observations exist");
 p=transition(p,{type:'recordPerformance',campaign:'Pilot',channel:'instagram',format:'static',objective:'Purchases',audience:'UK',offer:'Repairable',start:'2026-10-01',end:'2026-10-31',provenance:'Account export',attribution:'7-day click',currency:'GBP',impressions:1000,clicks:50,spend:100,conversions:5,publicAuthorised:true},a);
 assert.equal(prepareResearchPlanning(p).payload.historicalPerformance.length,0);
 p=transition(p,{type:'reviewPerformance',revision:p.revision,id:p.performance![0].id,status:'accepted',reason:'Checked report and attribution'},a);
