@@ -1,3 +1,4 @@
+import { planningInputKey, mediumCurrent, mediumEvidenceKey } from "./planning-context";
 import { proposeIdeas, researchPack } from "./ideas";
 import { planProject, syncTaskPlan, selectedResearch, requirePlannedTask, taskResearchCurrent } from "./task-plan";
 import { STORAGE_LIMIT_BYTES, projectParts, trimRunSnapshots } from "./storage-gauge";
@@ -189,6 +190,7 @@ export function createProject(
     runs: [],
     processed: [],
   };
+  if (!a.demo && brief.workRequest && input.useAIPlanner === true) project.researchPlanning = { enabled: true, status: "pending", version: 0, history: [] };
   if (!a.demo && brief.workRequest) planProject(project, a.subject, "Initial customer brief");
   return project;
 }
@@ -332,6 +334,17 @@ export function transition(
       by: a.subject,
       at: now(),
     };
+  } else if (type === "enableAIPlanning" || type === "useRulesResearchPlan") {
+    if (p.strategies.length || p.runs.some(r => r.status === "running")) throw new Error("Planning cannot change while a task runs or after direction work begins");
+    if (type === "enableAIPlanning") p.researchPlanning = { enabled: true, status: "pending", version: p.researchPlanning?.version || 0, history: p.researchPlanning?.history || [] };
+    else {
+      if (!p.researchPlanning) throw new Error("No AI research plan to replace");
+      const reason = text(c.reason, "rules-plan reason", 600, true);
+      p.researchPlanning = { ...p.researchPlanning, status: "rules", inputKey: planningInputKey(p), version: p.researchPlanning.version + 1, error: reason };
+      delete p.scope;
+    }
+    planProject(p, a.subject, type === "enableAIPlanning" ? "Producer enabled AI research planning" : "Producer explicitly selected the rules research plan");
+    if (p.producerAgent) p.producerAgent.lastFingerprint = "";
   } else if (type === "completeManualTask") {
     if (!p.taskPlan || c.version !== p.taskPlan.version) throw new Error("Plan changed; refresh before completing work");
     syncTaskPlan(p);
@@ -400,6 +413,9 @@ export function transition(
     p.capabilities = [];
     delete p.researchRequest;
     delete p.aiConsent;
+    delete p.mediumSelection;
+    delete p.mediumDecision;
+    if (p.researchPlanning) p.researchPlanning = { enabled: true, status: "pending", version: p.researchPlanning.version, history: p.researchPlanning.history };
     delete p.scope;
     delete p.scopeHistory;
     delete p.reviews;
@@ -764,6 +780,14 @@ export function transition(
   } else if (type === "suggestFormats") {
     p.formats = { ...(p.formats || { selected: [] }), suggested: suggestFormats(p.channels, p.brief.objective), suggestedAt: now() };
   } else if (type === "selectFormats") {
+    if (p.researchPlanning?.enabled) {
+      if (p.runs.some(r => r.status === "running")) throw new Error("Wait for running tasks before confirming media");
+      if (c.expectedMediumVersion !== (p.mediumSelection?.version || 0) || c.expectedEvidenceHash !== digest(mediumEvidenceKey(p))) throw new Error("Medium recommendation or evidence changed; refresh before confirming formats");
+      const rationale = text(c.rationale, "medium decision rationale", 1000, true);
+      requirePlannedTask(p, "mediumSelection");
+      if (!mediumCurrent(p)) p.mediumSelection = { status: "manual", evidenceKey: mediumEvidenceKey(p), version: (p.mediumSelection?.version || 0) + 1, history: p.mediumSelection?.history || [], error: "Producer deliberately proceeded without a current AI recommendation" };
+      p.mediumDecision = { at: now(), by: a.subject, rationale, ...(mediumCurrent(p) ? { recommendationVersion: p.mediumSelection!.version } : {}), formats: validFormats(c.formats), requestedFormats: [...(p.brief.requestedFormats || [])] };
+    }
     if (p.taskPlan && p.strategies.length) throw new Error("Formats are locked after direction work begins; request a scoped change");
     p.formats = { ...(p.formats || { suggested: suggestFormats(p.channels, p.brief.objective), suggestedAt: now() }), selected: validFormats(c.formats), decidedBy: a.subject, decidedAt: now() };
   } else if (type === "setAudiences") {
@@ -849,6 +873,10 @@ export function transition(
     });
   } else throw new Error("Unsupported command");
   if (requestId) p.processed.push(requestId);
+  if (p.researchPlanning && p.researchPlanning.inputKey && p.researchPlanning.inputKey !== planningInputKey(p)) {
+    p.researchPlanning.status = "pending";
+    delete p.researchPlanning.error;
+  }
   if (p.taskPlan && ["updateBrief", "setChannels", "requestResearch", "selectFormats", "resetProject"].includes(type)) {
     if (planProject(p, a.subject, `Requirements updated: ${type}`)) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "task_plan_revised", detail: `Plan v${p.taskPlan.version}: ${type}` });
   }
@@ -889,6 +917,7 @@ export function projectView(input: Project, a: Principal): Project {
     else if (autoApproveProducer()) p.researchNote = "Starting automatically.";
   }
   if (a.role === "operator") {
+    if (p.researchPlanning) p.mediumContextHash = digest(mediumEvidenceKey(p));
     p.sources = p.sources.map((s) => (s.kind === "public_source" ? { ...s, grade: gradeSource(s, gradeContext(p, s.segment)) } : s));
     p.evidence = { segments: allSegmentEvidence(p) };
     p.researchPack = researchPack(p, p.evidence.segments);
@@ -899,6 +928,10 @@ export function projectView(input: Project, a: Principal): Project {
   }
   delete p.aiConsent;
   delete p.taskPlan;
+  delete p.researchPlanning;
+  delete p.mediumSelection;
+  delete p.mediumDecision;
+  delete p.mediumContextHash;
   delete p.aiAuthorised;
   delete p.scope;
   delete p.scopeHistory;

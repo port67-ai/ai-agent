@@ -505,7 +505,7 @@ export default function Portal() {
             <>
               {tab === "overview" && (
                 <>
-                  <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} onRun={operator && !principal.demo ? () => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.") : undefined} />
+                  <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} onRun={operator && !principal.demo ? () => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.") : undefined} />
                   {operator && (
                     <RunTracker
                       p={p}
@@ -876,7 +876,7 @@ export default function Portal() {
                   }
                 />
               )}
-              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} onAiAudiences={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "audiences" }), "AI strapline and audience suggestions ready. Use what fits, then save.")} />}
+              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} onMedium={() => void run(() => api("projects/" + p.id + "/planning", { kind: "medium", retry: true }), "Medium recommendations ready. Compare them with the customer request, then confirm formats with a reason.")} onAiAudiences={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "audiences" }), "AI strapline and audience suggestions ready. Use what fits, then save.")} />}
               {tab === "direction" && (
                 <Direction
                   p={p}

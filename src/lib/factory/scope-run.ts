@@ -1,3 +1,5 @@
+import { planningCurrent, effectiveResearchDecision, planningScopeKey, planningInputKey } from "./planning-context";
+import { planProject } from "./task-plan";
 import { meteredModelCall } from "./metering";
 import { resolveSelection } from "./ai-routing";
 import { access, digest, hasProviderConsent, id, operator, scopeHash } from "./engine";
@@ -90,6 +92,21 @@ async function store(repo: Repository, a: Principal, projectId: string, build: (
 export async function ensureScope(repo: Repository, a: Principal, projectId: string, force = false, feedback?: string): Promise<ResearchScope> {
   const before = find((await repo.read(a.workspaceId)).projects, projectId, a);
   const hash = briefHash(before);
+  if (planningCurrent(before)) {
+    if (!force && before.scope?.briefHash === hash && before.scope.planningVersion === before.researchPlanning!.version && before.scope.planningKey === planningScopeKey(before)) return before.scope;
+    return store(repo, a, projectId, current => {
+      const scope = templateScope(current, { briefHash: briefHash(current), version: nextScopeVersion(current), note: "AI planner questions and methods; business classification uses the free rules baseline." });
+      for (const segment of segments) { const decision = effectiveResearchDecision(current, segment)!; if (decision.selected && decision.questions.length >= 2) scope.segments[segment] = { questions: decision.questions, sourceTypes: decision.sourceTypes, avoid: decision.avoid, maxPages: decision.maxPages }; }
+      scope.planningVersion = current.researchPlanning!.version;
+      scope.planningKey = planningScopeKey(current);
+      return scope;
+    });
+  }
+  if (before.researchPlanning?.status === "rules" && before.researchPlanning.inputKey === planningInputKey(before)) {
+    if (!force && before.scope?.briefHash === hash) return before.scope;
+    return store(repo, a, projectId, current => templateScope(current, { briefHash: briefHash(current), version: nextScopeVersion(current), note: "Producer explicitly chose the free rules research plan." }));
+  }
+  if (before.researchPlanning?.enabled) throw new Error("Complete the AI research planner or explicitly choose a current rules plan before scoping");
   if (!force && before.scope && before.scope.briefHash === hash) return before.scope;
   const template = (note?: string) => store(repo, a, projectId, (current) => templateScope(current, { briefHash: briefHash(current), version: nextScopeVersion(current), note }));
   if (a.demo) return template("Synthetic demo: no paid scoping call.");
@@ -158,7 +175,19 @@ export async function ensureScope(repo: Repository, a: Principal, projectId: str
 export async function saveScope(repo: Repository, a: Principal, projectId: string, input: unknown): Promise<ResearchScope> {
   operator(a);
   const valid = validateScope(input);
-  return store(repo, a, projectId, (current) => ({ version: nextScopeVersion(current), source: "manual", at: new Date().toISOString(), briefHash: briefHash(current), by: a.subject, ...valid }));
+  return store(repo, a, projectId, current => {
+    if (current.runs.some(r => r.status === "running")) throw new Error("Wait for running tasks before changing research scope");
+    if (current.researchPlanning && current.strategies.length) throw new Error("Research scope is locked after direction work begins");
+    if (current.researchPlanning && !planningCurrent(current) && !(current.researchPlanning.status === "rules" && current.researchPlanning.inputKey === planningInputKey(current))) throw new Error("Complete planning or explicitly choose the current rules plan before editing scope");
+    if (planningCurrent(current)) {
+      const planning = current.researchPlanning!;
+      planning.history = [...planning.history, { version: planning.version, summary: planning.proposal!.summary, at: new Date().toISOString(), runId: planning.runId }].slice(-10);
+      planning.proposal = { ...planning.proposal!, agents: planning.proposal!.agents.map(decision => ({ ...decision, selected: effectiveResearchDecision(current, decision.segment)!.selected, ...valid.segments[decision.segment] })) };
+      planning.version++;
+      planProject(current, a.subject, "Producer revised the AI plan's research questions and source scope");
+    }
+    return { version: nextScopeVersion(current), source: "manual", at: new Date().toISOString(), briefHash: briefHash(current), by: a.subject, ...valid, ...(planningCurrent(current) ? { planningVersion: current.researchPlanning!.version, planningKey: planningScopeKey(current) } : {}) };
+  });
 }
 /** Whether the stored scope still matches the brief. A false value means the brief changed after classification. */
 export const scopeCurrent = (p: Project) => !!p.scope && p.scope.briefHash === briefHash(p);

@@ -205,12 +205,14 @@ export type Audit = {
   detail: string;
 };
 export type ResearchRun = {
+  planningContextKey?: string;
+  researchTaskKey?: string;
   taskInputKey?: string;
   accountId?: string;
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences";
+  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences" | "planning" | "medium";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -286,6 +288,11 @@ export type Idea = {
   by?: "ai" | "rules"; status: "proposed" | "kept" | "dropped"; priority: "high" | "medium" | "low"; createdAt: string; decidedBy?: string;
 };
 export type Project = {
+  researchPlanning?: import("./research-planner").ResearchPlanning;
+  mediumSelection?: import("./medium-selection").MediumSelection;
+  mediumDecision?: { at: string; by: string; rationale: string; recommendationVersion?: number; formats: string[]; requestedFormats: string[] };
+  /** Operator projection only: compact optimistic concurrency token for a medium decision. */
+  mediumContextHash?: string;
   taskPlan?: import("./task-plan").TaskPlan;
   /** Customer-safe progress, without agent instructions, private costs or plan history. */
   taskProgress?: { id: string; title: string; status: string }[];

@@ -20,6 +20,8 @@ export const PROVIDERS: { id: Provider; label: string; research: boolean }[] = [
   { id: "deepseek", label: "DeepSeek", research: false },
 ];
 export const SLOTS = [
+  { id: "synthesis:planner", stage: "synthesis", label: "Planning: research plan", hint: "Interprets the full authorised brief and proposes relevant researchers, questions and medium hypotheses." },
+  { id: "synthesis:medium", stage: "synthesis", label: "Planning: evidence-backed medium selection", hint: "Recommends format-channel pairs from reviewed evidence; never substitutes the customer request." },
   { id: "scope:business", stage: "synthesis", label: "Scoping: classify the business", hint: "Reads the brief and decides what each research agent should ask and skip." },
   { id: "research:brand", stage: "research", label: "Research: business and brand", hint: "Product, offer and facts the business can stand behind." },
   { id: "research:customer", stage: "research", label: "Research: customer insight", hint: "Customer language, motivations, objections and reviews." },
@@ -120,7 +122,7 @@ export async function saveRouting(repo: Repository, raw: unknown, actor: string,
     };
   });
 }
-export type ResolvedSelection = ProviderSelection & { source: "slot" | "default" | "env" };
+export type ResolvedSelection = ProviderSelection & { source: "slot" | "default" | "env" | "inherited" };
 /**
  * Which provider and model runs this job. Order: the job's own route, then the stage default set on the
  * admin page, then the original PORT67_*_PROVIDER/MODEL settings. A saved route whose key has since been
@@ -136,13 +138,14 @@ export async function resolveSelection(repo: Repository, slotId: SlotId, env: En
     config = {};
   }
   const own = config.slots?.[slotId];
-  const route = own || config.defaults?.[slot.stage];
+  const inherited = slotId === "synthesis:planner" ? config.slots?.["scope:business"] : slotId === "synthesis:medium" ? config.slots?.["synthesis:formats"] : undefined;
+  const route = own || config.defaults?.[slot.stage] || inherited;
   if (route) {
     if (!isProvider(route.provider) || !MODEL.test(route.model)) throw new Error("Saved AI model settings are invalid; review them on the AI models page");
     if (slot.stage === "research" && !info(route.provider).research) throw new Error(`${slot.label} is set to a provider without web search`);
     const key = env[keyNames[route.provider]];
     if (!key?.trim()) throw new Error(`${slot.label} uses ${info(route.provider).label}, but ${keyNames[route.provider]} is not set in Render`);
-    return { provider: route.provider, model: route.model, key, source: own ? "slot" : "default" };
+    return { provider: route.provider, model: route.model, key, source: own ? "slot" : config.defaults?.[slot.stage] ? "default" : "inherited" };
   }
   return { ...providerSelection(slot.stage, env), source: "env" };
 }

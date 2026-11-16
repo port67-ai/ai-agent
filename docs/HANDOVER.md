@@ -1,3 +1,28 @@
+# Latest handover — CHG-0083 AI research planning and evidence-backed media, 16 November 2026
+
+Branch: `feat/ai-research-medium-planning`, base `bfaf83e` (PR #57). Owner authorises completing, merging and deploying while away, without further development approval pauses. Runtime customer approvals remain unchanged. This entry records implementation/acceptance; GitHub PR/commit and hosting statuses establish actual merge/deployment state.
+
+New explicit work-type briefs enable an LLM research planner before research starts. It reads the authorised public brief and chosen channels, proposes selected/excluded roles, reasons, questions, compatible methods, provisional medium hypotheses and capability gaps. The task manager validates the fixed catalogue and creates the dependency graph. It does not let a model register agents or tools. Existing clients/projects retain their old path; producers can enable planning in Overview before direction work begins.
+
+Two new model/skill slots are visible on the AI agents map: Research planning agent (`synthesis:planner`) and Medium selection strategist (`synthesis:medium`). Explicit routes and synthesis defaults win; otherwise the new slots can inherit the configured scoping/format model, then environment settings. Calls use existing consent, account/project cost ledger, spend caps and invocation limits. Planner/medium failures require explicit retry. Rules fallback needs a producer reason and uses cached free scoping. Accepted planner questions avoid a redundant paid scope call. Existing manual scope edits update the plan and survive subsequent execution.
+
+After source and insight review, the medium strategist recommends format-channel pairs with cited accepted evidence, counterarguments, confidence and uncertainty. Requested deliverables remain unchanged. Producer confirmation needs a rationale and the expected recommendation/evidence context; stale submissions are rejected. A confirmed video alternative adds craft research while compatible existing research remains reusable. New evidence invalidates old medium confirmation. General channel familiarity is a limited prior, never invented campaign history. No private ad-account connector, cross-client learning or automatic model training exists.
+
+Original Port67 research methods strengthen the seven existing roles, including product/offer and category/market depth. Gap proposals appear in Capabilities with existing limitations and required inputs. They remain non-executable until reviewed promotion; this change does not automatically launch a larger researcher catalogue.
+
+Independent review found four important issues: scope API bypass of pending planners, stale format confirmation, repeated rules scopes and stale manual-decision UI. These are fixed with regressions. Additional tests protect producer scope edits, dynamic video dependencies, requested-output preservation, stale paid usage, inherited model routes and provider output limits. Browser checks use synthetic API fixtures plus the real validators/transition code; no paid live call or real campaign-effectiveness claim is made.
+
+## Test this live
+
+1. Create a fresh brief with a work type, requested outputs, full business context and launch channels. Authorise/start research. In Overview inspect the AI plan, reasons, questions, methods and limited medium hypotheses.
+2. Review sources and insights. In Campaign direction run the medium recommendation, compare the unchanged request against the options/evidence, then choose formats with a rationale. If selecting a new video alternative, finish its craft research and reconfirm against the updated evidence before direction/production.
+3. Inspect Capabilities for gap proposals. For an old project, enable AI research planning in Overview before any direction exists. Configure planner/medium model slots only if no existing synthesis or inherited route resolves.
+
+Local full test suite, all four browser journeys, lint, TypeScript, production build, documentation governance and diff checks passed. Exact commands are recorded in CHG-0083. Firestore and actual hosting status are verified by CI/deployment checks; real selected-model quality and public-source availability still require the owner's keyed live acceptance.
+
+---
+Earlier handover follows.
+
 # Latest handover — CHG-0082 customer-driven project tasks, 16 November 2026
 
 Branch: `feat/customer-task-planning`. Base: `origin/main` at `9f629cd` (includes the Skill writer). Owner authorised adding task-based architecture to the existing MVP. Implementation is local, not merged or deployed.

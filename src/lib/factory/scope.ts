@@ -26,6 +26,8 @@ export type Classification = {
 };
 export type SegmentScope = { questions: string[]; sourceTypes: string[]; avoid: string[]; maxPages: number };
 export type ResearchScope = {
+  planningVersion?: number;
+  planningKey?: string;
   version: number;
   source: "ai" | "template" | "manual";
   at: string;

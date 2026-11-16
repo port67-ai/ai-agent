@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.27.0  
+**Version:** 1.28.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1512,3 +1512,19 @@ This evolution replaces the mandatory seven-researcher path for new project inta
 | FAC-TSK-005 | Match production agents to confirmed formats | Static-only work does not trigger motion or copy generation. Selected template agents have their own tracked tasks. Finished videos and long-form deliverables beyond current generators remain explicit producer tasks, completed only with a recorded handoff note; this cannot approve customer assets. No generic bot installation or live external side effects are introduced. |
 
 Optional AI format, audience and idea suggestions remain deliberate producer actions. An available agent on the global map is not automatically scheduled for each project. Legacy projects keep existing behaviour until a producer explicitly adopts a task plan. Planner selection uses transparent deterministic heuristics, not semantic understanding or a paid planning model; producer review and overrides address ambiguous requests. Durable queue delivery, multi-worker orchestration leases, external-agent adapters and the storage split remain separate work.
+
+
+## 25.9 AI research planning and evidence-backed medium decisions — 16 November 2026 (CHG-0083)
+
+Owner authorises implementation and deployment without further approval pauses. Runtime customer approvals, authorisation and budgets remain authoritative. This extends the task architecture, not a new autonomous business policy.
+
+| ID | Requirement | Acceptance criterion |
+|---|---|---|
+| FAC-PLN-001 | LLM proposes research from the full authorised customer brief and channels | New explicit work-type intake enables AI planning. The task manager validates exactly one decision per existing research role, compatible methods, bounded questions and page instructions, reasons and limited-confidence medium hypotheses. Unknown agents/tools and malformed proposals cannot execute. Contact and raw logo bytes are excluded; URLs are leads, not browsed evidence. |
+| FAC-PLN-002 | Planning executes through the existing metered, versioned task manager | Separate planner/medium model and skill slots; calls reserve costs and retain failed/stale usage. Planner precedes paid scoping/research; failed jobs require explicit retry or an audited rules fallback. Scope derives from accepted planner questions without a redundant paid classification pass. Current rules scope is cached. |
+| FAC-PLN-003 | Research uses stronger, explicit methods | Brand claims/proof and product/offer; customer journey, dated review mining and denominators; category/competitor and public ad-library limitations; creative/organic examples; adjacent transfer limits; dated trends; honest video provenance. Method IDs must match the selected role. Page limits remain provider instructions, not independently enforced retrieval counts. |
+| FAC-PLN-004 | Recommend media from reviewed evidence before confirming production formats | Show per-channel options, accepted source/insight references, counterarguments, uncertainty and requested-output differences. Channel knowledge is an unvalidated prior, not measured campaign history. Evidence supports suitability, not causal performance. Research-only projects omit this task. |
+| FAC-PLN-005 | Producer confirmation preserves the customer request and current evidence version | Customer requested outputs remain unchanged. Confirmed formats need a producer rationale and expected recommendation version/evidence hash. Stale or concurrent confirmation is rejected. New video/motion choices add targeted craft research without discarding compatible prior work. New evidence requires a current recommendation or explicit manual rationale before production. |
+| FAC-PLN-006 | Expand the catalogue selectively through evidence-backed proposals | Planner records missing capability, why existing roles are inadequate and required inputs in the existing proposed-capability backlog. Proposals cannot install agents, grant tools, call vendors or activate workflows. Product/market depth is initially delivered by methods within existing brand/competitor roles. |
+
+Legacy clients/projects retain their existing workflow until AI planning is enabled. New planner slots use explicit route, stage default, inherited configured scoping/format route, then environment; removed keys still fail visibly. No paid model fallback after invocation failure is introduced. No private ad-account connector, fabricated performance history, cross-customer learning, automatic model training, new research vendor or unreviewed agent promotion is introduced. Commercial third-party skill source text was not copied into runtime skills.
