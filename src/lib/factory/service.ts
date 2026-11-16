@@ -13,6 +13,7 @@ import { runContent } from "./content-run";
 import { promptPack } from "./advert";
 import { runAdvisory } from "./advisory-run";
 import { saveSkill, skillsOverview } from "./skills";
+import { writeSkill, writerConfig } from "./skill-writer";
 import { agentsOverview } from "./ai-agents";
 import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
@@ -597,6 +598,12 @@ export async function handleFactory(
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       if(request.method==="POST") await saveSkill(repository,data.agent,data.body,a.subject,data.note);
       return json({ skills: await skillsOverview(repository) });
+    }
+    if (route === "admin/skill-writer") {
+      // Owner only. Returns text for the owner to read and save; saving is a separate step through admin/skills.
+      if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      if(request.method!=="POST" || !data.agent) return json(await writerConfig(repository));
+      return json({ result: await writeSkill(repository,a,{ agent:String(data.agent), outsideSkill:typeof data.outsideSkill==="string"?data.outsideSkill:undefined, change:typeof data.change==="string"?data.change:"", notes:typeof data.notes==="string"?data.notes:undefined, model:typeof data.model==="string"?data.model:undefined, effort:typeof data.effort==="string"?data.effort:undefined }) });
     }
     if (route === "admin/ai-routing") {
       // Owner only. Chooses provider and model per job and holds prices; API keys stay in Render.

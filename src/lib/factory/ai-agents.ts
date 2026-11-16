@@ -26,6 +26,7 @@ const PURPOSE: Record<string, { capability: string; purpose: string }> = {
   "review:insights": { capability: "review.insights", purpose: "Walled garden: sees only each draft insight and its own evidence. Accepts or rejects each; sends the set back once with notes if too few are supported. Never sees the direction." },
   "review:direction": { capability: "review.direction", purpose: "Walled garden: sees only the draft direction, its accepted insights, the objective and the launch channels. Decides whether it is ready for the account owner; sends it back once with notes. Never sees raw sources." },
 };
+export const purposeOf = (agent: string) => PURPOSE[agent]?.purpose || "";
 export type AgentStats = { calls: number; completed: number; failed: number; unknown: number; inFlight: number; inputTokens: number; outputTokens: number; estimatedMicroUsd: number; lastAt?: string; lastStatus?: "completed" | "failed" | "unknown" | "reserved" };
 const IN_FLIGHT_MS = 120000;
 export function agentStats(rows: ApiCall[], agent: string, now = Date.now()): AgentStats {

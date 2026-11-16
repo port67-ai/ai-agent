@@ -33,6 +33,7 @@ import WorkspaceSetup from "./WorkspaceSetup";
 import AdminCosts from "./AdminCosts";
 import Team from "./Team";
 import AiAgents from "./AiAgents";
+import SkillWriter from "./SkillWriter";
 import Direction from "./Direction";
 import CampaignPlan from "./CampaignPlan";
 import Assets from "./Assets";
@@ -67,6 +68,7 @@ type Tab =
   | "setup"
   | "team"
   | "agents"
+  | "skillwriter"
   | "admin";
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
@@ -82,6 +84,7 @@ const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "setup", label: "Workspace setup", icon: Settings2 },
   { id: "team", label: "Team access", icon: Users },
   { id: "agents", label: "AI agents", icon: Bot },
+  { id: "skillwriter", label: "Skill writer", icon: Sparkles },
   { id: "admin", label: "Private API costs", icon: ShieldCheck },
 ];
 /** Owner and setup pages are not about one project, so they get their own subtitle and no account or project pickers. */
@@ -273,7 +276,7 @@ export default function Portal() {
           {nav
             .filter(
               (n) =>
-                n.id === "admin" || n.id === "team" || n.id === "agents" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
+                n.id === "admin" || n.id === "team" || n.id === "agents" || n.id === "skillwriter" ?!!principal.admin && principal.identity === "firebase" && !principal.demo : operator ||
                 !["production", "capabilities", "setup", "ideas"].includes(n.id),
             )
             .map(({ id, label, icon: Icon }) => (
@@ -474,6 +477,8 @@ export default function Portal() {
             <AdminCosts />
           ) : tab === "agents" && principal.admin ? (
             <AiAgents />
+          ) : tab === "skillwriter" && principal.admin ? (
+            <SkillWriter />
           ) : tab === "team" && principal.admin ? (
             <Team />
           ) : tab === "setup" && operator ? (
