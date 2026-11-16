@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.26.0  
+**Version:** 1.27.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1497,3 +1497,18 @@ Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-000
 ---
 
 **Final operating rule:** **Port67 Factory has one durable project memory: versioned GitHub documents and verified implementation evidence.** The latest AI conversation is never a substitute. **Listen First. Build What Matters.**
+
+
+## 25.8 Customer-driven project task plans — owner-authorised 16 November 2026 (CHG-0082)
+
+This evolution replaces the mandatory seven-researcher path for new project intake with a customer-driven selection. It supersedes section 25.6's seven-role default for planned projects while retaining all seven available capabilities and legacy continuation. It does not adopt the proposed Cloud Tasks stack or install an external agent framework.
+
+| ID | Requirement | Acceptance criterion |
+|---|---|---|
+| FAC-TSK-001 | Generate a free, versioned task plan from customer input | Initial intake records campaign versus research-and-insights-only work and optional requested formats; objective, channels and confirmed formats select relevant research roles with inclusion/exclusion reasons. Explicit outputs override incidental industry wording. Brand and customer evidence remain foundational. |
+| FAC-TSK-002 | Persist tasks, dependencies, assignments, acceptance criteria and progress | Project stores a validated acyclic graph; existing repository transactions reconcile running/completed/blocked states from run, evidence and approval records. Project management view shows tasks, assigned capabilities, dependencies, blockers, exclusions and bounded plan history. Customer projection shows titles/status only. |
+| FAC-TSK-003 | Execute only relevant, dependency-ready work | Server denies excluded research before scoping/provider invocation and enforces dependencies for research, insight/direction drafting, copy packs and production. Orchestrator reads the plan and retains existing bounded reviewer rework, consent, identity, budget and approval controls. Research-only plans finish after reviewed insights. Paid failed tasks require deliberate producer retry. |
+| FAC-TSK-004 | Revise plans without erasing execution history | Brief/channel/format changes before direction work replan; producer can override known research agents with a reason and expected plan version. Changed public inputs reject late outputs with usage retained and invalidate prior evidence for automatic use. Compatible selection/format changes retain completed work; old plans and execution lineage remain traceable. Existing post-direction scope locks remain authoritative. |
+| FAC-TSK-005 | Match production agents to confirmed formats | Static-only work does not trigger motion or copy generation. Selected template agents have their own tracked tasks. Finished videos and long-form deliverables beyond current generators remain explicit producer tasks, completed only with a recorded handoff note; this cannot approve customer assets. No generic bot installation or live external side effects are introduced. |
+
+Optional AI format, audience and idea suggestions remain deliberate producer actions. An available agent on the global map is not automatically scheduled for each project. Legacy projects keep existing behaviour until a producer explicitly adopts a task plan. Planner selection uses transparent deterministic heuristics, not semantic understanding or a paid planning model; producer review and overrides address ambiguous requests. Durable queue delivery, multi-worker orchestration leases, external-agent adapters and the storage split remain separate work.

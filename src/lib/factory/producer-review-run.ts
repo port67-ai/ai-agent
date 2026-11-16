@@ -31,6 +31,7 @@ async function ask(repo: Repository, a: Principal, projectId: string, gate: Revi
     return { skipped: "No model chosen for this reviewer, so only the free checks ran." };
   }
   const run: ResearchRun = {
+    ...(before.taskPlan ? { taskInputKey: before.taskPlan.researchKey } : {}),
     id: id(), stage: "review", capabilityId: `review.${gate}`, capabilityVersion: "1.0.0", at: new Date().toISOString(), status: "running",
     provider: selection.provider, model: selection.model, leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
     contextHash: digest(JSON.stringify(before.brief)), contextSnapshot: structuredClone(before.brief), usageStatus: "unknown",
@@ -65,8 +66,13 @@ async function ask(repo: Repository, a: Principal, projectId: string, gate: Revi
     reason = e instanceof Error ? e.message.slice(0, 200) : "The review call failed";
   }
   await repo.mutate(a.workspaceId, (state) => {
-    const rec = find(state.projects, projectId, a).runs.find((r) => r.id === run.id);
+    const current = find(state.projects, projectId, a);
+    const rec = current.runs.find((r) => r.id === run.id);
     if (!rec) return;
+    if (current.taskPlan && (rec.taskInputKey !== current.taskPlan.researchKey || !hasProviderConsent(current) || rec.status !== "running")) {
+      reason = "Task plan inputs changed or authorisation was withdrawn; stale review rejected";
+      result = undefined;
+    }
     rec.status = reason ? "failed" : "completed";
     rec.finishedAt = new Date().toISOString();
     rec.usage = usage;
@@ -138,6 +144,7 @@ export async function reviewGate(repo: Repository, a: Principal, projectId: stri
   }
   const used = asked.filter((x): x is Extract<Asked, { result: GateResult }> => "result" in x);
   const skipped = asked.filter((x): x is { skipped: string } => "skipped" in x).map((x) => x.skipped)[0];
+  if (asked.some(x => "skipped" in x && x.skipped.includes("stale review rejected"))) throw new Error("Task plan inputs changed; stale review rejected");
   const record: ReviewRecord = {
     ...base, by: used.length ? "ai" : "rules", ...(used[0] ? { provider: used[0].provider, model: used[0].model, runId: used[0].runId } : {}),
     subject, verdict: outcome.verdict, summary: outcome.summary.slice(0, 300), ...(outcome.score === undefined ? {} : { score: outcome.score }), ...(outcome.unsupported?.length ? { unsupported: outcome.unsupported } : {}), ...(outcome.notes ? { notes: outcome.notes.slice(0, 600) } : {}), items: outcome.items.slice(0, 100), ...(skipped ? { skipped } : {}),

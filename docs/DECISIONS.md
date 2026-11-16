@@ -19,3 +19,8 @@ Owner explicitly requested building now without further questions/approvals, inc
 PRODUCT-003 — 2026-11-12: continue the owner-authorised MVP on Render with explicit launch readiness and reviewed, bounded AI drafting. No cloud activation without working credentials/connection tests. See adr/ADR-0002-live-foundation.md and CHG-0007/0008.
 
 PRODUCT-004 — 2026-11-12: owner explicitly requests individual user accounts and common account IDs across research/build/assets, four API providers and owner-only cost tracking as part of items1–4 implementation. Retain Render, Firebase project ai-agency-3671b, server-derived ownership, explicit provider routing and pre-dispatch private ledger. Live provisioning awaits authenticated access. See ADR-0003 and CHG-0009.
+
+
+## PRODUCT-005 — 2026-11-16 — Owner-authorised task-based MVP evolution
+
+Owner requests customer-input-driven agent selection, persistent task management and project-style progress while retaining existing controls. CHG-0082 implements an embedded deterministic coordinator using the current stack and runners, rather than introducing a workflow framework or paid planner. New intake plans the requested journey; legacy projects explicitly opt in. Producer overrides are audited/version-checked. Existing post-direction scope locks stay; finished unsupported deliverables remain producer work. Cloud Tasks, a separate service and external-agent adapters are not implicitly approved or claimed implemented. Design and plan: `docs/superpowers/specs/2026-11-16-customer-task-planning-design.md` and corresponding implementation plan.

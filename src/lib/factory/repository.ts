@@ -1,3 +1,4 @@
+import { syncTaskPlan } from "./task-plan";
 import { linkProjectOwnership } from "./accounts";
 import { getFactoryFirebaseApp } from "./firebase-admin";
 import { serializeAccount, hydrateAccount, type AccountMetadata } from "./storage-schema";
@@ -49,7 +50,7 @@ export class LocalRepository implements Repository {
         await mkdir(this.directory, { recursive: true, mode: 0o700 });
         const db = await this.read(workspace);
         const result = fn(db);
-        db.projects = db.projects.map(linkProjectOwnership);
+        db.projects = db.projects.map(p => { syncTaskPlan(p); return linkProjectOwnership(p); });
         let serialized = JSON.stringify(db);
         if (Buffer.byteLength(serialized) > snapshotLimit(db) && trimDatabase(db)) serialized = JSON.stringify(db);
         if (Buffer.byteLength(serialized) > snapshotLimit(db))
@@ -96,7 +97,7 @@ export class FirebaseRepository implements Repository {
       const db=await this.load(tx,ref,workspace);
       const before=new Map(db.projects.map(p=>[p.id,JSON.stringify(p)]));
       const result=fn(db);
-      db.projects=db.projects.map(linkProjectOwnership);
+      db.projects=db.projects.map(p => { syncTaskPlan(p); return linkProjectOwnership(p); });
       let serialized=JSON.stringify(db);
       if(Buffer.byteLength(serialized)>snapshotLimit(db) && trimDatabase(db)) serialized=JSON.stringify(db);
       if(Buffer.byteLength(serialized)>snapshotLimit(db)) throw Error("Workspace storage limit reached");

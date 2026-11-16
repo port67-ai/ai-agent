@@ -15,3 +15,10 @@ CHG-0009: Principal adds verified Firebase identity/accountId/admin/issuedAt; Ac
 
 
 CHG-0062: Segment adds adjacent/trends/video. Source.videoAnalysis optionally stores bounded native-video observations (basis, sampledFps=2, maxAnalysedSeconds=120, duration, nine craft/limitation strings and at most six timecodes). ResearchRun.contextBundle stores the frozen public research inputs; contextHash/inputHash cover those inputs and skill v2. Old records remain readable; old direction hashes are not rewritten. Advert treatment optionally carries creativeDirection from the approved strategy and includes it in its existing plan hash. No raw video/transcript storage or generic client-context collections added.
+
+
+## CHG-0082 task plans
+
+Optional `Project.taskPlan` is stored inside the existing project record. No destructive migration occurs. It includes monotonic version, timestamps/actor/reason, exact public-input freshness key, selected research/overrides, campaign or research-only mode, clarifications and tasks. Each task has stable ID, capability, dependencies, state, selection reason, acceptance criteria, run IDs and blocker detail. Manual producer-only tasks may hold completion actor/time/note. Plan history retains the last ten superseded version summaries and completed-task IDs; run/cost/audit records remain separate authoritative history.
+
+`Brief.workRequest` and `Brief.requestedFormats` capture customer intent; producer-approved `formats` remains the production gate. New paid runs carry `taskInputKey` when planned. These keys contain public input context and are freshness metadata, never authority. A changed brief or channel invalidates automatic reuse of old sources/insights without removing them or paid usage. Customer projections remove `taskPlan` and expose only `taskProgress` entries `{id,title,status}`. Plans use the existing account/project repository and storage limits. Workspace size limits and FAC-STO-002 remain in force.

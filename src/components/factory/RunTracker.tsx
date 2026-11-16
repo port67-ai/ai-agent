@@ -11,19 +11,20 @@ const TONE: Record<StepState, string> = { done: "#34d399", running: "#60a5fa", p
 const AI_LABEL: Record<AiStage, string> = { insights: "Draft insights with AI", formats: "Suggest formats with AI", audiences: "Suggest strapline and audiences with AI", strategy: "Draft direction with AI", content: "Draft copy pack with AI" };
 type Props = { p: Project; go: (tab: "research" | "direction" | "assets" | "advert") => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
 export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
-  const steps = runTracker(p);
+  const allSteps = runTracker(p);
+  const steps = p.taskPlan ? allSteps.filter(s => s.ai || s.act || s.state === "paused" || s.state === "waiting_approval" || s.state === "running") : allSteps;
   return (
     <section className="f-panel" aria-label="Run progress">
-      <div className="f-eyebrow">Run progress</div>
+      <div className="f-eyebrow">{p.taskPlan ? "Task actions" : "Run progress"}</div>
       <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {steps.map((s) => {
           const Icon = ICON[s.state];
           return (
-            <li key={s.id} data-state={s.state} className="f-small" style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 0" }}>
+            <li key={s.id} data-state={s.state} className="f-small" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "4px 0" }}>
               <Icon size={16} color={TONE[s.state]} className={s.state === "running" ? "f-spin" : undefined} aria-hidden="true" />
               <strong style={{ minWidth: 150 }}>{s.label}</strong>
               <span style={{ color: TONE[s.state], minWidth: 150 }}>{LABEL[s.state]}</span>
-              <span>{s.detail}</span>
+              <span style={{ flex: "1 1 220px" }}>{s.detail}</span>
               {s.ai && aiReady && onAi && (
                 <button type="button" className="f-button small" disabled={busy} onClick={() => onAi(s.ai!)}>{AI_LABEL[s.ai]}</button>
               )}

@@ -73,7 +73,7 @@ export default function SkillDialog({ agentId, agentName, purpose, onClose }: { 
             )}
             <details open={editing || undefined}>
               <summary className="f-small"><strong>Data this agent receives and variables you can use</strong>{usedList.length ? ` (${usedList.length} used in this skill)` : ""}</summary>
-              <p className="f-small">Write <code>{"{{business}}"}</code> in the skill to name the business explicitly. It is replaced with the project's value, in quotes, just before the call. While editing, press a variable to add it. Variables in green are used in the skill shown above.</p>
+              <p className="f-small">Write <code>{"{{business}}"}</code> in the skill to name the business explicitly. It is replaced with the project&apos;s value, in quotes, just before the call. While editing, press a variable to add it. Variables in green are used in the skill shown above.</p>
               <div className="f-actions" style={{ flexWrap: "wrap" }}>
                 {row.variables.map((v) => (
                   <button key={v.name} type="button" className={"f-button secondary small" + (used.has(v.name) ? " f-var-used" : "")} disabled={!editing} title={v.meaning} onClick={() => insert(v.name)}>{used.has(v.name) ? "✓ " : ""}{`{{${v.name}}}`}</button>
