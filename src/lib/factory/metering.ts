@@ -4,6 +4,8 @@ import type { Repository } from './repository';
 import { getSkill, renderSkill, withSkill } from './skills';
 export function agentOf(run:ResearchRun):string {
  const stage=run.stage||'research';
+ if(stage==='planning') return 'synthesis:planner';
+ if(stage==='medium') return 'synthesis:medium';
  if(stage==='scope') return 'scope:business';
  if(stage==='review') return 'review:'+String(run.capabilityId||'').replace('review.','');
  return stage==='research'?'research:'+(run.segment||'brand'):stage==='insights'?'synthesis:insights':stage==='content'?'synthesis:content':stage==='formats'?'synthesis:formats':stage==='ideas'?'synthesis:ideas':stage==='audiences'?'synthesis:audiences':'synthesis:strategy';

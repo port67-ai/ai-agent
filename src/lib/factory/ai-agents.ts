@@ -7,6 +7,8 @@ import { flowObservability } from "./observability";
 
 // Admin view of every agent: what it does, which model runs it, and what it has done and cost.
 const PURPOSE: Record<string, { capability: string; purpose: string }> = {
+  "synthesis:planner": { capability: "planning.research", purpose: "Interprets the complete public brief and channels; selects relevant approved research agents, bounded questions and methods. Proposes preliminary medium hypotheses and capability gaps without granting tools or changing requested outputs." },
+  "synthesis:medium": { capability: "planning.medium", purpose: "Recommends format-channel pairs from reviewed project evidence. Separates model/channel priors from cited suitability, flags requested-output mismatches and unknown performance. Producer confirmation controls production." },
   "scope:business": { capability: "scope.business", purpose: "Reads the brief (no web search) and classifies the business: type, size, reach, audience and regulation. Saves that classification and a narrow, business-specific question list for each research agent to Firestore, so every later step can read it." },
   "research:brand": { capability: "research.brand", purpose: "Reads the business website and independent coverage to establish the offer, brand voice and facts the business can stand behind." },
   "research:customer": { capability: "research.customer", purpose: "Finds real customer reviews and discussion: motivations, objections, the words customers use and the alternatives they weigh." },
@@ -60,7 +62,7 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
     const eff = routing.effective.find((e) => e.slot === slot.id);
     return {
       id: slot.id as string,
-      group: slot.id === "scope:business" ? "scoping" : slot.id.startsWith("review:") ? "review" : slot.stage === "research" ? "research" : "drafting",
+      group: ["synthesis:planner", "synthesis:medium"].includes(slot.id) ? "planning" : slot.id === "scope:business" ? "scoping" : slot.id.startsWith("review:") ? "review" : slot.stage === "research" ? "research" : "drafting",
       name: cap?.name || slot.label,
       purpose: meta.purpose,
       kind: "ai" as const,

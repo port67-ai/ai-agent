@@ -583,3 +583,14 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Status: local implementation on feat/customer-task-planning, base 9f629cd; not merged/deployed. Verification results appended after final checks.
 
 - Final CHG-0082 evidence (16 November 2026): `npm test`, `npm run check:factory`, `./node_modules/.bin/tsc --noEmit`, `npm run build`, `PORT67_TEST_ORIGIN=http://localhost:3100 npm run test:browser`, `python3 scripts/check_docs_governance.py --base 9f629cd` and `git diff --check` passed. Independent review's hold-bypass and failed-paid-retry findings reproduced RED→GREEN; stale reviewer output regression also RED→GREEN. Firestore emulator verification could not run because its JAR download from storage.googleapis.com failed, including a retry with writable temp cache/config paths. No live provider, production or deployment claims.
+
+
+## CHG-0083 — 2026-11-16 — AI research plans, evidence-backed media and selective catalogue proposals
+- Author/harness: Codex. Owner explicitly authorised implementation and deployment while away, without approval pauses.
+- What/why: interpret the full public customer brief with an LLM; validate/version relevant researcher choices and methods; execute through the existing task manager; recommend channel-format options from reviewed evidence; preserve requested outputs and record producer choices. New video alternatives create targeted craft research. Existing producer scope/agent overrides remain authoritative. Missing capabilities become reviewable proposals, not executable agents.
+- Requirements: FAC-PLN-001 through FAC-PLN-006; extends FAC-TSK-001 through 005, FAC-CTX-009, FAC-HAR-012, FAC-FMT-002/003 and FAC-OBS-001.
+- PRD impact: 1.28.0, section 25.9. New paid planner/medium stages use the existing metering gateway, caps, roles and approval policy. No new provider, performance connector, cross-customer learning or unreviewed catalogue promotion.
+- Source handling: original Port67 methods were authored from the functional requirements; the external source's runtime/skill text was not copied or installed.
+- Status: feat/ai-research-medium-planning, base bfaf83e. Local implementation; CI, merge and deployment evidence appended after final verification.
+
+- CHG-0083 local verification (16 November 2026): `npm test`, `npm run check:factory`, `./node_modules/.bin/tsc --noEmit`, `npm run build`, `PORT67_TEST_ORIGIN=http://localhost:3100 npm run test:browser`, `python3 scripts/check_docs_governance.py --base bfaf83e` and `git diff --check` passed. All four browser journeys passed with synthetic providers/fixtures; no paid live calls. Fresh independent review findings were reproduced and fixed; no findings deferred. CI will run the Firestore emulator and repeat acceptance before merge. Existing video-store tracing warnings remain unchanged.

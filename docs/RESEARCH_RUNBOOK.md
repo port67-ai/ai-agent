@@ -54,3 +54,10 @@ Gate 1 is a human step today (single Accept all, or per source). If an AI review
 4. Idempotent decisions: it only touches unreviewed sources; accepting or rejecting an already-decided source is a no-op. A second run with nothing waiting must do nothing and cost nothing.
 5. Backoff and a kill switch: after a failure wait before any retry (as the automatic start does), and provide a PORT67_ environment switch to turn it off. It must record every decision and its reason in the audit trail.
 6. Meter it: every call goes through the cost ledger as its own agent so the map shows its calls and cost.
+
+
+## AI planning and medium testing (CHG-0083)
+
+Create a new brief with a work type and optional requested deliverables, choose channels, then authorise/start research. AI planner uses the full authorised public context before scoped research. In Overview, inspect selection/exclusion reasons, specific questions/methods, provisional medium hypotheses and any capability gaps. An existing project can use Enable AI research planning before direction work. Planner and medium model/skill controls are on the AI agents map; existing synthesis defaults or scoping/format routes provide initial model choices. Calls are metered and capped. Failed calls are never silently retried: use the explicit retry or record a rules-plan reason.
+
+After reviewing evidence and insights, open Campaign direction. Request the evidence-backed medium recommendation or let Run ready tasks reach it. Compare the customer's unchanged request against per-channel options, evidence, counterarguments and unknowns. Choose actual formats and record a rationale; if the evidence/recommendation changed in another session, refresh before confirming. A newly selected video format can commission video craft research; review its evidence, refresh recommendations and reconfirm before direction/production. Capability gaps appear under Capabilities for review and cannot run automatically. Do not treat public ad visibility or general model familiarity as measured customer performance.

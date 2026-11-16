@@ -1,3 +1,4 @@
+import { runResearchPlanning, runMediumSelection } from "./planning-run";
 import { syncTaskPlan, taskResearchCurrent } from "./task-plan";
 import { requiredResearchSegments } from "./research-catalog";
 import { loadApprovalMode, producerApprovalsOn } from "./approval-mode";
@@ -45,8 +46,10 @@ const MAX_PASSES = 30;
 const MAX_LOG = 40;
 const MAX_REWORKS = 1;
 
-export type StepId = "scope" | "research" | "reResearch" | "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
+export type StepId = "planResearch" | "mediumSelection" | "scope" | "research" | "reResearch" | "approveDirection" | "reviewScope" | "reviewSources" | "draftInsights" | "reviewInsights" | "draftDirection" | "reviewDirection" | "produce" | "draftCopyPack" | "shareAssets";
 export const STEP_LABEL: Record<StepId, string> = {
+  planResearch: "AI proposes the research plan",
+  mediumSelection: "Recommend evidence-backed channel media",
   scope: "Scope the customer request",
   research: "Execute the next selected research task",
   reviewScope: "Scope producer reviews the classification",
@@ -107,6 +110,7 @@ export function planNext(input: Project, aiReady: boolean): Plan {
   const tasks = p.taskPlan!.tasks;
   const held = tasks.find(t => t.status === "blocked");
   if (held) return wait("waiting_human", held.title + ": " + held.detail);
+  if (tasks.some(t => t.id === "planResearch" && t.status !== "done")) return aiReady ? { step: "planResearch" } : wait("waiting_human", "Configure a research planning model or explicitly choose the rules plan.");
   if (tasks.find(t => t.id === "scope")?.status !== "done") return { step: "scope" };
   if (p.scope && !(p.reviews || []).some(r => r.gate === "scope" && r.subject === "v" + p.scope!.version)) return { step: "reviewScope" };
   const research = tasks.filter(t => t.id.startsWith("research:") && t.status !== "skipped");
@@ -115,6 +119,7 @@ export function planNext(input: Project, aiReady: boolean): Plan {
   if (research.some(t => t.status === "ready")) return researchRunner ? { step: "research" } : wait("blocked", "Research execution is not connected.");
   if (research.some(t => t.status !== "done")) return wait("blocked", "Waiting for selected research dependencies.");
   if (p.taskPlan!.mode === "research" && tasks.filter(t => !t.id.startsWith("research:")).every(t => t.status === "done")) return wait("done", "Requested research and insights are reviewed. No creative agents are scheduled.");
+  if (tasks.some(t => t.id === "mediumSelection" && t.status === "ready")) return aiReady ? { step: "mediumSelection" } : wait("waiting_human", "Configure medium selection or confirm formats with a producer rationale.");
   const plan = legacyPlanNext(p, aiReady);
   if ("step" in plan) {
     // Bounded reviewer rework continues through the existing audited commands.
@@ -274,6 +279,8 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
   };
   const current = async () => find((await repo.read(op.workspaceId)).projects, projectId, op);
 
+  if (step === "planResearch") { await runResearchPlanning(repo, op, projectId); return "Validated AI research plan applied"; }
+  if (step === "mediumSelection") { await runMediumSelection(repo, op, projectId); return "Evidence-backed options ready for producer confirmation"; }
   if (step === "scope") {
     await ensureScope(repo, op, projectId);
     return "Research questions scoped for the customer request";

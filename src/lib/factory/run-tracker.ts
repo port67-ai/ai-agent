@@ -17,7 +17,7 @@ export function runTracker(p: Project): TrackStep[] {
     syncTaskPlan(copy);
     const states = { done: "done", running: "running", blocked: "paused", waiting_approval: "waiting_approval", pending: "pending", ready: "pending", manual: "paused", skipped: "pending" } as const;
     return copy.taskPlan!.tasks.filter(t => t.status !== "skipped").map(t => {
-      const tab = t.id.startsWith("research:") || ["scope", "reviewSources", "draftInsights", "reviewInsights"].includes(t.id) ? "research" : ["formats", "draftDirection", "reviewDirection", "approveDirection"].includes(t.id) ? "direction" : "assets";
+      const tab = t.id.startsWith("research:") || ["planResearch", "scope", "reviewSources", "draftInsights", "reviewInsights"].includes(t.id) ? "research" : ["mediumSelection", "formats", "draftDirection", "reviewDirection", "approveDirection"].includes(t.id) ? "direction" : "assets";
       const ai = ({ draftInsights: "insights", draftDirection: "strategy", draftCopyPack: "content" } as const)[t.id as "draftInsights" | "draftDirection" | "draftCopyPack"];
       const act = t.id === "reviewSources" && p.sources.some(s => s.status === "unreviewed") ? "review_sources" : t.id === "reviewInsights" && p.insights.some(i => i.status === "draft") ? "review_insights" : t.id === "approveDirection" && p.strategies.at(-1)?.status === "shared" ? "approve_direction" : undefined;
       return { id: t.id, label: t.title, state: states[t.status], detail: t.detail || t.reason, tab, ...(ai && ["ready", "blocked"].includes(t.status) ? { ai } : {}), ...(act ? { act } : {}) };

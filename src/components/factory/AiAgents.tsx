@@ -23,6 +23,7 @@ const ago = (iso?: string) => {
   return s < 90 ? `${s}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 };
 const groups: { id: string; title: string; note: string }[] = [
+  { id: "planning", title: "Research and medium planners", note: "Interpret the brief, propose relevant research and recommend media from reviewed evidence. Producers retain decisions." },
   { id: "scoping", title: "Scoping agent", note: "Classifies the business from the brief and saves the classification and each researcher's questions to Firestore. Optional: without a model a free template scope is used." },
   { id: "research", title: "Research agents", note: "Search the public web and cite every finding." },
   { id: "drafting", title: "Drafting agents", note: "Write only from reviewed evidence and the approved direction." },

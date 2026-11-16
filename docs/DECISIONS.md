@@ -24,3 +24,8 @@ PRODUCT-004 — 2026-11-12: owner explicitly requests individual user accounts a
 ## PRODUCT-005 — 2026-11-16 — Owner-authorised task-based MVP evolution
 
 Owner requests customer-input-driven agent selection, persistent task management and project-style progress while retaining existing controls. CHG-0082 implements an embedded deterministic coordinator using the current stack and runners, rather than introducing a workflow framework or paid planner. New intake plans the requested journey; legacy projects explicitly opt in. Producer overrides are audited/version-checked. Existing post-direction scope locks stay; finished unsupported deliverables remain producer work. Cloud Tasks, a separate service and external-agent adapters are not implicitly approved or claimed implemented. Design and plan: `docs/superpowers/specs/2026-11-16-customer-task-planning-design.md` and corresponding implementation plan.
+
+
+## PRODUCT-006 — 2026-11-16 — Owner-authorised AI planning and live delivery
+
+Owner requests AI planning → stronger research methods → evidence-backed medium selection → selective catalogue expansion, authorising execution/deployment without pauses while away. Implement the hybrid within the existing task manager: validated LLM proposals, fixed policy and approval dependencies, metered calls and producer decisions. Runtime approval remains separate from development approval. Preserve the requested medium and require evidence/rationale before producing alternatives. Expand capabilities through reviewed gap proposals, not automatic registration. General channel knowledge is labelled as a prior; no campaign performance or private connectors are invented. See CHG-0083 and the 2026-11-16 AI research/medium design and plan.

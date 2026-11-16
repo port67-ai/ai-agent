@@ -269,3 +269,17 @@ Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. 
 | FAC-TSK-005 | IMPLEMENTED locally; not deployed or live-verified | Static-only production and individual template-agent tasks; unsupported full outputs remain producer tasks with audited notes. External agent harness interfaces still have no runtime adapters. |
 
 Supports FAC-WFL-001/002 and FAC-AGT-003 with a bounded project graph and persisted state. Does not promote full original workflow requirements to VERIFIED or implement FAC-WFL-003 Cloud Tasks dispatch. Final local unit/API/UI, full regression, browser, typecheck, lint, production build and structural governance checks passed; exact commands are recorded in CHG-0082 and HANDOVER. Firestore emulator assertions did not run because the emulator JAR download failed. No live acceptance or deployment is claimed.
+
+
+## CHG-0083 — AI planning, stronger research and medium decisions
+
+| Requirement | State | Working scope / evidence |
+|---|---|---|
+| FAC-PLN-001 | Implemented locally; deployment pending | Strict planner contracts, complete public context, catalogue/method validation and selected-agent execution tested in `factory-ai-planning*.test.ts`. |
+| FAC-PLN-002 | Implemented locally; deployment pending | Metered planner/medium runs, cached derived/rules scopes, explicit retry/fallback, stale-result usage and separate model/skill attribution. |
+| FAC-PLN-003 | Implemented locally; live quality acceptance pending | Original method catalogue injected into grounded research. Actual public source access and real campaign quality depend on configured providers. |
+| FAC-PLN-004 | Implemented locally; live quality acceptance pending | Cited per-channel recommendation contracts, counterarguments/confidence/unknowns, separate customer request and UI. No measured campaign-history connector. |
+| FAC-PLN-005 | Implemented locally; deployment pending | Expected recommendation/evidence version, rationale, explicit manual path, targeted video research and stale manual-decision reconfirmation regressions. |
+| FAC-PLN-006 | Implemented locally; promotion remains manual | Proposed capability gaps are non-executable and use the existing backlog; no new researcher/tool permissions are granted. |
+
+Independent review identified pending-planner scoping bypass, stale format confirmation, repeated rules-scope reviews and stale manual UI decisions. Reproductions and regression tests accompany fixes. Final verification and release references are recorded in HANDOVER/CHANGELOG; no paid live-provider quality acceptance is inferred from simulated transport tests.

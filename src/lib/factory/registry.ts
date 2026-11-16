@@ -10,6 +10,8 @@ export interface CapabilityDefinition {
   approvalRequired: boolean;
 }
 export const capabilityRegistry: readonly CapabilityDefinition[] = [
+  { id: "planning.research", version: "1.0.0", name: "Research planning agent", kind: "synthesis", inputContract: "Authorised public brief, requested formats, channels and approved research method catalogue", outputContract: "Validated research selection, scoped questions, limited medium hypotheses and non-executable capability proposals", permissions: ["model-call-public-data"], approvalRequired: false },
+  { id: "planning.medium", version: "1.0.0", name: "Medium selection strategist", kind: "synthesis", inputContract: "Public brief, requested outputs, accepted sources and insights, selected channel playbooks", outputContract: "Cited format-channel recommendations, uncertainty and alternatives; producer confirms", permissions: ["model-call-public-data"], approvalRequired: true },
   {
     id: "scope.business",
     version: "1.0.0",

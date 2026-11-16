@@ -19,7 +19,7 @@ async function main() {
   };
   const login = async (uid: string) => { cookie = ""; await request("session"); return (await (await request("identity-login", { idToken: uid })).json()).principal; };
   const customer = await login("customer");
-  const created = await request("projects", { business: "Shop", objective: "Understand customer objections", contact: "a@example.com", workRequest: "research" });
+  const created = await request("projects", { business: "Shop", objective: "Understand customer objections", contact: "a@example.com", workRequest: "research", useAIPlanner: false });
   assert.equal(created.status, 201);
   const safe = (await created.json()).project;
   assert.equal(safe.taskPlan, undefined);

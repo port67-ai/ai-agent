@@ -1796,3 +1796,8 @@
   padding: 2px 6px;
   font-weight: 600;
 }
+
+@media (max-width: 720px) {
+  .f-campaign-plan .f-button { white-space: normal; max-width: 100%; text-align: left; }
+  .f-campaign-plan .f-button svg { flex-shrink: 0; }
+}

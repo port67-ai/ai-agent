@@ -1,10 +1,14 @@
 import { segments, type Project, type ResearchRun, type Segment } from "./model";
+import { planningCurrent, planningInputKey, researchTaskKey, mediumCurrent, mediumEvidenceKey, effectiveResearchDecision, planningScopeKey } from "./planning-context";
 
 export type TaskStatus = "pending" | "ready" | "running" | "blocked" | "waiting_approval" | "done" | "skipped" | "manual";
 export type ProjectTask = {
   id: string; title: string; capability: string; dependsOn: string[]; status: TaskStatus;
   reason: string; acceptance: string[]; runIds: string[]; detail: string;
   completion?: { by: string; at: string; note: string };
+  scopeKey?: string;
+  questions?: string[];
+  methods?: string[];
 };
 export type TaskPlan = {
   version: number; createdAt: string; updatedBy: string; reason: string;
@@ -25,7 +29,7 @@ export function selectedResearch(p: Pick<Project, "taskPlan">): Segment[] {
   return p.taskPlan ? [...p.taskPlan.research] : [...segments];
 }
 export function taskResearchCurrent(p: Project, run: ResearchRun): boolean {
-  return !p.taskPlan || (!!run.taskInputKey && run.taskInputKey === p.taskPlan.researchKey && !!run.segment && p.taskPlan.research.includes(run.segment));
+  return !p.taskPlan || (!!run.taskInputKey && run.taskInputKey === p.taskPlan.researchKey && !!run.segment && p.taskPlan.research.includes(run.segment) && (!researchTaskKey(p, run.segment) || run.researchTaskKey === researchTaskKey(p, run.segment)));
 }
 export function validateTaskGraph(tasks: { id: string; dependsOn: string[] }[]) {
   const byId = new Map(tasks.map(t => [t.id, t]));
@@ -69,9 +73,10 @@ export function planProject(p: Project, actor: string, reason: string, override?
   if (overrides && (!overrides.length || overrides.some(s => !segments.includes(s)) || !overrides.includes("brand") || !overrides.includes("customer"))) throw new Error("Research selection must include brand and customer and known research agents only");
   const overrideReason = override ? reason : overrides ? previous?.overrideReason || previous?.reason : undefined;
   const decisions = relevance(p);
-  const research = segments.filter(s => overrides ? overrides.includes(s) : decisions[s].selected);
+  const ai = planningCurrent(p) ? p.researchPlanning!.proposal : undefined;
+  const research = segments.filter(s => overrides ? overrides.includes(s) : ai ? effectiveResearchDecision(p, s)!.selected : decisions[s].selected);
   const mode = p.brief.workRequest === "research" ? "research" : "campaign";
-  const inputKey = JSON.stringify([researchKey, p.formats?.selected || [], research, mode, overrideReason || null]);
+  const inputKey = JSON.stringify([researchKey, p.formats?.selected || [], research, mode, overrideReason || null, p.researchPlanning?.enabled || false, p.researchPlanning?.version || 0, ai ? "ai" : "rules"]);
   if (previous?.inputKey === inputKey) { syncTaskPlan(p); return false; }
   if (previous && previous.researchKey !== researchKey) {
     for (const s of p.sources) s.status = "rejected";
@@ -81,16 +86,28 @@ export function planProject(p: Project, actor: string, reason: string, override?
   }
   const tasks: ProjectTask[] = [];
   const add = (id: string, title: string, capability: string, dependsOn: string[], why: string) => tasks.push({ id, title, capability, dependsOn, reason: why, status: "pending", acceptance: ["Current inputs and approved evidence only", "Existing authorisation, budget and review gates pass"], runIds: [], detail: "" });
-  add("scope", "Scope the customer request", "scope.business", [], "Match research questions to the customer's business and requirements.");
+  if (p.researchPlanning?.enabled) add("planResearch", "AI plans relevant research", "planning.research", [], "Interpret the complete customer brief; validate and version the proposed research work.");
+  add("scope", "Scope the customer request", "scope.business", p.researchPlanning?.enabled ? ["planResearch"] : [], "Match research questions to the customer's business and requirements.");
   for (const s of segments) {
-    add("research:" + s, `${s[0].toUpperCase() + s.slice(1)} research`, "research." + s, ["scope"], overrides ? (research.includes(s) ? "Producer selected: " : "Producer excluded: ") + (overrideReason || reason) : decisions[s].reason);
+    const decision = ai ? effectiveResearchDecision(p, s) : undefined;
+    add("research:" + s, `${s[0].toUpperCase() + s.slice(1)} research`, "research." + s, ["scope"], overrides ? (research.includes(s) ? "Producer selected: " : "Producer excluded: ") + (overrideReason || reason) : decision?.reason || decisions[s].reason);
+    const task = tasks.at(-1)!;
+    task.scopeKey = researchTaskKey(p, s);
+    if (decision) { task.questions = decision.questions; task.methods = decision.methods; }
+    const previousTask = previous?.tasks.find(t => t.id === task.id);
+    if (previousTask && (previousTask.scopeKey || "") !== task.scopeKey) {
+      const invalid = new Set(p.sources.filter(source => source.segment === s).map(source => source.id));
+      for (const source of p.sources) if (invalid.has(source.id)) source.status = "rejected";
+      for (const insight of p.insights) if (insight.sourceIds.some(id => invalid.has(id))) insight.status = "rejected";
+    }
     if (!research.includes(s)) tasks.at(-1)!.status = "skipped";
   }
   add("reviewSources", "Review research evidence", "review.sources", research.map(s => "research:" + s), "Decide which sources can support the customer's work.");
   add("draftInsights", "Draft evidence-backed insights", "analysis.insights", ["reviewSources"], "Interpret accepted findings for the customer's objective.");
   add("reviewInsights", "Review insights", "review.insights", ["draftInsights"], "Accept interpretations before they guide deliverables.");
   if (mode === "campaign") {
-    add("formats", "Choose campaign formats", "human.formats", ["reviewInsights"], "A producer confirms the deliverables required for this customer.");
+    if (p.researchPlanning?.enabled) add("mediumSelection", "Recommend evidence-backed channel media", "planning.medium", ["reviewInsights"], "Compare requested outputs with audience/channel suitability, reviewed evidence and explicit uncertainty.");
+    add("formats", "Choose campaign formats", "human.formats", [p.researchPlanning?.enabled ? "mediumSelection" : "reviewInsights"], "A producer confirms the deliverables required for this customer.");
     add("draftDirection", "Draft campaign direction", "drafting.direction", ["formats"], "Develop the approved deliverable types from accepted insights.");
     add("reviewDirection", "Review campaign direction", "review.direction", ["draftDirection"], "Check relevance, evidence and unsupported claims.");
     add("approveDirection", "Approve campaign direction", "human.direction", ["reviewDirection"], "Existing version-specific customer approval policy applies.");
@@ -116,6 +133,14 @@ export function planProject(p: Project, actor: string, reason: string, override?
 export function syncTaskPlan(p: Project) {
   const plan = p.taskPlan;
   if (!plan) return;
+  if (p.researchPlanning?.status === "running") {
+    const run = p.runs.find(r => r.id === p.researchPlanning!.runId);
+    if (run?.status === "failed") { p.researchPlanning.status = "failed"; p.researchPlanning.error = run.error || "Planning was interrupted; inspect usage before retrying"; }
+  }
+  if (p.mediumSelection?.status === "running") {
+    const run = p.runs.find(r => r.id === p.mediumSelection!.runId);
+    if (run?.status === "failed") { p.mediumSelection.status = "failed"; p.mediumSelection.error = run.error || "Medium selection was interrupted; inspect usage before retrying"; }
+  }
   const d = p.strategies.at(-1);
   const currentRuns = p.runs.filter(r => r.stage === "scope" || r.taskInputKey === plan.researchKey);
   const sources = p.sources.filter(s => s.status !== "rejected");
@@ -123,17 +148,19 @@ export function syncTaskPlan(p: Project) {
   const assets = d ? p.assets.filter(a => a.strategyHash === d.hash) : [];
   for (const t of plan.tasks) {
     if (t.id.startsWith("research:") && !plan.research.includes(t.id.slice(9) as Segment)) { t.status = "skipped"; continue; }
-    const stage = ({ scope: "scope", draftInsights: "insights", draftDirection: "strategy", draftCopyPack: "content" } as Record<string, string>)[t.id];
-    const runs = currentRuns.filter(r => t.id.startsWith("research:") ? (r.stage || "research") === "research" && r.segment === t.id.slice(9) : (!!stage && r.stage === stage) || (r.stage === "review" && r.capabilityId === t.capability));
+    const stage = ({ planResearch: "planning", mediumSelection: "medium", scope: "scope", draftInsights: "insights", draftDirection: "strategy", draftCopyPack: "content" } as Record<string, string>)[t.id];
+    const runs = currentRuns.filter(r => t.id.startsWith("research:") ? (r.stage || "research") === "research" && r.segment === t.id.slice(9) && taskResearchCurrent(p, r) : (!!stage && r.stage === stage && (stage !== "planning" || r.planningContextKey === planningInputKey(p)) && (stage !== "medium" || r.planningContextKey === mediumEvidenceKey(p))) || (r.stage === "review" && r.capabilityId === t.capability));
     t.runIds = runs.map(r => r.id);
     t.detail = "";
     let done = false;
-    if (t.id === "scope") done = !!p.scope;
+    if (t.id === "planResearch") done = planningCurrent(p) || p.researchPlanning?.status === "rules" && p.researchPlanning.inputKey === planningInputKey(p);
+    else if (t.id === "mediumSelection") done = mediumCurrent(p) || p.mediumSelection?.status === "manual" && p.mediumSelection.evidenceKey === mediumEvidenceKey(p);
+    else if (t.id === "scope") done = !!p.scope && (!(planningCurrent(p) && (p.scope.planningVersion !== p.researchPlanning!.version || p.scope.planningKey !== planningScopeKey(p))));
     else if (t.id.startsWith("research:")) done = runs.at(-1)?.status === "completed";
     else if (t.id === "reviewSources") done = sources.some(s => s.status === "supported") && !sources.some(s => s.kind === "public_source" && s.status === "unreviewed");
     else if (t.id === "draftInsights") done = p.insights.some(i => i.status !== "rejected");
     else if (t.id === "reviewInsights") done = !!acceptedInsights.length && !p.insights.some(i => i.status === "draft");
-    else if (t.id === "formats") done = !!p.formats?.decidedAt;
+    else if (t.id === "formats") done = !!p.formats?.decidedAt && (!p.researchPlanning || (mediumCurrent(p) && p.mediumDecision?.recommendationVersion === p.mediumSelection!.version) || (p.mediumSelection?.status === "manual" && p.mediumSelection.evidenceKey === mediumEvidenceKey(p)));
     else if (t.id === "draftDirection") done = !!d && d.status !== "changes_requested";
     else if (t.id === "reviewDirection") done = !!d && (d.status === "shared" || d.status === "approved" || !!p.reviews?.some(r => r.gate === "direction" && r.subject === d.hash && r.verdict === "pass"));
     else if (t.id === "approveDirection") done = d?.status === "approved";
