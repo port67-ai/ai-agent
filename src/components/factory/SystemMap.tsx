@@ -20,7 +20,7 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
 ];
 const COLOR = { input: "#22d3ee", agent: "#a78bfa", producer: "#f97316", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
-  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film,
+  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film, "research:channel": Users, "research:offer": Building2, "research:measurement": Target,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:audiences": Users, "synthesis:ideas": Sparkles,
   "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
 };
@@ -125,7 +125,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
 
   const AH = 124;
   /** Everything from the sources bar down moves this far so the two research rows have room. */
-  const SH = 204;
+  const SH = 404;
   const R1 = 320;
   const R2 = 520;
   // Agent positions (each row is a lane of the journey).
@@ -138,6 +138,9 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     "research:adjacent": { x: COLS[0], y: R2 },
     "research:trends": { x: COLS[1], y: R2 },
     "research:video": { x: COLS[2], y: R2 },
+    "research:channel": { x: COLS[0], y: R2 + 180 },
+    "research:offer": { x: COLS[1], y: R2 + 180 },
+    "research:measurement": { x: COLS[2], y: R2 + 180 },
     "review:scope": { x: COLS[3], y: 150 },
     "review:sources": { x: COLS[0], y: 590 },
     "review:insights": { x: COLS[2], y: 590 },
@@ -151,7 +154,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     "synthesis:planner": { x: COLS[0], y: 1640 },
     "synthesis:medium": { x: COLS[1], y: 1640 },
   };
-  const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video"].includes(id);
+  const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video", "research:channel", "research:offer", "research:measurement"].includes(id);
   /** The same four facts on every AI agent node: calls and cost, health, and how many failed. */
   const factLines = (stat: NonNullable<Agent["stats"]>, es: ReturnType<typeof edgesFor>, hasModel: boolean) => {
     const unpriced = es.some((e) => e.unpriced > 0);
@@ -242,7 +245,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
   const insightGate = waiting.insightReview;
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
-  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video"];
+  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video", "research:channel", "research:offer", "research:measurement"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
   const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
   const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:audiences", "synthesis:ideas"];

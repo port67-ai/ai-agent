@@ -6,8 +6,9 @@ import { selectedResearch } from "@/lib/factory/task-plan";
 import { channelNames } from "@/lib/factory/channels";
 import { researchLabels, researchNotes } from "./shared";
 
-const icons = { brand: Building2, customer: Users, competitor: Target, creative: Palette, adjacent: Building2, trends: Megaphone, video: FileSearch } as const;
+const icons = { channel: Users, offer: Building2, measurement: Target, brand: Building2, customer: Users, competitor: Target, creative: Palette, adjacent: Building2, trends: Megaphone, video: FileSearch } as const;
 const agentName: Record<Segment, string> = {
+  channel: "Channel and audience behaviour", offer: "Product and offer", measurement: "Measurement and experiments",
   brand: "Business and brand researcher",
   customer: "Customer insight researcher",
   competitor: "Competitor researcher",

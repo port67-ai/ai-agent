@@ -18,10 +18,10 @@ export function PlanningPanel({ p, busy, command, onRun }: { p: Project; busy: b
   const current = planningCurrent(p);
   return <section aria-label="AI research planning" className="f-callout" style={{ marginBottom: 16 }}>
     <h3>AI research planning</h3>
-    <p className="f-small">{state.status === "rules" ? "Producer chose the rules plan" : current ? `AI proposal version ${state.version} validated and applied` : state.status === "running" ? "The AI planner is interpreting the brief" : state.status === "failed" ? "Planning needs attention; no automatic paid retry" : "Research awaits an AI plan for the current brief and channels"}.</p>
+    <p className="f-small">{p.strategies.length ? "Plan retained for the existing direction; new performance reports inform future campaigns" : state.status === "rules" ? "Producer chose the rules plan" : current ? `AI proposal version ${state.version} validated and applied` : state.status === "running" ? "The AI planner is interpreting the brief" : state.status === "failed" ? "Planning needs attention; no automatic paid retry" : "Research awaits an AI plan for the current brief and channels"}.</p>
     {state.error && <p role={state.status === "failed" ? "alert" : undefined}>{state.error}</p>}
     {current && state.proposal && <>
-      <p>{state.proposal.summary}</p>
+      <p>{state.proposal.summary}</p>{!!state.proposal.performanceIds?.length && <p className="f-small">Campaign observations considered: {state.proposal.performanceIds.join(", ")}. See feedback records for context and limitations.</p>}
       {!!state.proposal.unknowns.length && <details><summary>Questions still open</summary><ul>{state.proposal.unknowns.map(q => <li key={q}>{q}</li>)}</ul></details>}
       {!!state.proposal.mediumHypotheses.length && <details><summary>Provisional medium hypotheses</summary><p className="f-small">These use general channel knowledge. They are unvalidated, limited-confidence hypotheses, not production decisions or historical campaign results.</p><ul>{state.proposal.mediumHypotheses.map((h, n) => <li key={n}>{channelById(h.channel)?.name || h.channel}: {formatById(h.format)?.name || h.format} — {h.reason}</li>)}</ul></details>}
       {!!state.proposal.gaps.length && <details><summary>Selective catalogue expansion proposals</summary><p className="f-small">These are saved to Capabilities for review. They cannot launch agents or grant tools.</p><ul>{state.proposal.gaps.map(g => <li key={g.name}><strong>{g.name}</strong>: {g.reason} Existing limitation: {g.existingCapabilityLimit}. Inputs needed: {g.requiredInputs.join(", ")}.</li>)}</ul></details>}
@@ -47,12 +47,12 @@ export function MediumPanel({ p, busy, onRun }: { p: Project; busy: boolean; onR
     {state?.proposal && !current && <p role="status">The previous recommendation is out of date. Review the changed evidence before relying on it.</p>}
     {current && state?.proposal ? <>
       <p>{state.proposal.summary}</p>
-      <p className="f-small">Research supports suitability, not guaranteed performance. A channel prior is general model knowledge; no private campaign-performance history is connected.</p>
+      <p className="f-small">Research supports suitability, not guaranteed performance. A channel prior is general model knowledge; only reviewed and authorised campaign observations are used when supplied.</p>
       {state.proposal.recommendations.map(r => <article key={`${r.channel}:${r.format}`} style={{ borderTop: "1px solid #ddd", padding: "12px 0" }}>
         <strong>{channelById(r.channel)?.name || r.channel} → {formatById(r.format)?.name || r.format}</strong>
-        <p className="f-small">{r.basis === "evidence" ? "Reviewed evidence" : "Channel prior"} · {r.confidence} confidence · relevance {r.score}/10</p>
+        <p className="f-small">{r.basis === "evidence" ? "Reviewed evidence" : r.basis === "observed_performance" ? "Observed performance" : "Channel prior"} · {r.confidence} confidence · relevance {r.score}/10</p>
         {!!p.brief.requestedFormats?.length && !p.brief.requestedFormats.includes(r.format) && <p><strong>Alternative to the requested deliverables.</strong> Requires a deliberate producer/customer decision.</p>}
-        <p>{r.reason}</p><p><strong>Counterargument:</strong> {r.counterargument}</p>
+        <p>{r.reason}</p>{!!r.performanceIds?.length && <p>Observed campaign records: {r.performanceIds.join(", ")} (producer-reviewed observations; causality unproven).</p>}<p><strong>Counterargument:</strong> {r.counterargument}</p>
         <ul>{r.uncertainties.map(u => <li key={u}>{u}</li>)}</ul>
         {!!r.sourceIds.length && <details><summary>Evidence used</summary><ul>{r.sourceIds.map(id => { const s = p.sources.find(s => s.id === id); return <li key={id}>{s ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : id}</li>; })}{r.insightIds.map(id => <li key={id}>Insight: {p.insights.find(i => i.id === id)?.title || id}</li>)}</ul></details>}
       </article>)}

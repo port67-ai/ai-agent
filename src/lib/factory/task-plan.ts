@@ -1,5 +1,5 @@
 import { segments, type Project, type ResearchRun, type Segment } from "./model";
-import { planningCurrent, planningInputKey, researchTaskKey, mediumCurrent, mediumEvidenceKey, effectiveResearchDecision, planningScopeKey } from "./planning-context";
+import { planningContextCurrent, mediumContextCurrent, planningCurrent, planningInputKey, researchTaskKey, mediumCurrent, mediumEvidenceKey, effectiveResearchDecision, planningScopeKey } from "./planning-context";
 
 export type TaskStatus = "pending" | "ready" | "running" | "blocked" | "waiting_approval" | "done" | "skipped" | "manual";
 export type ProjectTask = {
@@ -26,7 +26,7 @@ export const researchInputKey = (p: Pick<Project, "brief" | "channels">) => {
 
 /** Legacy campaigns retain the catalogue until an operator explicitly adopts a plan. */
 export function selectedResearch(p: Pick<Project, "taskPlan">): Segment[] {
-  return p.taskPlan ? [...p.taskPlan.research] : [...segments];
+  return p.taskPlan ? [...p.taskPlan.research] : segments.filter(s => !["channel", "offer", "measurement"].includes(s));
 }
 export function taskResearchCurrent(p: Project, run: ResearchRun): boolean {
   return !p.taskPlan || (!!run.taskInputKey && run.taskInputKey === p.taskPlan.researchKey && !!run.segment && p.taskPlan.research.includes(run.segment) && (!researchTaskKey(p, run.segment) || run.researchTaskKey === researchTaskKey(p, run.segment)));
@@ -55,6 +55,9 @@ function relevance(p: Project): Record<Segment, { selected: boolean; reason: str
   const creative = campaign || /\b(creative|campaign|advert|design|content|hooks?)\b/.test(ask);
   const adjacent = /\b(adjacent|parallel|cross-category|cross category|complementary|inspiration beyond)\b/.test(ask);
   return {
+    channel: { selected: !!p.researchPlanning?.enabled && campaign && !!p.channels?.length, reason: "Investigate audience behaviour and medium suitability on the selected launch channels." },
+    offer: { selected: !!p.researchPlanning?.enabled && campaign, reason: "Campaign propositions require offer, proof and purchase-friction evidence." },
+    measurement: { selected: !!p.researchPlanning?.enabled && (campaign || /measure|attribution|experiment|performance|kpi/.test(ask)), reason: "Define objective-aligned success measures, attribution limits and a testable learning plan." },
     brand: { selected: true, reason: "Establish the customer's offer and source-backed business facts." },
     customer: { selected: true, reason: "Understand the intended audience, needs and objections." },
     competitor: { selected: competitor, reason: competitor ? "Positioning, named rivals or campaign differentiation require competitor evidence." : "No competitor or positioning question is requested." },
@@ -74,7 +77,7 @@ export function planProject(p: Project, actor: string, reason: string, override?
   const overrideReason = override ? reason : overrides ? previous?.overrideReason || previous?.reason : undefined;
   const decisions = relevance(p);
   const ai = planningCurrent(p) ? p.researchPlanning!.proposal : undefined;
-  const research = segments.filter(s => overrides ? overrides.includes(s) : ai ? effectiveResearchDecision(p, s)!.selected : decisions[s].selected);
+  const research = segments.filter(s => overrides ? overrides.includes(s) : ai ? effectiveResearchDecision(p, s)?.selected === true : decisions[s].selected);
   const mode = p.brief.workRequest === "research" ? "research" : "campaign";
   const inputKey = JSON.stringify([researchKey, p.formats?.selected || [], research, mode, overrideReason || null, p.researchPlanning?.enabled || false, p.researchPlanning?.version || 0, ai ? "ai" : "rules"]);
   if (previous?.inputKey === inputKey) { syncTaskPlan(p); return false; }
@@ -153,14 +156,14 @@ export function syncTaskPlan(p: Project) {
     t.runIds = runs.map(r => r.id);
     t.detail = "";
     let done = false;
-    if (t.id === "planResearch") done = planningCurrent(p) || p.researchPlanning?.status === "rules" && p.researchPlanning.inputKey === planningInputKey(p);
-    else if (t.id === "mediumSelection") done = mediumCurrent(p) || p.mediumSelection?.status === "manual" && p.mediumSelection.evidenceKey === mediumEvidenceKey(p);
+    if (t.id === "planResearch") done = planningCurrent(p) || p.researchPlanning?.status === "rules" && planningContextCurrent(p);
+    else if (t.id === "mediumSelection") done = mediumCurrent(p) || p.mediumSelection?.status === "manual" && mediumContextCurrent(p);
     else if (t.id === "scope") done = !!p.scope && (!(planningCurrent(p) && (p.scope.planningVersion !== p.researchPlanning!.version || p.scope.planningKey !== planningScopeKey(p))));
     else if (t.id.startsWith("research:")) done = runs.at(-1)?.status === "completed";
     else if (t.id === "reviewSources") done = sources.some(s => s.status === "supported") && !sources.some(s => s.kind === "public_source" && s.status === "unreviewed");
     else if (t.id === "draftInsights") done = p.insights.some(i => i.status !== "rejected");
     else if (t.id === "reviewInsights") done = !!acceptedInsights.length && !p.insights.some(i => i.status === "draft");
-    else if (t.id === "formats") done = !!p.formats?.decidedAt && (!p.researchPlanning || (mediumCurrent(p) && p.mediumDecision?.recommendationVersion === p.mediumSelection!.version) || (p.mediumSelection?.status === "manual" && p.mediumSelection.evidenceKey === mediumEvidenceKey(p)));
+    else if (t.id === "formats") done = !!p.formats?.decidedAt && (!p.researchPlanning || (mediumCurrent(p) && p.mediumDecision?.recommendationVersion === p.mediumSelection!.version) || (p.mediumSelection?.status === "manual" && mediumContextCurrent(p)));
     else if (t.id === "draftDirection") done = !!d && d.status !== "changes_requested";
     else if (t.id === "reviewDirection") done = !!d && (d.status === "shared" || d.status === "approved" || !!p.reviews?.some(r => r.gate === "direction" && r.subject === d.hash && r.verdict === "pass"));
     else if (t.id === "approveDirection") done = d?.status === "approved";

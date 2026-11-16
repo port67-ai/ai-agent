@@ -1,3 +1,7 @@
+# Latest change — CHG-0084 specialists and performance feedback
+
+16 November 2026; branch feat/research-performance-feedback, base fd0b183 (PR #58). Local implementation/acceptance passed on 16 November 2026; this entry is not deployment evidence. FAC-PLN-007, FAC-FBK-001, FAC-FBK-002 and FAC-FBK-003 implemented with full local regression, browser, lint, typecheck and production build acceptance; GitHub CI/deployment pending. Existing seven-role execution is preserved. No live provider quality, direct advertising connector or measured causal lift is claimed.
+
 # Implementation status
 
 Updated: 2026-11-12. Baseline inspected: 26ab3be. Environment: local managed checkout.

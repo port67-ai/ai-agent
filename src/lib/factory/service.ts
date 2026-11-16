@@ -1,3 +1,4 @@
+import { performanceHistory } from "./performance";
 import { runResearchPlanning, runMediumSelection } from "./planning-run";
 import { researchTaskKey } from "./planning-context";
 import { selectedResearch, taskResearchCurrent, syncTaskPlan, requirePlannedTask } from "./task-plan";
@@ -680,6 +681,23 @@ export async function handleFactory(
         // The producer orchestrator resumes on a view too (skipped when nothing changed), so a missed kick never leaves a step waiting.
         if (p.runs.length && !p.runs.some((r) => r.status === "running")) kickProducerAgent(a, projectId, "project view");
         return json({ project: projectView(p, a) });
+      }
+      if (path[2] === "performance-history" && request.method === "POST") {
+        operator(a);
+        const sourceId = text(data.sourceProjectId, "source project", 100, true);
+        if (sourceId === projectId) throw new Error("Choose another campaign");
+        const project = await repo(a).mutate(a.workspaceId, state => {
+          const source = find(state.projects, sourceId, a);
+          const target = find(state.projects, projectId, a);
+          if (source.accountId !== target.accountId) throw new Error("Campaign history must stay within its account");
+          const history = performanceHistory(source).filter(row => !target.performance?.some(r => r.provenance.startsWith(`Carried from project ${sourceId}, record ${row.id}: `)));
+          if (!history.length) throw new Error("No new accepted authorised performance records in that campaign");
+          let next = target;
+          for (const row of history) next = transition(next, { ...row, type: "recordPerformance", publicAuthorised: true, provenance: (`Carried from project ${sourceId}, record ${row.id}: ` + row.provenance).slice(0,600) }, a);
+          state.projects[state.projects.findIndex(x => x.id === projectId)] = next;
+          return next;
+        });
+        return json({ project: projectView(project, a) });
       }
       if (path[2] === "planning" && request.method === "POST") {
         operator(a);

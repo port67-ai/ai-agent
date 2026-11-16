@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { CircleDot } from "lucide-react";
 import type { Project, Segment } from "@/lib/factory/model";
 export const researchLabels: Record<Segment, string> = {
+  channel: "Channel and audience behaviour", offer: "Product and offer", measurement: "Measurement and experiments",
   brand: "Business & brand",
   customer: "Customer insight",
   competitor: "Competitor intelligence",
@@ -10,6 +11,7 @@ export const researchLabels: Record<Segment, string> = {
   adjacent: "Adjacent businesses", trends: "Social trends", video: "Video language",
 };
 export const researchNotes: Record<Segment, string> = {
+  channel: "Channel and audience behaviour", offer: "Product and offer", measurement: "Measurement and experiments",
   adjacent: "Learn from complementary businesses and parallel categories serving the same audience or occasion.",
   trends: "Investigate recent channel-specific patterns, dates, comparable examples and uncertainty about performance.",
   video: "Study style, lighting, motion, graphics, pace, duration and audio. Search descriptions are not direct video analysis.",

@@ -1,3 +1,15 @@
+# Latest handover — CHG-0084 specialists and performance feedback
+
+Owner authorised autonomous build while asleep, continuing the main deployment workflow. Branch feat/research-performance-feedback, base fd0b183. New segments: channel (audience/channel behaviour), offer (product/proposition/proof/friction), measurement (KPIs/attribution/experiments), each independently selectable with approved methods and existing provider routes/metering. Old stored seven-role plans are supported; new AI plans decide all ten roles.
+
+Performance learning now includes Campaign performance feedback (also linked from Overview): enter results or import CSV, explicitly authorise PUBLIC model use and review report provenance/attribution. Accepted authorised observations inform research planning and medium selection through structured historical citations. Ratios preserve missing data; observations do not prove causation. Rejected observations and their stale derived hypotheses are excluded. After changing history before direction, replan research and refresh medium recommendations. Existing approved direction is not unapproved by a results upload.
+
+To test the loop: finish a campaign, record dated results with audience/offer/attribution, accept them, create the next campaign in the same account, choose the old project under Carry reviewed history, review copies, then authorise/start planning. Inspect historical IDs in the plan and observed-performance recommendations. Carry is explicit and deduplicated; no cross-client history or model training. Runtime customer approvals remain unchanged.
+
+Independent review identified stored-plan scoping crashes, history freshness/derived-hypothesis leakage and missing planner citations; regression tests reproduce and fix them. Full npm test, all four browser journeys, lint, TypeScript, production build, documentation governance and diff checks passed locally on 16 November 2026. GitHub checks and hosting statuses establish merge/deployment evidence. No paid model calls or actual ad-account results were used during development.
+
+---
+
 # Latest handover — CHG-0083 AI research planning and evidence-backed media, 16 November 2026
 
 Branch: `feat/ai-research-medium-planning`, base `bfaf83e` (PR #57). Owner authorises completing, merging and deploying while away, without further development approval pauses. Runtime customer approvals remain unchanged. This entry records implementation/acceptance; GitHub PR/commit and hosting statuses establish actual merge/deployment state.

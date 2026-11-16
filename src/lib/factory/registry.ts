@@ -22,7 +22,7 @@ export const capabilityRegistry: readonly CapabilityDefinition[] = [
     permissions: ["model-call-public-data"],
     approvalRequired: false,
   },
-  ...(["brand", "customer", "competitor", "creative", "adjacent", "trends", "video"] as const).map(
+  ...(["brand", "customer", "competitor", "creative", "adjacent", "trends", "video", "channel", "offer", "measurement"] as const).map(
     (segment) => ({
       id: `research.${segment}`,
       version: "2.0.0",
