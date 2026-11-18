@@ -1130,7 +1130,7 @@ export default function Portal() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                const data = fields(e.currentTarget);
+                const data: Record<string, unknown> = fields(e.currentTarget);
                 const chooseAccount = operator && principal.identity === "firebase" ? String(data.accountId || briefAccount || principal.workspaceId) : "";
                 delete data.accountId;
                 void run(async () => {
@@ -1149,7 +1149,7 @@ export default function Portal() {
                   <select name="accountId" required value={briefAccount || principal.workspaceId} onChange={(e) => setBriefAccount(e.target.value)}>
                     {accounts.map((account) => <option key={account.id} value={account.id}>{account.email || account.id}</option>)}
                   </select>
-                  <small>The project is created inside this customer's account. A new customer signs in once to create their account; it then appears here.</small>
+                  <small>The project is created inside this customer&apos;s account. A new customer signs in once to create their account; it then appears here.</small>
                 </Field>
               )}
               <div className="f-form-grid">
