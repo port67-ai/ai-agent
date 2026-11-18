@@ -1,0 +1,11 @@
+# Selective specialists and performance feedback
+
+Owner request: create channel/audience behaviour, product/offer and measurement research, including performance feedback, autonomously while away. Extend the existing Next.js task architecture, not a new framework.
+
+Add catalogue segments `channel`, `offer`, `measurement`, each with original methods, configurable models, metering, scoped sources and review gates. The LLM explicitly includes/excludes them; legacy projects retain seven-role execution. Channel research investigates dated audience behaviour and medium suitability; offer research establishes proposition, proof and purchase friction; measurement research investigates objective-aligned KPIs, attribution limits and experiments. Research does not claim private analytics access.
+
+Feedback is producer-entered project campaign observations, with CSV import, provenance, dates, channel, format, objective, audience/offer context, attribution and currency, counts/spend/revenue. Records start pending, require explicit review and separate public-data authorisation before model use, may be rejected, and never cross accounts. Deterministic metrics preserve zero and missing denominators. Reviewed authorised observations enter this project's next plan and medium recommendation, invalidate stale recommendation context, and require explicit historical record citations. No training or causal winner claims. Producer controls unchanged.
+
+Approaches considered: direct advertising API ingestion needs unavailable credentials and separate platform integration; model-only memory cannot substantiate measured outcomes. Selected first implementation: auditable project-local observations and CSV import. Cross-project retrieval is deferred until reliable brand identity and access rules exist; no implicit sharing by business name.
+
+Acceptance: three slots selectable without forcing every run; old plans remain compatible; invalid metrics/dates/provenance rejected; pending/rejected/unapproved records excluded; stale paid outputs rejected; reviewed history referenced by ID, with attribution/sample limitations; producer UI records/reviews/imports results; customer views exclude observations. No new paid calls outside existing gateway.

@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Building2, CheckCircle2, Clock, FileSearch, Lightbulb, Loader2, Palette, RefreshCw, Target, Users, Megaphone, Send } from "lucide-react";
 import type { Project, Segment } from "@/lib/factory/model";
-import { segments } from "@/lib/factory/model";
+import { selectedResearch } from "@/lib/factory/task-plan";
 import { channelNames } from "@/lib/factory/channels";
 import { researchLabels, researchNotes } from "./shared";
 
-const icons = { brand: Building2, customer: Users, competitor: Target, creative: Palette, adjacent: Building2, trends: Megaphone, video: FileSearch } as const;
+const icons = { channel: Users, offer: Building2, measurement: Target, brand: Building2, customer: Users, competitor: Target, creative: Palette, adjacent: Building2, trends: Megaphone, video: FileSearch } as const;
 const agentName: Record<Segment, string> = {
+  channel: "Channel and audience behaviour", offer: "Product and offer", measurement: "Measurement and experiments",
   brand: "Business and brand researcher",
   customer: "Customer insight researcher",
   competitor: "Competitor researcher",
@@ -52,6 +53,7 @@ export default function ResearchProgress({
   onRefresh: () => void;
 }) {
   const progress = p.researchProgress || [];
+  const segments = p.taskPlan ? selectedResearch(p) : progress.length ? progress.map(r => r.segment) : selectedResearch(p);
   const requested = !!p.researchRequest;
   const stateOf = (segment: Segment): { state: State; sources: number } => {
     const row = progress.find((x) => x.segment === segment);
@@ -104,7 +106,7 @@ export default function ResearchProgress({
       </div>
       {!anyStarted && p.researchNote && <p className="f-callout" role="status">{p.researchNote}{operator ? " You can still click Start research above to run it by hand." : ""}</p>}
       <p className="f-small">
-        Four specialist researchers each search the public web for their own question and must cite every finding.
+        {segments.length} selected specialist researchers each search the public web for their own question and must cite every finding.
         {channels.length ? ` They focus on ${channels.join(", ")}.` : ""} Nothing is used until Port67 has reviewed the sources.
       </p>
       <div className="f-flow" role="group" aria-label="Research progress flow">

@@ -111,7 +111,7 @@ function Picker({
                       ? "Authorise public project data first"
                       : !live
                         ? "Configure the research provider first"
-                        : "Runs the four research segments, one paid call each"
+                        : "Runs the selected research agents, one paid call each"
                 }
                 onClick={() => void saveThen(onRunAll, "setChannels", "Channels saved")}
               >

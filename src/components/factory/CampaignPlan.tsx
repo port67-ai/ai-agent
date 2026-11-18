@@ -1,6 +1,9 @@
 "use client";
+import { mediumCurrent, mediumEvidenceKey } from "@/lib/factory/planning-context";
+import { MediumPanel } from "./PlanningPanel";
 import { useState } from "react";
 import { Check, Sparkles } from "lucide-react";
+import { channelById } from "@/lib/factory/channels";
 import { FORMATS } from "@/lib/factory/formats";
 import { Tag, Field, Actions } from "./shared";
 
@@ -12,33 +15,41 @@ const fromLines = (t: string) => t.split("\n").map((l) => l.trim()).filter(Boole
 });
 
 /** The two decisions that shape every ad: which formats to make (a producer decides, the system suggests) and the strapline plus audience segments. */
-export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi, onAiAudiences }: Actions & { aiReady?: boolean; onAi?: () => void; onAiAudiences?: () => void }) {
+export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi, onAiAudiences, onMedium }: Actions & { aiReady?: boolean; onAi?: () => void; onAiAudiences?: () => void; onMedium?: () => unknown }) {
   const f = p.formats;
+  const [rationale, setRationale] = useState(p.mediumDecision?.rationale || "");
   const [picked, setPicked] = useState<string[]>(f?.selected || []);
   const [strap, setStrap] = useState(p.audiences?.strapline || "");
   const [segs, setSegs] = useState(toLines(p.audiences?.segments));
   const sug = p.audienceSuggestion;
-  const formatsSaved = !!f?.decidedAt && picked.length === f.selected.length && picked.every((x) => f.selected.includes(x));
+  const formatsSaved = !!f?.decidedAt && (!p.researchPlanning || (mediumCurrent(p) && p.mediumDecision?.recommendationVersion === p.mediumSelection?.version) || (p.mediumSelection?.status === "manual" && p.mediumSelection.evidenceKey === mediumEvidenceKey(p))) && picked.length === f.selected.length && picked.every((x) => f.selected.includes(x));
   const audSaved = !!p.audiences && strap === p.audiences.strapline && segs === toLines(p.audiences.segments);
   const lastOf = (stage: string) => p.runs.filter((r) => r.stage === stage).at(-1);
   const failure = (stage: string) => { const r = lastOf(stage); return r?.status === "failed" && r.error ? r.error : ""; };
-  const why = new Map((f?.suggested || []).map((s) => [s.id, s.reason]));
+  const why = new Map<string, string>();
+  if (p.researchPlanning) {
+    if (mediumCurrent(p)) for (const r of p.mediumSelection!.proposal!.recommendations) {
+      const detail = `${channelById(r.channel)?.name || r.channel}: ${r.basis === "evidence" ? "reviewed evidence" : r.basis === "observed_performance" ? "observed campaign performance" : "limited channel prior"}; see the assessment above`;
+      why.set(r.format, why.has(r.format) ? why.get(r.format) + ". " + detail : detail);
+    }
+  } else for (const suggestion of f?.suggested || []) why.set(suggestion.id, suggestion.reason);
   const insightsReady = p.insights.some((i) => (i.status || "reviewed") !== "draft" && i.status !== "rejected");
   return (
-    <section className="f-panel">
+    <section className="f-panel f-campaign-plan">
       <div className="f-eyebrow">Campaign plan</div>
+      {operator && <MediumPanel p={p} busy={busy} onRun={onMedium} />}
       <h3 id="formats-anchor">Ad formats {f?.decidedAt ? <Tag tone="good">chosen</Tag> : <Tag>not chosen yet</Tag>}</h3>
       {operator ? (
         <>
           <p className="f-small">After the insight review, choose what to make. Destination channels come from the customer; the formats are suggested from them and the objective, and you decide. The direction and copy are then written for these formats.</p>
-          {aiReady && (
+          {aiReady && !p.researchPlanning && (
             <button className="f-button" disabled={busy || !insightsReady} onClick={onAi}>
               Suggest with AI <Sparkles size={14} />
             </button>
           )}
           {failure("formats") && <p className="f-small" style={{ color: "#b42318" }}>The last AI suggestion failed: {failure("formats")}</p>}
-          {f?.suggestedBy === "ai" && <p className="f-small">These suggestions were written by the AI format agent. You still decide.</p>}
-          {!f?.suggested?.length && (
+          {!p.researchPlanning && f?.suggestedBy === "ai" && <p className="f-small">These suggestions were written by the AI format agent. You still decide.</p>}
+          {!p.researchPlanning && !f?.suggested?.length && (
             <button className="f-button secondary" disabled={busy || !insightsReady} onClick={() => void command({ type: "suggestFormats" }, "Formats suggested.")}>
               Suggest formats (rules) <Sparkles size={14} />
             </button>
@@ -51,7 +62,8 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
               {why.get(x.id) ? <em> Why: {why.get(x.id)}.</em> : null}
             </label>
           ))}
-          <button className={"f-button" + (formatsSaved ? " done" : "")} disabled={busy || !picked.length || formatsSaved} onClick={() => void command({ type: "selectFormats", formats: picked }, "Formats chosen. The direction is written for them.")}>
+          {p.researchPlanning && <Field label="Why these formats for this audience and channel?"><textarea value={rationale} onChange={e => setRationale(e.target.value)} maxLength={1000} required placeholder="Explain evidence, requested-output differences, budget or why you are proceeding without an AI recommendation" /></Field>}
+          <button className={"f-button" + (formatsSaved ? " done" : "")} disabled={busy || p.runs.some(r => r.status === "running") || (!!p.researchPlanning && !insightsReady) || !picked.length || formatsSaved || (!!p.researchPlanning && !rationale.trim())} onClick={() => void command({ type: "selectFormats", formats: picked, rationale, ...(p.researchPlanning ? { expectedMediumVersion: p.mediumSelection?.version || 0, expectedEvidenceHash: p.mediumContextHash } : {}) }, "Formats chosen. The direction is written for them.")}>
             {formatsSaved ? "Formats confirmed" : "Confirm formats"} <Check size={14} />
           </button>
         </>

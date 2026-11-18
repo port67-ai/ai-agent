@@ -1,3 +1,7 @@
+# Latest change — CHG-0084 specialists and performance feedback
+
+16 November 2026; branch feat/research-performance-feedback, base fd0b183 (PR #58). Local implementation/acceptance passed on 16 November 2026; this entry is not deployment evidence. FAC-PLN-007, FAC-FBK-001, FAC-FBK-002 and FAC-FBK-003 implemented with full local regression, browser, lint, typecheck and production build acceptance; GitHub CI/deployment pending. Existing seven-role execution is preserved. No live provider quality, direct advertising connector or measured causal lift is claimed.
+
 # Implementation status
 
 Updated: 2026-11-12. Baseline inspected: 26ab3be. Environment: local managed checkout.
@@ -258,3 +262,30 @@ Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. 
 | FAC-OVR-001 | Owner-requested 2026-11-18 (CHG-0084) | IMPLEMENTED | Built (CHG-0084). Customer accounts are created when a customer first signs in; a producer cannot yet create an account for a customer who has not. Returns to the Overview after share, approve, format, audience and bulk review decisions; single source or insight reviews keep you in the queue. |
 | FAC-STO-001 | Owner-requested 2026-11-16 (CHG-0077) | IMPLEMENTED | Built (CHG-0077): storage gauge in the producer Overview and diagnostics, automatic trimming of old run copies on save, manual Trim button. |
 | FAC-STO-002 | Owner-requested 2026-11-16 (CHG-0077) | PLANNED | Not started. Split the project record into separate records; trigger is about 60 percent of the limit on the gauge or before several live customers. |
+
+
+## CHG-0082 — task-based MVP evolution (16 November 2026)
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-TSK-001 | IMPLEMENTED locally; not deployed or live-verified | `factory-task-plan.test.ts`: narrow/video/research-only selection, explicit formats, reasons; free deterministic planning needs producer review for ambiguous intent. |
+| FAC-TSK-002 | IMPLEMENTED locally; not deployed or live-verified | Planner DAG and UI tests; API test reconstructs completed status from a new local repository instance; existing Firestore adapter integration still requires environment acceptance. |
+| FAC-TSK-003 | IMPLEMENTED locally; not deployed or live-verified | API tests: excluded agent zero provider calls, dependency guards, research-only completion, existing control regression suite. No durable queue or distributed orchestration lease added. |
+| FAC-TSK-004 | IMPLEMENTED locally; not deployed or live-verified | Version/role checks, plan history, stale paid response usage retention and compatible-result preservation tests; existing post-direction scope locks remain. |
+| FAC-TSK-005 | IMPLEMENTED locally; not deployed or live-verified | Static-only production and individual template-agent tasks; unsupported full outputs remain producer tasks with audited notes. External agent harness interfaces still have no runtime adapters. |
+
+Supports FAC-WFL-001/002 and FAC-AGT-003 with a bounded project graph and persisted state. Does not promote full original workflow requirements to VERIFIED or implement FAC-WFL-003 Cloud Tasks dispatch. Final local unit/API/UI, full regression, browser, typecheck, lint, production build and structural governance checks passed; exact commands are recorded in CHG-0082 and HANDOVER. Firestore emulator assertions did not run because the emulator JAR download failed. No live acceptance or deployment is claimed.
+
+
+## CHG-0083 — AI planning, stronger research and medium decisions
+
+| Requirement | State | Working scope / evidence |
+|---|---|---|
+| FAC-PLN-001 | Implemented locally; deployment pending | Strict planner contracts, complete public context, catalogue/method validation and selected-agent execution tested in `factory-ai-planning*.test.ts`. |
+| FAC-PLN-002 | Implemented locally; deployment pending | Metered planner/medium runs, cached derived/rules scopes, explicit retry/fallback, stale-result usage and separate model/skill attribution. |
+| FAC-PLN-003 | Implemented locally; live quality acceptance pending | Original method catalogue injected into grounded research. Actual public source access and real campaign quality depend on configured providers. |
+| FAC-PLN-004 | Implemented locally; live quality acceptance pending | Cited per-channel recommendation contracts, counterarguments/confidence/unknowns, separate customer request and UI. No measured campaign-history connector. |
+| FAC-PLN-005 | Implemented locally; deployment pending | Expected recommendation/evidence version, rationale, explicit manual path, targeted video research and stale manual-decision reconfirmation regressions. |
+| FAC-PLN-006 | Implemented locally; promotion remains manual | Proposed capability gaps are non-executable and use the existing backlog; no new researcher/tool permissions are granted. |
+
+Independent review identified pending-planner scoping bypass, stale format confirmation, repeated rules-scope reviews and stale manual UI decisions. Reproductions and regression tests accompany fixes. Final verification and release references are recorded in HANDOVER/CHANGELOG; no paid live-provider quality acceptance is inferred from simulated transport tests.

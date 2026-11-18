@@ -15,3 +15,22 @@ CHG-0009: Principal adds verified Firebase identity/accountId/admin/issuedAt; Ac
 
 
 CHG-0062: Segment adds adjacent/trends/video. Source.videoAnalysis optionally stores bounded native-video observations (basis, sampledFps=2, maxAnalysedSeconds=120, duration, nine craft/limitation strings and at most six timecodes). ResearchRun.contextBundle stores the frozen public research inputs; contextHash/inputHash cover those inputs and skill v2. Old records remain readable; old direction hashes are not rewritten. Advert treatment optionally carries creativeDirection from the approved strategy and includes it in its existing plan hash. No raw video/transcript storage or generic client-context collections added.
+
+
+## CHG-0082 task plans
+
+Optional `Project.taskPlan` is stored inside the existing project record. No destructive migration occurs. It includes monotonic version, timestamps/actor/reason, exact public-input freshness key, selected research/overrides, campaign or research-only mode, clarifications and tasks. Each task has stable ID, capability, dependencies, state, selection reason, acceptance criteria, run IDs and blocker detail. Manual producer-only tasks may hold completion actor/time/note. Plan history retains the last ten superseded version summaries and completed-task IDs; run/cost/audit records remain separate authoritative history.
+
+`Brief.workRequest` and `Brief.requestedFormats` capture customer intent; producer-approved `formats` remains the production gate. New paid runs carry `taskInputKey` when planned. These keys contain public input context and are freshness metadata, never authority. A changed brief or channel invalidates automatic reuse of old sources/insights without removing them or paid usage. Customer projections remove `taskPlan` and expose only `taskProgress` entries `{id,title,status}`. Plans use the existing account/project repository and storage limits. Workspace size limits and FAC-STO-002 remain in force.
+
+
+## CHG-0083 planning records
+
+Optional `Project.researchPlanning` stores enabled/status, input key, proposal version, validated role decisions, medium hypotheses, unknowns/gaps, run/provider/model and ten prior summaries. `mediumSelection` separately stores status/version, evidence key, cited recommendations, uncertainty and prior summaries. `mediumDecision` stores confirmed formats, unchanged requested formats, actor/time/rationale and the recommendation version used. `mediumContextHash` is an operator-only computed optimistic token; it is never customer authority. Customer projections strip all four records and retain the existing safe task-progress view.
+
+`ResearchRun.planningContextKey` pins planning/evidence context; `researchTaskKey` pins per-researcher questions/methods/source scope. `ResearchScope.planningVersion/planningKey` prevent stale or redundant scope regeneration. Task records expose assigned questions/methods and scope identity. Rejected late output retains run usage. New planned scope changes invalidate only affected researcher results and dependent insights. Existing project/workspace size limits and FAC-STO-002 remain unchanged; no destructive migration or cross-account history store is introduced.
+
+## Campaign observations (CHG-0084)
+Project.performance holds at most 100 immutable observations: campaign/channel/format, objective/audience/offer, ISO period, report provenance/attribution/currency, optional nonnegative counts/spend/revenue, PUBLIC authorisation and pending/accepted/rejected review lineage. CSV is limited to 25,000 characters and 30 rows. Counts must be safe whole numbers. Missing denominators produce null derived ratios. Only accepted authorised last 30 records enter model context; no currency aggregation. ResearchProposal.performanceIds and medium recommendation performanceIds reference available records. Medium observed_performance citations must match channel and format. Performance is removed from customer projections.
+
+Freshness keys use a compact browser-safe observation fingerprint; actual provider payloads are independently SHA-256 hashed by the server. After direction work begins, only performance changes are ignored by the existing direction’s planning gates; brief and source/insight freshness is still checked. New reports inform explicitly carried future-campaign history.

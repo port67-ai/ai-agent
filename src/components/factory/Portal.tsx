@@ -1,4 +1,5 @@
 "use client";
+import PerformancePanel from "./PerformancePanel";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowUpRight,
@@ -24,7 +25,7 @@ import {
   Bot,
   ArrowLeft,
 } from "lucide-react";
-import { segments, type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
+import { type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
 import Link from "next/link";
 import { PortalWelcome } from "./Welcome";
@@ -42,6 +43,8 @@ import Advert from "./Advert";
 import Ideas from "./Ideas";
 import CustomerApprovals from "./CustomerApprovals";
 import RunTracker from "./RunTracker";
+import TaskPlanPanel, { WorkRequestField } from "./TaskPlan";
+import { selectedResearch } from "@/lib/factory/task-plan";
 import ReviewQueue from "./ReviewQueue";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
@@ -515,6 +518,8 @@ export default function Portal() {
             <>
               {tab === "overview" && (
                 <>
+                  {operator && <section className="f-panel"><h2>Performance feedback</h2><p>{p.performance?.length || 0} campaign observations recorded. Review results and carry relevant history into the next campaign.</p><button className="f-button" disabled={busy} onClick={() => go("learning")}>Open performance learning</button></section>}
+                  <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} onRun={operator && !principal.demo ? () => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.") : undefined} />
                   {operator && (
                     <RunTracker
                       p={p}
@@ -856,7 +861,11 @@ export default function Portal() {
                   onRunAll={() =>
                     void run(async () => {
                       try {
-                        for (const seg of segments) {
+                        if (p.taskPlan) {
+                          await api("projects/" + p.id + "/producer-agent", {});
+                          return;
+                        }
+                        for (const seg of selectedResearch(p)) {
                           setRunningSegment(seg);
                           await api("projects/" + p.id + "/research", { segment: seg });
                           await refresh();
@@ -865,7 +874,7 @@ export default function Portal() {
                         setRunningSegment(null);
                         await refresh();
                       }
-                    }, "Research finished for all seven areas. Review the sources and gaps before drafting insights.")
+                    }, "Research finished for the selected areas. Review the sources and gaps before drafting insights.")
                   }
                   onRecover={(id) =>
                     void run(
@@ -883,7 +892,7 @@ export default function Portal() {
                   }
                 />
               )}
-              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} onAiAudiences={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "audiences" }), "AI strapline and audience suggestions ready. Use what fits, then save.")} />}
+              {tab === "direction" && <CampaignPlan key={p.revision} p={p} operator={operator} busy={busy} command={command} aiReady={!!config?.synthesisReady && !principal.demo} onAi={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "formats" }), "AI format suggestions saved. Review them and choose the formats.")} onMedium={() => void run(() => api("projects/" + p.id + "/planning", { kind: "medium", retry: true }), "Medium recommendations ready. Compare them with the customer request, then confirm formats with a reason.")} onAiAudiences={() => void run(() => api("projects/" + p.id + "/synthesis", { stage: "audiences" }), "AI strapline and audience suggestions ready. Use what fits, then save.")} />}
               {tab === "direction" && (
                 <Direction
                   p={p}
@@ -1030,15 +1039,14 @@ export default function Portal() {
               )}
               {tab === "learning" && (
                 <>
+                  {operator && <PerformancePanel p={p} busy={busy} command={command} projects={projects} onCarry={sourceProjectId => void run(() => api("projects/" + p.id + "/performance-history", { sourceProjectId }), "History copied for review")} />}
                   <div className="f-panel f-production-head">
                     <div>
-                      <Tag tone="orange">PHASE TWO</Tag>
+                      <Tag tone="orange">PERFORMANCE LEARNING</Tag>
                       <h2>Learning starts with a clear hypothesis.</h2>
                       <p>
                         Capture what each creative direction is testing now.
-                        Connect actual channel results later. There are no
-                        connected ad accounts, observed performance metrics or
-                        automatic publishing in this MVP.
+                        Producers can record and review supplied channel results, then carry relevant observations into the next campaign. Advertising accounts and automatic publishing are not connected.
                       </p>
                     </div>
                     <ChartNoAxesCombined size={48} />
@@ -1064,11 +1072,11 @@ export default function Portal() {
                         </div>
                       </section>
                       <section className="f-panel">
-                        <h2>The future feedback loop</h2>
+                        <h2>The feedback cycle</h2>
                         {[
-                          "Connect authorised channel and analytics data",
-                          "Map results to published asset versions",
-                          "Compare signals with the creative hypothesis",
+                          "Record authorised campaign reports and attribution",
+                          "Review objective, audience, offer, channel and format",
+                          "Carry relevant observations into the next campaign",
                           "Recommend the next test — with attribution limits",
                         ].map((x, i) => (
                           <div className="f-learning-step" key={x}>
@@ -1076,7 +1084,7 @@ export default function Portal() {
                             {x}
                           </div>
                         ))}
-                        <Tag>Not connected</Tag>
+                        <Tag>Producer-managed observations</Tag>
                       </section>
                     </div>
                   ) : (
@@ -1152,6 +1160,7 @@ export default function Portal() {
                   <input key={briefAccount || principal.workspaceId} name="contact" type="email" required maxLength={180} defaultValue={operator && principal.identity === "firebase" ? (accounts.find((x) => x.id === (briefAccount || principal.workspaceId))?.email || "") : ""} />
                 </Field>
               </div>
+              <WorkRequestField />
               <Field label="What do you want to achieve? *">
                 <textarea
                   name="objective"

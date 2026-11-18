@@ -13,13 +13,15 @@ type Tab = "research" | "direction" | "assets" | "advert";
 type Props = { p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
 /** The overview's single sheet: every deliverable top to bottom, AI agent steps and human review steps, each with the button or link that does it. */
 export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
-  const steps = runTracker(p);
-  const next = nextAction(steps);
-  const doneCount = steps.filter((s) => s.state === "done").length;
+  const allSteps = runTracker(p);
+  // With a task plan, only the steps that need an action or are running are listed; without one, the whole sheet.
+  const steps = p.taskPlan ? allSteps.filter((s) => s.ai || s.act || s.state === "paused" || s.state === "waiting_approval" || s.state === "running") : allSteps;
+  const next = nextAction(allSteps);
+  const doneCount = allSteps.filter((s) => s.state === "done").length;
   return (
     <section className="f-panel f-deliverables" aria-label="Campaign deliverables">
-      <div className="f-eyebrow">Campaign deliverables</div>
-      <p className="f-small" style={{ margin: "0 0 6px" }}>{doneCount} of {steps.length} steps done. <span className="f-kind agent">AI agent</span> steps run by themselves once started; <span className="f-kind review">Review</span> steps need a person. Press a button to jump straight to it; you come back here when it is done.</p>
+      <div className="f-eyebrow">{p.taskPlan ? "Task actions" : "Campaign deliverables"}</div>
+      <p className="f-small" style={{ margin: "0 0 6px" }}>{doneCount} of {allSteps.length} steps done. <span className="f-kind agent">AI agent</span> steps run by themselves once started; <span className="f-kind review">Review</span> steps need a person. Press a button to jump straight to it; you come back here when it is done.</p>
       <p className="f-small" data-testid="next-action" style={{ margin: "4px 0 10px", padding: "8px 10px", borderRadius: 8, border: `1px solid ${next.who === "Producer" ? "#f97316" : "#475569"}` }}>
         <strong>{next.who === "Producer" ? "Your turn" : next.who === "AI" ? "AI is working" : "Nothing needs pressing"}</strong>
         {next.who === "Producer" ? `: ${next.label}. ` : ". "}{next.text}

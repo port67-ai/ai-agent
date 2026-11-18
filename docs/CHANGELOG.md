@@ -588,3 +588,32 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - What/why: after the admin restart (CHG-0045 area) the producer's Start research button stayed greyed out and Run producer agent only said no research sources yet. Cause: the restart removes the project's AI authorisation (by design, since the project is a fresh start) and the only way to give it again was a separate Authorise public project data button further down the Research room, so nothing told the producer what was missing. The research tab now shows an orange "Authorise public data and start research" button when the project is not authorised, with a plain explanation of why Start research is greyed out. Customers are unaffected: their Request research button still authorises and starts automatically when test-mode auto-approval is on.
 - Requirements: FAC-HAR-012 (producer test controls, behaviour refined). PRD impact: none.
 - Tests: portal tests unchanged and passing; no new server behaviour.
+
+
+## CHG-0082 — 2026-11-16 — Customer-driven task plans and relevant agent execution
+- Author/harness: Codex; owner explicitly requested evolution of the existing MVP into task-based architecture.
+- What/why: task manager creates persistent versioned dependency graphs from customer requests, selects relevant research agents with reasons, supports audited producer overrides, feeds the orchestrator and project progress, and limits production to selected formats. Research-only requests stop after reviewed insights. Plan changes preserve history and usage, reject stale output and prevent unrelated calls. Customer-safe progress omits internal plans. Existing campaigns retain legacy behaviour until adopted.
+- Requirements: FAC-TSK-001 through FAC-TSK-005; supports FAC-WFL-001/002/007/008/009, FAC-AGT-003, FAC-HAR-012, FAC-OBS-001/002, FAC-FMT-003 and FAC-CTX-009.
+- PRD impact: version 1.27.0 adds section 25.8 and supersedes the mandatory seven-role default for planned projects. No external-agent framework, durable queue, live vendor or publishing is activated.
+- Incidental fixes: escape existing JSX quotation marks in Direction/SkillDialog so the required lint check can pass; preserve rendered wording.
+- Status: local implementation on feat/customer-task-planning, base 9f629cd; not merged/deployed. Verification results appended after final checks.
+
+- Final CHG-0082 evidence (16 November 2026): `npm test`, `npm run check:factory`, `./node_modules/.bin/tsc --noEmit`, `npm run build`, `PORT67_TEST_ORIGIN=http://localhost:3100 npm run test:browser`, `python3 scripts/check_docs_governance.py --base 9f629cd` and `git diff --check` passed. Independent review's hold-bypass and failed-paid-retry findings reproduced RED→GREEN; stale reviewer output regression also RED→GREEN. Firestore emulator verification could not run because its JAR download from storage.googleapis.com failed, including a retry with writable temp cache/config paths. No live provider, production or deployment claims.
+
+
+## CHG-0083 — 2026-11-16 — AI research plans, evidence-backed media and selective catalogue proposals
+- Author/harness: Codex. Owner explicitly authorised implementation and deployment while away, without approval pauses.
+- What/why: interpret the full public customer brief with an LLM; validate/version relevant researcher choices and methods; execute through the existing task manager; recommend channel-format options from reviewed evidence; preserve requested outputs and record producer choices. New video alternatives create targeted craft research. Existing producer scope/agent overrides remain authoritative. Missing capabilities become reviewable proposals, not executable agents.
+- Requirements: FAC-PLN-001 through FAC-PLN-006; extends FAC-TSK-001 through 005, FAC-CTX-009, FAC-HAR-012, FAC-FMT-002/003 and FAC-OBS-001.
+- PRD impact: 1.28.0, section 25.9. New paid planner/medium stages use the existing metering gateway, caps, roles and approval policy. No new provider, performance connector, cross-customer learning or unreviewed catalogue promotion.
+- Source handling: original Port67 methods were authored from the functional requirements; the external source's runtime/skill text was not copied or installed.
+- Status: feat/ai-research-medium-planning, base bfaf83e. Local implementation; CI, merge and deployment evidence appended after final verification.
+
+- CHG-0083 local verification (16 November 2026): `npm test`, `npm run check:factory`, `./node_modules/.bin/tsc --noEmit`, `npm run build`, `PORT67_TEST_ORIGIN=http://localhost:3100 npm run test:browser`, `python3 scripts/check_docs_governance.py --base bfaf83e` and `git diff --check` passed. All four browser journeys passed with synthetic providers/fixtures; no paid live calls. Fresh independent review findings were reproduced and fixed; no findings deferred. CI will run the Firestore emulator and repeat acceptance before merge. Existing video-store tracing warnings remain unchanged.
+
+
+## CHG-0084 — 2026-11-16 — Selective research specialists and performance feedback
+- Owner request: autonomously add channel/audience behaviour, product/offer, measurement research and a feedback loop while away. PRD impact: version 1.29.0; FAC-PLN-007, FAC-FBK-001..003; selective expansion of FAC-PLN-006.
+- Added three routed, skilled, metered research roles; preserved legacy seven-role execution. Added producer results entry/CSV/review and explicit same-account history carry, separate PUBLIC authorisation, deterministic metrics and structured historical citations in planning/medium output. Requested deliverables and approval gates remain intact.
+- Design: supplied-report observations first; no ad-platform credentials, cross-client retrieval, training job or causal winner claims. Missing/zero denominators remain unknown, history changes stale plans, and rejected observations cannot return through old hypotheses.
+- Focused tests RED→GREEN cover catalogue, legacy persisted plans, validation/privacy/freshness/citations and duplicate carry. Full verification commands: npm test; npm run check:factory; npx tsc --noEmit; npm run build; PORT67_TEST_ORIGIN=http://localhost:3100 npm run test:browser; python3 scripts/check_docs_governance.py --base fd0b183; git diff --check. All listed local commands passed on 16 November 2026; CI/PR records final checks before merge; no live paid calls. Implementation branch, not deployment evidence until hosting statuses succeed.

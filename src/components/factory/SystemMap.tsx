@@ -21,7 +21,7 @@ const PROVIDERS: { id: string; label: string; color: string }[] = [
 ];
 const COLOR = { input: "#22d3ee", agent: "#a78bfa", producer: "#f97316", store: "#34d399", gate: "#fbbf24", mon: "#60a5fa", out: "#94a3b8", bad: "#f87171" };
 const AGENT_ICON: Record<string, Icon> = {
-  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film,
+  "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film, "research:channel": Users, "research:offer": Building2, "research:measurement": Target,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:audiences": Users, "synthesis:ideas": Sparkles,
   "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
 };
@@ -133,7 +133,7 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
 
   const AH = 124;
   /** Everything from the sources bar down moves this far so the two research rows have room. */
-  const SH = 204;
+  const SH = 404;
   const R1 = 320;
   const R2 = 520;
   // Agent positions (each row is a lane of the journey).
@@ -146,6 +146,9 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
     "research:adjacent": { x: COLS[0], y: R2 },
     "research:trends": { x: COLS[1], y: R2 },
     "research:video": { x: COLS[2], y: R2 },
+    "research:channel": { x: COLS[0], y: R2 + 180 },
+    "research:offer": { x: COLS[1], y: R2 + 180 },
+    "research:measurement": { x: COLS[2], y: R2 + 180 },
     "review:scope": { x: COLS[3], y: 150 },
     "review:sources": { x: COLS[0], y: 590 },
     "review:insights": { x: COLS[2], y: 590 },
@@ -156,8 +159,10 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
     "synthesis:formats": { x: COLS[0], y: 1480 },
     "synthesis:audiences": { x: COLS[1], y: 1480 },
     "synthesis:ideas": { x: COLS[2], y: 1480 },
+    "synthesis:planner": { x: COLS[0], y: 1640 },
+    "synthesis:medium": { x: COLS[1], y: 1640 },
   };
-  const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video"].includes(id);
+  const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video", "research:channel", "research:offer", "research:measurement"].includes(id);
   /** The same four facts on every AI agent node: calls and cost, health, and how many failed. */
   const factLines = (stat: NonNullable<Agent["stats"]>, es: ReturnType<typeof edgesFor>, hasModel: boolean) => {
     const unpriced = es.some((e) => e.unpriced > 0);
@@ -222,7 +227,8 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
     );
   };
   // A producer reviewer: purple like every agent, model or free checks, calls and cost, click to choose its model.
-  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, _extra = "") => {
+  const reviewNode = (rid: string, x: number, y: number, w: number, h: number, waiting = 0, extra = "") => {
+    void extra;
     const a = byId.get(rid);
     if (!a) return null;
     const stat = a.stats!;
@@ -242,12 +248,12 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
   const total = flow.models.reduce((n, m) => n + m.microUsd, 0);
   const calls = flow.models.reduce((n, m) => n + m.calls, 0);
   const failedCalls = flow.models.reduce((n, m) => n + (m.failed || 0) + (m.unknown || 0), 0);
-  const H = 1590 + SH + 200;
+  const H = 1790 + SH + 200;
   const waiting = P.waiting;
   const insightGate = waiting.insightReview;
   const gateState = (n: number) => (n > 0 ? "blocked" : "");
   const gateBadge = (n: number) => (n > 0 ? `${n} WAITING` : undefined);
-  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video"];
+  const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video", "research:channel", "research:offer", "research:measurement"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
   const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
   const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:audiences", "synthesis:ideas"];
@@ -270,7 +276,7 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
             <marker id="sm-dim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></marker>
           </defs>
           <rect x="0" y="0" width={W} height={H} className="sm-bg" />
-          <text x={W / 2} y="38" textAnchor="middle" className="sm-heading">Port67 agent system: data in, data out</text>
+          <text x={W / 2} y="38" textAnchor="middle" className="sm-heading">Port67 agent capabilities: data in, data out</text>
 
           <text x="30" y="78" className="sm-band">1 · INPUTS</text>
           <Node id="form-brief" x={COLS[0]} y={90} h={64} color={COLOR.input} icon={FileText} title="Business brief" lines={["Account owner form"]} />
@@ -343,6 +349,8 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
 
           </g>
           {/* Producer orchestrator: drawn like an LLM at the top of the LLM column, but it is a rules-only agent that steers its four reviewers. */}
+          <Node id="task-manager" x={PX} y={20} w={PW} h={92} color={COLOR.store} icon={Database} title="Task manager" lines={["Customer-driven plans", "Select agents · track tasks", "Project plan in Overview"]} />
+          <Link d={`M${PX + PW / 2} 112 L${PX + PW / 2} 148`} color={COLOR.store} />
           <text x={PX} y={136} className="sm-band">PRODUCER AGENT</text>
           <Node id="producer-orchestrator" x={PX} y={150} w={PW} h={96} color={COLOR.producer} icon={Bot} title="Orchestrator"
             lines={["Rules only · no model", `${PR.passes} passes · ${PR.reviews} verdicts`, PR.holds ? `${PR.holds} held for a person` : PR.pending ? `${PR.pending} redraft${PR.pending === 1 ? "" : "s"} pending` : "Stops at customer gates"]}
@@ -364,6 +372,9 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
           {agentNode("synthesis:formats")}
           {agentNode("synthesis:audiences")}
           {agentNode("synthesis:ideas")}
+          <text x="30" y="1626" className="sm-band">9 · RESEARCH AND MEDIUM PLANNING</text>
+          {agentNode("synthesis:planner")}
+          {agentNode("synthesis:medium")}
           {PROVIDERS.map((p, i) => <Link key={"tel" + p.id} d={`M${PX + PW} ${providerY[p.id] + PH / 2} L${1088 - i * 4} ${providerY[p.id] + PH / 2} L${1088 - i * 4} 1280 L${COLS[1] + 62 + 380} 1280`} color={COLOR.mon} dim />)}
 
           <text x="30" y="1236" className="sm-band">7 · MONITORING</text>

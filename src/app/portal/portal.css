@@ -1818,3 +1818,7 @@
 .f-deliverable[data-state="pending"]{opacity:.62}
 @media (max-width:900px){.f-deliverable{grid-template-columns:24px 18px 70px 1fr}.f-deliverable-state,.f-deliverable-detail,.f-deliverable-actions{grid-column:2 / -1;justify-content:flex-start}}
 .f-back-bar{display:flex;gap:10px;align-items:center;margin:0 0 12px}
+@media (max-width: 720px) {
+  .f-campaign-plan .f-button { white-space: normal; max-width: 100%; text-align: left; }
+  .f-campaign-plan .f-button svg { flex-shrink: 0; }
+}

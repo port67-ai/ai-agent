@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.26.0  
+**Version:** 1.29.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1499,3 +1499,46 @@ Ongoing version history: see `docs/CHANGELOG.md`, CHG-0003 for 1.1.0 and CHG-000
 ---
 
 **Final operating rule:** **Port67 Factory has one durable project memory: versioned GitHub documents and verified implementation evidence.** The latest AI conversation is never a substitute. **Listen First. Build What Matters.**
+
+
+## 25.8 Customer-driven project task plans — owner-authorised 16 November 2026 (CHG-0082)
+
+This evolution replaces the mandatory seven-researcher path for new project intake with a customer-driven selection. It supersedes section 25.6's seven-role default for planned projects while retaining all seven available capabilities and legacy continuation. It does not adopt the proposed Cloud Tasks stack or install an external agent framework.
+
+| ID | Requirement | Acceptance criterion |
+|---|---|---|
+| FAC-TSK-001 | Generate a free, versioned task plan from customer input | Initial intake records campaign versus research-and-insights-only work and optional requested formats; objective, channels and confirmed formats select relevant research roles with inclusion/exclusion reasons. Explicit outputs override incidental industry wording. Brand and customer evidence remain foundational. |
+| FAC-TSK-002 | Persist tasks, dependencies, assignments, acceptance criteria and progress | Project stores a validated acyclic graph; existing repository transactions reconcile running/completed/blocked states from run, evidence and approval records. Project management view shows tasks, assigned capabilities, dependencies, blockers, exclusions and bounded plan history. Customer projection shows titles/status only. |
+| FAC-TSK-003 | Execute only relevant, dependency-ready work | Server denies excluded research before scoping/provider invocation and enforces dependencies for research, insight/direction drafting, copy packs and production. Orchestrator reads the plan and retains existing bounded reviewer rework, consent, identity, budget and approval controls. Research-only plans finish after reviewed insights. Paid failed tasks require deliberate producer retry. |
+| FAC-TSK-004 | Revise plans without erasing execution history | Brief/channel/format changes before direction work replan; producer can override known research agents with a reason and expected plan version. Changed public inputs reject late outputs with usage retained and invalidate prior evidence for automatic use. Compatible selection/format changes retain completed work; old plans and execution lineage remain traceable. Existing post-direction scope locks remain authoritative. |
+| FAC-TSK-005 | Match production agents to confirmed formats | Static-only work does not trigger motion or copy generation. Selected template agents have their own tracked tasks. Finished videos and long-form deliverables beyond current generators remain explicit producer tasks, completed only with a recorded handoff note; this cannot approve customer assets. No generic bot installation or live external side effects are introduced. |
+
+Optional AI format, audience and idea suggestions remain deliberate producer actions. An available agent on the global map is not automatically scheduled for each project. Legacy projects keep existing behaviour until a producer explicitly adopts a task plan. Planner selection uses transparent deterministic heuristics, not semantic understanding or a paid planning model; producer review and overrides address ambiguous requests. Durable queue delivery, multi-worker orchestration leases, external-agent adapters and the storage split remain separate work.
+
+
+## 25.9 AI research planning and evidence-backed medium decisions — 16 November 2026 (CHG-0083)
+
+Owner authorises implementation and deployment without further approval pauses. Runtime customer approvals, authorisation and budgets remain authoritative. This extends the task architecture, not a new autonomous business policy.
+
+| ID | Requirement | Acceptance criterion |
+|---|---|---|
+| FAC-PLN-001 | LLM proposes research from the full authorised customer brief and channels | New explicit work-type intake enables AI planning. The task manager validates exactly one decision per existing research role, compatible methods, bounded questions and page instructions, reasons and limited-confidence medium hypotheses. Unknown agents/tools and malformed proposals cannot execute. Contact and raw logo bytes are excluded; URLs are leads, not browsed evidence. |
+| FAC-PLN-002 | Planning executes through the existing metered, versioned task manager | Separate planner/medium model and skill slots; calls reserve costs and retain failed/stale usage. Planner precedes paid scoping/research; failed jobs require explicit retry or an audited rules fallback. Scope derives from accepted planner questions without a redundant paid classification pass. Current rules scope is cached. |
+| FAC-PLN-003 | Research uses stronger, explicit methods | Brand claims/proof and product/offer; customer journey, dated review mining and denominators; category/competitor and public ad-library limitations; creative/organic examples; adjacent transfer limits; dated trends; honest video provenance. Method IDs must match the selected role. Page limits remain provider instructions, not independently enforced retrieval counts. |
+| FAC-PLN-004 | Recommend media from reviewed evidence before confirming production formats | Show per-channel options, accepted source/insight references, counterarguments, uncertainty and requested-output differences. Channel knowledge is an unvalidated prior, not measured campaign history. Evidence supports suitability, not causal performance. Research-only projects omit this task. |
+| FAC-PLN-005 | Producer confirmation preserves the customer request and current evidence version | Customer requested outputs remain unchanged. Confirmed formats need a producer rationale and expected recommendation version/evidence hash. Stale or concurrent confirmation is rejected. New video/motion choices add targeted craft research without discarding compatible prior work. New evidence requires a current recommendation or explicit manual rationale before production. |
+| FAC-PLN-006 | Expand the catalogue selectively through evidence-backed proposals | Planner records missing capability, why existing roles are inadequate and required inputs in the existing proposed-capability backlog. Proposals cannot install agents, grant tools, call vendors or activate workflows. Product/market depth is initially delivered by methods within existing brand/competitor roles. |
+
+Legacy clients/projects retain their existing workflow until AI planning is enabled. New planner slots use explicit route, stage default, inherited configured scoping/format route, then environment; removed keys still fail visibly. No paid model fallback after invocation failure is introduced. No private ad-account connector, fabricated performance history, cross-customer learning, automatic model training, new research vendor or unreviewed agent promotion is introduced. Commercial third-party skill source text was not copied into runtime skills.
+
+
+## 27. Selective specialists and measured feedback — owner requested 16 November 2026
+
+| ID | Requirement | Acceptance |
+|---|---|---|
+| FAC-PLN-007 | Select channel/audience behaviour, product/offer and measurement specialists | Catalogue has three independently routed, metered research agents with distinct approved methods, scoped questions and inclusion/exclusion decisions. Existing seven-role projects continue without compulsory extra calls; new AI plans cover all ten roles. |
+| FAC-FBK-001 | Capture auditable observed campaign results | Producer entry and bounded CSV import record campaign, channel, format, objective, audience, offer, dates, provenance, attribution, currency and optional observed metrics. Pending results need producer review; PUBLIC authorisation is separate. Unknown and zero metrics remain distinct; ratios require positive denominators. |
+| FAC-FBK-002 | Use reviewed history in planning and medium selection | Only accepted, explicitly authorised observations enter metered planning prompts. Research plans cite available record IDs and explain transfer limits. Medium recommendations may cite matching channel/format history as observed_performance, with at most moderate confidence. Observations never establish causal winners or incremental results. New/rejected history invalidates old planning/recommendation context and stale derived hypotheses. |
+| FAC-FBK-003 | Carry history into later campaigns within the same account | Producer explicitly selects a source project. Only accepted authorised records are copied with source provenance; copies start pending and need a new review. Repeated carry cannot duplicate source observations. No account joins by business name and no cross-customer training. Customer views exclude performance records. |
+
+This supersedes the initial FAC-PLN-006 limitation of delivering offer depth only inside brand research. Other catalogue additions remain reviewed proposals. Direct advertising-platform ingestion and cross-project automatic matching are not implemented; the feedback loop uses supplied reports, manual entry and CSV. It improves model context, not model weights. Existing consent, spend limits, customer deliverable requests and approval gates remain.

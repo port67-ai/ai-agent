@@ -16,20 +16,20 @@ await command({type:'setChannels',channels:['instagram']});
 // Switch off: a request only queues, nothing runs and no consent is given.
 let p=await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,300));p=await project();
 assert.ok(p.researchRequest);assert.equal(p.runs.length,0);assert.equal(calls,0);
-// Switch on: the next request authorises public data and runs all seven researchers without a producer.
+// Switch on: the next request authorises public data and runs only relevant researchers without a producer.
 process.env.PORT67_AUTO_APPROVE_PRODUCER='true';
 await project();// self-healing: merely viewing the project starts a request made before the switch was on
-for(let i=0;i<60&&(await project()).runs.filter((r:{status:string})=>r.status==='completed').length<7;i++)await new Promise(r=>setTimeout(r,100));
+for(let i=0;i<60&&(await project()).runs.filter((r:{status:string})=>r.status==='completed').length<5;i++)await new Promise(r=>setTimeout(r,100));
 p=await project();
-assert.equal(p.runs.filter((r:{status:string})=>r.status==='completed').length,7,'seven researchers ran');
-assert.deepEqual(new Set(p.runs.filter((r:{stage:string})=>r.stage==='research').map((r:{segment:string})=>r.segment)),new Set(['brand','customer','competitor','creative','adjacent','trends','video']));
-assert.equal(calls,8,'one scoping call, then seven researchers');assert.ok(p.sources.length>=4);
+assert.equal(p.runs.filter((r:{status:string})=>r.status==='completed').length,5,'only five relevant researchers ran');
+assert.deepEqual(new Set(p.runs.filter((r:{stage:string})=>r.stage==='research').map((r:{segment:string})=>r.segment)),new Set(['brand','customer','competitor','creative','trends']));
+assert.equal(calls,6,'one scoping call, then five relevant researchers');assert.ok(p.sources.length>=4);
 assert.ok(p.sources.every((s:{status:string})=>s.status==='unreviewed'),'source review stays a human gate');
 await login('producer');await req('accounts',{accountId:customer.accountId});
 const full=await project();assert.ok(full.audit.some((x:{action:string;actor:string})=>x.action==='producer_step_auto_approved'&&x.actor==='port67-auto-approve'));
 // A second request does not run research again.
-await login('customer');await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,300));assert.equal(calls,8);
-const plan=await(await req(route+'/research-plan')).json();assert.equal(plan.plan.segments.length,7);assert.ok(plan.plan.checks.length>=8);
+await login('customer');await command({type:'requestResearch'});await new Promise(r=>setTimeout(r,300));assert.equal(calls,6);
+const plan=await(await req(route+'/research-plan')).json();assert.equal(plan.plan.segments.length,5);assert.ok(plan.plan.checks.length>=8);
 const doss=await(await req(route+'/research-dossier')).json();assert.equal(doss.dossier.totals.unreviewed,0,'customer dossier hides unreviewed sources');assert.match(doss.markdown,/# Research dossier/);
 await login('producer');await req('accounts',{accountId:customer.accountId});const pd=await(await req(route+'/research-dossier')).json();assert.ok(pd.dossier.totals.unreviewed>=4,'producer dossier shows every source');
 // Not ready: the reason is recorded, shown to the producer, and customers see a neutral line.

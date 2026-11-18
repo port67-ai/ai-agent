@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import PerformancePanel from '../src/components/factory/PerformancePanel';
+import { createProject } from '../src/lib/factory/engine';
+const p=createProject({business:'Shop',contact:'p@example.test',objective:'Purchases'}, {role:'operator',subject:'p',workspaceId:'w'},'p');
+const html=renderToStaticMarkup(<PerformancePanel p={p} busy={false} command={()=>{}} onCarry={()=>{}} />);
+for(const label of ['Campaign performance feedback','Record results for review','Import results for review','Carry history for review','Attribution window','publicAuthorised'])assert.ok(html.includes(label),label);
+assert.ok(!html.includes('class="f-button" disabled'));
+console.log('Performance entry, CSV, review and carry UI rendered');

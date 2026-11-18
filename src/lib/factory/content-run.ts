@@ -1,3 +1,4 @@
+import { requirePlannedTask } from "./task-plan";
 import { meteredModelCall } from "./metering";
 import { capabilityRegistry } from "./registry";
 import { access, digest, id, operator } from "./engine";
@@ -17,6 +18,7 @@ export async function runContent(repo: Repository, a: Principal, projectId: stri
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
     access(current, a);
+    requirePlannedTask(current, "draftCopyPack");
     const context = prepareContent(current);
     if (!current.assets.some((x) => x.kind === "copy" && x.strategyHash === context.strategy.hash))
       throw new Error("Create the production drafts first so the copy pack has a task to attach to");
@@ -24,7 +26,7 @@ export async function runContent(repo: Repository, a: Principal, projectId: stri
     if (current.runs.some((r) => r.status === "running")) throw new Error("A provider task is already running; wait or recover its expired lease");
     if (current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >= Math.max(1, Math.min(50, Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "12", 10) || 12)))
       throw new Error("Provider invocation cap reached for this project");
-    const run: ResearchRun = {
+    const run: ResearchRun = { ...(current.taskPlan ? { taskInputKey: current.taskPlan.researchKey } : {}),
       capabilityId: capability.id, capabilityVersion: capability.version, id: id(), stage: "content",
       at: new Date().toISOString(), status: "running", provider: selection.provider, model: selection.model,
       leaseExpiresAt: new Date(Date.now() + 120000).toISOString(), contextHash: digest(JSON.stringify(current.brief)),
@@ -46,6 +48,7 @@ export async function runContent(repo: Repository, a: Principal, projectId: stri
       record.providerRequestId = result.providerRequestId;
       let reason = result.error;
       try {
+        if (current.taskPlan && record.taskInputKey !== current.taskPlan.researchKey) throw new Error("Task plan inputs changed; no stale output accepted");
         if (record.status !== "running") throw new Error("Provider task was recovered or cancelled; no late output accepted");
         if (record.contextHash !== digest(JSON.stringify(current.brief))) throw new Error("Brief changed during drafting; no stale output accepted");
         const fresh = prepareContent(current);

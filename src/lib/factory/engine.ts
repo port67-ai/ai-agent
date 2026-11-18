@@ -1,4 +1,7 @@
+import { validatePerformance, parsePerformanceCsv } from "./performance";
+import { planningInputKey, mediumCurrent, mediumEvidenceKey } from "./planning-context";
 import { proposeIdeas, researchPack } from "./ideas";
+import { planProject, syncTaskPlan, selectedResearch, requirePlannedTask, taskResearchCurrent } from "./task-plan";
 import { STORAGE_LIMIT_BYTES, projectParts, trimRunSnapshots } from "./storage-gauge";
 import { suggestFormats, validFormats, hasVideoFormat } from "./formats";
 import { buildAdvert, advertIssues, planHash, validateContinuity, MAX_SHOT_SEC } from "./advert";
@@ -130,6 +133,14 @@ export function createProject(
     inspiration: text(input.inspiration, "inspiration", 2000),
     brandColor: text(input.brandColor, "brandColor", 7) || "#ec663c",
   };
+  if (input.workRequest !== undefined) {
+    if (input.workRequest !== "campaign" && input.workRequest !== "research") throw new Error("Unknown requested work");
+    brief.workRequest = input.workRequest;
+  }
+  if (input.requestedFormats !== undefined) {
+    if (!Array.isArray(input.requestedFormats)) throw new Error("Requested formats must be a list");
+    if (input.requestedFormats.length) brief.requestedFormats = validFormats(input.requestedFormats);
+  }
   // Optional fields are stored only when filled in, so a brief without them keeps its fingerprint and existing AI authorisation.
   for (const [key, max] of [["market", 300], ["differentiators", 1000], ["proof", 1500]] as const) {
     const value = text(input[key], key, max);
@@ -152,7 +163,7 @@ export function createProject(
     throw new Error("A valid approval contact email is required");
   if (!/^#[a-f\d]{6}$/i.test(brief.brandColor))
     throw new Error("Use a six-digit brand colour");
-  return {
+  const project: Project = {
     id: projectId,
     workspaceId: a.workspaceId,
     accountId: accountScope(a),
@@ -180,6 +191,9 @@ export function createProject(
     runs: [],
     processed: [],
   };
+  if (!a.demo && brief.workRequest && input.useAIPlanner === true) project.researchPlanning = { enabled: true, status: "pending", version: 0, history: [] };
+  if (!a.demo && brief.workRequest) planProject(project, a.subject, "Initial customer brief");
+  return project;
 }
 function latest(p: Project) {
   const s = p.strategies.at(-1);
@@ -311,7 +325,21 @@ export function transition(
     throw new Error("Customer approval identity required");
   const approver = onBehalf ? (a.subject === "port67-producer-agent" ? "AI producer (on behalf of the customer)" : `${a.subject} (on behalf of the customer)`) : a.subject;
   if (requestId && p.processed.includes(requestId)) return p;
-  if (type === "authoriseAI") {
+  if (type === "recordPerformance" || type === "importPerformance") {
+    if ((p.performance?.length || 0) >= 100) throw new Error("Performance record limit reached");
+    const rows = type === "importPerformance" ? parsePerformanceCsv(String(c.csv || "")) : [validatePerformance(c)];
+    if ((p.performance?.length || 0) + rows.length > 100) throw new Error("Performance record limit reached");
+    p.performance ||= [];
+    for (const row of rows) p.performance.push({ ...row, publicAuthorised: c.publicAuthorised === true, id: id(), status: "pending", createdAt: now(), createdBy: a.subject });
+  } else if (type === "reviewPerformance") {
+    if (c.revision !== p.revision) throw new Error("Project revision changed; reload before reviewing results");
+    if (c.status !== "accepted" && c.status !== "rejected") throw new Error("Unknown performance review status");
+    const row = p.performance?.find(r => r.id === c.id);
+    if (!row) throw new Error("Performance record not found");
+    const reason = text(c.reason, "performance review reason", 600);
+    if (!reason.trim()) throw new Error("Performance review reason is required");
+    row.status = c.status; row.reviewedAt = now(); row.reviewedBy = a.subject; row.reviewReason = reason;
+  } else if (type === "authoriseAI") {
     if (c.confirm !== true)
       throw new Error(
         "Confirm that the brief is authorised PUBLIC data before enabling AI",
@@ -322,6 +350,32 @@ export function transition(
       by: a.subject,
       at: now(),
     };
+  } else if (type === "enableAIPlanning" || type === "useRulesResearchPlan") {
+    if (p.strategies.length || p.runs.some(r => r.status === "running")) throw new Error("Planning cannot change while a task runs or after direction work begins");
+    if (type === "enableAIPlanning") p.researchPlanning = { enabled: true, status: "pending", version: p.researchPlanning?.version || 0, history: p.researchPlanning?.history || [] };
+    else {
+      if (!p.researchPlanning) throw new Error("No AI research plan to replace");
+      const reason = text(c.reason, "rules-plan reason", 600, true);
+      p.researchPlanning = { ...p.researchPlanning, status: "rules", inputKey: planningInputKey(p), version: p.researchPlanning.version + 1, error: reason };
+      delete p.scope;
+    }
+    planProject(p, a.subject, type === "enableAIPlanning" ? "Producer enabled AI research planning" : "Producer explicitly selected the rules research plan");
+    if (p.producerAgent) p.producerAgent.lastFingerprint = "";
+  } else if (type === "completeManualTask") {
+    if (!p.taskPlan || c.version !== p.taskPlan.version) throw new Error("Plan changed; refresh before completing work");
+    syncTaskPlan(p);
+    const task = p.taskPlan.tasks.find(t => t.id === c.id && t.id.startsWith("manual:"));
+    if (!task || task.status !== "manual") throw new Error("Only a ready manual production task can be completed here");
+    task.completion = { by: a.subject, at: now(), note: text(c.note, "completion note", 1000, true) };
+    p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "manual_task_completed", detail: `${task.id}: ${task.completion.note}` });
+  } else if (type === "reviseTaskPlan") {
+    if (p.strategies.length) throw new Error("Plan is locked after direction work begins; request a scoped change");
+    if (c.version !== (p.taskPlan?.version || 0)) throw new Error("Plan changed; refresh before revising it");
+    if (p.runs.some(r => r.status === "running")) throw new Error("Wait for running tasks before revising the plan");
+    const reason = text(c.reason, "plan revision reason", 600, true);
+    if (!Array.isArray(c.research) || c.research.some(s => typeof s !== "string" || !segments.includes(s as Segment))) throw new Error("Invalid research selection");
+    if (planProject(p, a.subject, reason, c.research as Segment[])) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "task_plan_revised", detail: `Plan v${p.taskPlan!.version}: ${reason}` });
+    if (p.producerAgent) p.producerAgent.lastFingerprint = "";
   } else if (type === "revokeAI") {
     delete p.aiConsent;
   } else if (type === "setChannels" || type === "requestResearch") {
@@ -375,6 +429,9 @@ export function transition(
     p.capabilities = [];
     delete p.researchRequest;
     delete p.aiConsent;
+    delete p.mediumSelection;
+    delete p.mediumDecision;
+    if (p.researchPlanning) p.researchPlanning = { enabled: true, status: "pending", version: p.researchPlanning.version, history: p.researchPlanning.history };
     delete p.scope;
     delete p.scopeHistory;
     delete p.reviews;
@@ -621,14 +678,18 @@ export function transition(
       s.approvedAt = now();
     }
   } else if (type === "produce") {
+    requirePlannedTask(p, "produce");
     const s = approved(p);
     if (p.tasks.some((t) => t.strategyId === s.id))
       throw new Error(
         "Drafts already exist for this direction; create a new direction version for rework",
       );
-    const kinds = ["svg", "motion", "copy"] as const;
+    const selected = p.taskPlan ? p.formats?.selected : undefined;
+    const kinds = (["svg", "motion", "copy"] as const).filter(kind => !selected ||
+      (kind === "svg" ? selected.includes("static") : kind === "motion" ? selected.some(f => ["motion", "video_short", "video_long", "video_ugc"].includes(f)) : selected.some(f => ["written_ad", "written_long", "video_short", "video_long", "video_ugc"].includes(f))));
     let motionTaskId = "";
-    kinds.forEach((kind, i) => {
+    kinds.forEach((kind) => {
+      const i = ["svg", "motion", "copy"].indexOf(kind);
       const task = {
         id: id(),
         role: productionCapabilities[i].name,
@@ -671,6 +732,7 @@ export function transition(
       });
     });
     // The static, side-by-side storyboard grid sits beside the motion storyboard and is produced by the same task.
+    if (motionTaskId) {
     const grid = storyboardGrid(p, s);
     p.assets.push({
       id: id(),
@@ -686,6 +748,7 @@ export function transition(
       hash: digest(grid),
       createdAt: now(),
     });
+    }
   } else if (
     type === "shareAsset" ||
     type === "approveAsset" ||
@@ -733,6 +796,15 @@ export function transition(
   } else if (type === "suggestFormats") {
     p.formats = { ...(p.formats || { selected: [] }), suggested: suggestFormats(p.channels, p.brief.objective), suggestedAt: now() };
   } else if (type === "selectFormats") {
+    if (p.researchPlanning?.enabled) {
+      if (p.runs.some(r => r.status === "running")) throw new Error("Wait for running tasks before confirming media");
+      if (c.expectedMediumVersion !== (p.mediumSelection?.version || 0) || c.expectedEvidenceHash !== digest(mediumEvidenceKey(p))) throw new Error("Medium recommendation or evidence changed; refresh before confirming formats");
+      const rationale = text(c.rationale, "medium decision rationale", 1000, true);
+      requirePlannedTask(p, "mediumSelection");
+      if (!mediumCurrent(p)) p.mediumSelection = { status: "manual", evidenceKey: mediumEvidenceKey(p), version: (p.mediumSelection?.version || 0) + 1, history: p.mediumSelection?.history || [], error: "Producer deliberately proceeded without a current AI recommendation" };
+      p.mediumDecision = { at: now(), by: a.subject, rationale, ...(mediumCurrent(p) ? { recommendationVersion: p.mediumSelection!.version } : {}), formats: validFormats(c.formats), requestedFormats: [...(p.brief.requestedFormats || [])] };
+    }
+    if (p.taskPlan && p.strategies.length) throw new Error("Formats are locked after direction work begins; request a scoped change");
     p.formats = { ...(p.formats || { suggested: suggestFormats(p.channels, p.brief.objective), suggestedAt: now() }), selected: validFormats(c.formats), decidedBy: a.subject, decidedAt: now() };
   } else if (type === "setAudiences") {
     const raw = Array.isArray(c.segments) ? c.segments : [];
@@ -817,6 +889,14 @@ export function transition(
     });
   } else throw new Error("Unsupported command");
   if (requestId) p.processed.push(requestId);
+  if (!p.strategies.length && p.researchPlanning && p.researchPlanning.inputKey && p.researchPlanning.inputKey !== planningInputKey(p)) {
+    p.researchPlanning.status = "pending";
+    delete p.researchPlanning.error;
+  }
+  if (p.taskPlan && ["updateBrief", "setChannels", "requestResearch", "selectFormats", "resetProject"].includes(type)) {
+    if (planProject(p, a.subject, `Requirements updated: ${type}`)) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "task_plan_revised", detail: `Plan v${p.taskPlan.version}: ${type}` });
+  }
+  syncTaskPlan(p);
   p.revision++;
   p.updatedAt = now();
   p.audit.push({
@@ -831,8 +911,8 @@ export function transition(
   return p;
 }
 export function researchProgress(p: Project): NonNullable<Project["researchProgress"]> {
-  return segments.map((segment) => {
-    const last = p.runs.filter((r) => r.stage === "research" && r.segment === segment).at(-1);
+  return selectedResearch(p).map((segment) => {
+    const last = p.runs.filter((r) => r.stage === "research" && r.segment === segment && taskResearchCurrent(p, r)).at(-1);
     return {
       segment,
       status: last ? last.status : ("idle" as const),
@@ -844,6 +924,8 @@ export function researchProgress(p: Project): NonNullable<Project["researchProgr
 export function projectView(input: Project, a: Principal): Project {
   access(input, a);
   const p = linkProjectOwnership(input);
+  syncTaskPlan(p);
+  if (p.taskPlan) p.taskProgress = p.taskPlan.tasks.filter(t => t.status !== "skipped").map(t => ({ id: t.id, title: t.title, status: t.status }));
   p.researchProgress = researchProgress(p);
   if (p.researchRequest && !p.runs.some((r) => (r.stage || "research") === "research")) {
     const failure = [...p.audit].reverse().find((x) => x.action === "producer_step_auto_failed" || x.action === "producer_step_auto_approved");
@@ -851,6 +933,7 @@ export function projectView(input: Project, a: Principal): Project {
     else if (autoApproveProducer()) p.researchNote = "Starting automatically.";
   }
   if (a.role === "operator") {
+    if (p.researchPlanning) p.mediumContextHash = digest(mediumEvidenceKey(p));
     p.sources = p.sources.map((s) => (s.kind === "public_source" ? { ...s, grade: gradeSource(s, gradeContext(p, s.segment)) } : s));
     p.evidence = { segments: allSegmentEvidence(p) };
     p.researchPack = researchPack(p, p.evidence.segments);
@@ -860,6 +943,12 @@ export function projectView(input: Project, a: Principal): Project {
     return p;
   }
   delete p.aiConsent;
+  delete p.taskPlan;
+  delete p.performance;
+  delete p.researchPlanning;
+  delete p.mediumSelection;
+  delete p.mediumDecision;
+  delete p.mediumContextHash;
   delete p.aiAuthorised;
   delete p.scope;
   delete p.scopeHistory;

@@ -10,6 +10,9 @@ export const segments = [
   "adjacent",
   "trends",
   "video",
+  "channel",
+  "offer",
+  "measurement",
 ] as const;
 export type Segment = (typeof segments)[number];
 export type Principal = {
@@ -27,6 +30,10 @@ export type Principal = {
   expires?: number;
 };
 export type Brief = {
+  /** Explicit requested journey; omitted on legacy projects. */
+  workRequest?: "campaign" | "research";
+  /** Customer's requested outputs; producer format confirmation remains a later gate. */
+  requestedFormats?: string[];
   business: string;
   objective: string;
   description: string;
@@ -201,11 +208,14 @@ export type Audit = {
   detail: string;
 };
 export type ResearchRun = {
+  planningContextKey?: string;
+  researchTaskKey?: string;
+  taskInputKey?: string;
   accountId?: string;
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences";
+  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences" | "planning" | "medium";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -281,6 +291,15 @@ export type Idea = {
   by?: "ai" | "rules"; status: "proposed" | "kept" | "dropped"; priority: "high" | "medium" | "low"; createdAt: string; decidedBy?: string;
 };
 export type Project = {
+  performance?: import("./performance").PerformanceRecord[];
+  researchPlanning?: import("./research-planner").ResearchPlanning;
+  mediumSelection?: import("./medium-selection").MediumSelection;
+  mediumDecision?: { at: string; by: string; rationale: string; recommendationVersion?: number; formats: string[]; requestedFormats: string[] };
+  /** Operator projection only: compact optimistic concurrency token for a medium decision. */
+  mediumContextHash?: string;
+  taskPlan?: import("./task-plan").TaskPlan;
+  /** Customer-safe progress, without agent instructions, private costs or plan history. */
+  taskProgress?: { id: string; title: string; status: string }[];
   accountId?: string;
   createdBy?: string;
   aiConsent?: {

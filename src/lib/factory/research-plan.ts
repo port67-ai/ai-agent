@@ -1,3 +1,4 @@
+import { selectedResearch } from "./task-plan";
 import { extendedResearchScope, RESEARCH_LABELS, researchDestinations } from "./research-catalog";
 import { channelById, channelNames } from "./channels";
 import { segments, type Project, type Segment } from "./model";
@@ -6,7 +7,7 @@ import { CATEGORY_LABEL, type Classification, type ResearchScope } from "./scope
 // Research preparation: decide, before any paid call, whether the brief is good enough, what each research
 // agent will be asked, and what the research will produce. Pure functions, no AI cost, safe on the client.
 export const SEGMENT_LABEL: Record<Segment, string> = RESEARCH_LABELS;
-export const SEGMENT_AGENT: Record<Segment, string> = { brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative", adjacent: "research:adjacent", trends: "research:trends", video: "research:video" };
+export const SEGMENT_AGENT: Record<Segment, string> = { channel: "research:channel", offer: "research:offer", measurement: "research:measurement", brand: "research:brand", customer: "research:customer", competitor: "research:competitor", creative: "research:creative", adjacent: "research:adjacent", trends: "research:trends", video: "research:video" };
 export type Check = { id: string; label: string; ok: boolean; level: "required" | "recommended"; fix: string };
 export type SegmentPlan = { segment: Segment; label: string; agent: string; startFrom: string[]; questions: string[]; delivers: string; /** From the stored scope: what this agent skips and how many pages it may open. */ avoid?: string[]; maxPages?: number };
 export type PlanScope = { source: ResearchScope["source"]; version: number; at: string; classification: Classification; competitorSet: string[]; note?: string };
@@ -31,8 +32,8 @@ const host = (url: string) => {
     return "";
   }
 };
-export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { scope?: ResearchScope }): ResearchPlan {
-  const raw = (p.brief || {}) as Partial<Record<string, string>>;
+export function prepareResearchPlan(p: Pick<Project, "brief" | "channels" | "taskPlan"> & { scope?: ResearchScope }): ResearchPlan {
+  const raw = (p.brief || {}) as Partial<Record<string, unknown>>;
   const b = { business: String(raw.business ?? ""), objective: String(raw.objective ?? ""), description: String(raw.description ?? ""), website: String(raw.website ?? ""), audience: String(raw.audience ?? ""), competitors: String(raw.competitors ?? ""), inspiration: String(raw.inspiration ?? "") };
   const site = host(b.website);
   const competitors = list(b.competitors);
@@ -103,7 +104,7 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { s
     },
   ];
   // A stored scope replaces the generic questions with ones matched to this kind of business.
-  for (const segment of ["adjacent", "trends", "video"] as const) {
+  for (const segment of ["adjacent", "trends", "video", "channel", "offer", "measurement"] as const) {
     const scope = extendedResearchScope(segment, b.business, channelList)!;
     plans.push({ segment, label: SEGMENT_LABEL[segment], agent: SEGMENT_AGENT[segment], startFrom: [...scope.sourceTypes, ...researchDestinations(segment, p.channels).map(d => d.name)], questions: scope.questions, delivers: segment === "video" ? "Cited video references and craft analysis; direct viewing requires the explicit Gemini action." : "Cited observations, applicability, counterexamples and gaps.", avoid: scope.avoid, maxPages: scope.maxPages });
   }
@@ -125,7 +126,7 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { s
     ready: checks.filter((c) => c.level === "required").every((c) => c.ok),
     score,
     checks,
-    segments: plans,
+    segments: plans.filter(s => selectedResearch(p).includes(s.segment)),
     ...(p.scope ? { scope: { source: p.scope.source, version: p.scope.version, at: p.scope.at, classification: p.scope.classification, competitorSet: p.scope.competitorSet, ...(p.scope.note ? { note: p.scope.note } : {}) } } : {}),
     assumptions,
     expectedOutputs: [
@@ -134,7 +135,7 @@ export function prepareResearchPlan(p: Pick<Project, "brief" | "channels"> & { s
       "A research dossier you can download, grouped by agent, before any insight is drafted",
       "Nothing is used as evidence until a producer reviews each source",
     ],
-    estimate: { runs: segments.length, inputTokensPerRun: Math.ceil((briefChars + 1800) / 4), note: "Rough size of what each research call sends. Search results add to the input and are billed by the provider." },
+    estimate: { runs: selectedResearch(p).length, inputTokensPerRun: Math.ceil((briefChars + 1800) / 4), note: "Rough size of what each research call sends. Search results add to the input and are billed by the provider." },
   };
 }
 
@@ -155,10 +156,10 @@ export type Dossier = {
 export function researchDossier(p: Project, audience: "operator" | "customer", now = new Date().toISOString()): Dossier {
   const plan = prepareResearchPlan(p);
   const visible = (s: Project["sources"][number]) => s.kind === "public_source" && (audience === "operator" || s.status === "supported");
-  const segs = segments.map((segment) => {
+  const segs = segments.filter(segment => selectedResearch(p).includes(segment) || p.sources.some(s => s.segment === segment && visible(s))).map((segment) => {
     const sources = p.sources.filter((s) => s.segment === segment && visible(s)).map((s) => ({ id: s.id, title: s.title, url: s.url, status: s.status, confidence: s.confidence, collectedAt: s.collectedAt, findings: s.findings || [], ...(s.videoAnalysis ? { videoAnalysis: s.videoAnalysis } : {}) }));
     const gaps = [...new Set(p.runs.filter((r) => r.segment === segment && r.status === "completed").flatMap((r) => r.gaps || []))].slice(0, 8);
-    return { segment, label: SEGMENT_LABEL[segment], sources, gaps, questions: plan.segments.find((x) => x.segment === segment)!.questions };
+    return { segment, label: SEGMENT_LABEL[segment], sources, gaps, questions: plan.segments.find((x) => x.segment === segment)?.questions || [] };
   });
   const all = segs.flatMap((s) => s.sources);
   const totals = {

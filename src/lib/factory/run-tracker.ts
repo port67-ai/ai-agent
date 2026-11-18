@@ -1,3 +1,4 @@
+import { syncTaskPlan } from "./task-plan";
 import type { Project, Segment } from "./model";
 import { MIN_ACCEPTED_PER_SEGMENT } from "./producer-reviews";
 
@@ -16,6 +17,17 @@ const SEGS: Segment[] = ["brand", "customer", "competitor", "creative", "adjacen
 const CORE = new Set<Segment>(["brand", "customer", "competitor", "creative"]);
 
 export function runTracker(p: Project): TrackStep[] {
+  if (p.taskPlan) {
+    const copy = structuredClone(p);
+    syncTaskPlan(copy);
+    const states = { done: "done", running: "running", blocked: "paused", waiting_approval: "waiting_approval", pending: "pending", ready: "pending", manual: "paused", skipped: "pending" } as const;
+    return copy.taskPlan!.tasks.filter(t => t.status !== "skipped").map(t => {
+      const tab = t.id.startsWith("research:") || ["planResearch", "scope", "reviewSources", "draftInsights", "reviewInsights"].includes(t.id) ? "research" : ["mediumSelection", "formats", "draftDirection", "reviewDirection", "approveDirection"].includes(t.id) ? "direction" : "assets";
+      const ai = ({ draftInsights: "insights", draftDirection: "strategy", draftCopyPack: "content" } as const)[t.id as "draftInsights" | "draftDirection" | "draftCopyPack"];
+      const act = t.id === "reviewSources" && p.sources.some(s => s.status === "unreviewed") ? "review_sources" : t.id === "reviewInsights" && p.insights.some(i => i.status === "draft") ? "review_insights" : t.id === "approveDirection" && p.strategies.at(-1)?.status === "shared" ? "approve_direction" : undefined;
+      return { id: t.id, label: t.title, state: states[t.status], detail: t.detail || t.reason, tab, ...(ai && ["ready", "blocked"].includes(t.status) ? { ai } : {}), ...(act ? { act } : {}) };
+    });
+  }
   const out: TrackStep[] = [];
   const st = p.producerAgent;
   const runs = p.runs || [];

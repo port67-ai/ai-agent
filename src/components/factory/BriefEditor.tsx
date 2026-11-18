@@ -1,4 +1,5 @@
 "use client";
+import { WorkRequestField } from "./TaskPlan";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { Field, fields, Actions } from "./shared";
@@ -45,6 +46,7 @@ export default function BriefEditor({
             />
           </Field>
         </div>
+        <WorkRequestField initial={p.brief.workRequest} initialFormats={p.brief.requestedFormats} />
         <Field label="Your objective">
           <textarea
             name="objective"

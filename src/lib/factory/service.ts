@@ -1,3 +1,7 @@
+import { performanceHistory } from "./performance";
+import { runResearchPlanning, runMediumSelection } from "./planning-run";
+import { researchTaskKey } from "./planning-context";
+import { selectedResearch, taskResearchCurrent, syncTaskPlan, requirePlannedTask } from "./task-plan";
 import { youtubeVideoUrl } from "./public-video";
 import { researchContextHash } from "./research-catalog";
 import { allSegmentEvidence } from "./evidence";
@@ -230,7 +234,11 @@ async function seed(a: Principal) {
   });
 }
 async function runResearchSegment(a: Principal, projectId: string, segment: Segment, guidance?: string, videoUrl?: string) {
-  requireProviderConsent(find((await repo(a).read(a.workspaceId)).projects, projectId, a));
+  let initial = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
+  requireProviderConsent(initial);
+  if (initial.researchPlanning?.enabled) { await runResearchPlanning(repo(a), a, projectId); initial = find((await repo(a).read(a.workspaceId)).projects, projectId, a); }
+  if (!selectedResearch(initial).includes(segment)) throw new Error("This research agent is excluded from the project task plan; revise the plan first");
+  requireProviderConsent(initial);
   // Classify the business once per brief so each researcher gets a narrow, business-specific ask. Never blocks research.
   await ensureScope(repo(a), a, projectId);
   if (producerAgentAuto()) await reviewScopeBeforeResearch(repo(a), a, projectId);
@@ -247,6 +255,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
       model: selection.model,
       leaseExpiresAt: new Date(Date.now() + 120000).toISOString(),
       contextHash: digest(researchContextHash(p)),
+      ...(p.taskPlan ? { taskInputKey: p.taskPlan.researchKey, researchTaskKey: researchTaskKey(p, segment) } : {}),
       capabilityId: `research.${segment}`, capabilityVersion: "2.0.0", inputHash: digest(researchContextHash(p)),
       contextSnapshot: structuredClone(p.brief),
       contextBundle: JSON.parse(researchContextHash(p)),
@@ -255,6 +264,8 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
     await repo(a).mutate(a.workspaceId, (state) => {
       const current = find(state.projects, projectId, a);
       requireProviderConsent(current);
+      requirePlannedTask(current, "research:" + segment);
+      if (!selectedResearch(current).includes(segment) || !taskResearchCurrent(current, run)) throw new Error("Research task plan changed; refresh before execution");
       if (digest(researchContextHash(current)) !== run.contextHash)
         throw new Error(
           "Brief changed before research reservation; refresh and authorise the current context",
@@ -294,7 +305,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
         const contextError =
           record.status !== "running"
             ? "Research task was recovered or cancelled; no late findings accepted"
-            : !hasProviderConsent(current) ||
+            : !taskResearchCurrent(current, record) || !hasProviderConsent(current) ||
                 record.contextHash !== digest(researchContextHash(current))
               ? "Research context or authorisation changed; no stale findings accepted"
               : "";
@@ -367,7 +378,7 @@ async function autoStartResearch(a: Principal, projectId: string) {
     const op: Principal = { ...a, role: "operator", subject: AUTO_APPROVER, admin: false };
     const r = repo(op);
     const before = find((await r.read(op.workspaceId)).projects, projectId, op);
-    if (!before.researchRequest || before.runs.some((x) => (x.stage || "research") === "research")) return;
+    if (!before.researchRequest || before.runs.some((x) => (x.stage || "research") === "research" && taskResearchCurrent(before, x))) return;
     // After a failed attempt wait two minutes so a polling page does not retry on every refresh.
     const lastFail = [...before.audit].reverse().find((x) => x.action === "producer_step_auto_failed");
     if (lastFail && Date.parse(lastFail.at) + 120000 > Date.now()) return;
@@ -382,7 +393,9 @@ async function autoStartResearch(a: Principal, projectId: string) {
       next.audit.push({ id: id(), at: new Date().toISOString(), actor: AUTO_APPROVER, role: "operator", action: "producer_step_auto_approved", detail: "Public-data authorisation and research start approved automatically (test mode)" });
       state.projects[index] = next;
     });
-    for (const segment of segments) {
+    if (before.researchPlanning?.enabled) await runResearchPlanning(r, op, projectId);
+    const planned = find((await r.read(op.workspaceId)).projects, projectId, op);
+    for (const segment of selectedResearch(planned)) {
       try {
         await runResearchSegment(op, projectId, segment);
       } catch (error) {
@@ -650,7 +663,7 @@ export async function handleFactory(
     }
     if (route === "projects" && request.method === "POST") {
       if(!canCreateProject(a)) operator(a);
-      const p = createProject(data, a);
+      const p = createProject({ ...data, workRequest: data.workRequest ?? "campaign", useAIPlanner: data.workRequest !== undefined && data.useAIPlanner !== false }, a);
       await repo(a).mutate(a.workspaceId, (db) => {
         if (db.projects.length >= 20)
           throw new Error("Workspace project limit reached");
@@ -668,6 +681,35 @@ export async function handleFactory(
         // The producer orchestrator resumes on a view too (skipped when nothing changed), so a missed kick never leaves a step waiting.
         if (p.runs.length && !p.runs.some((r) => r.status === "running")) kickProducerAgent(a, projectId, "project view");
         return json({ project: projectView(p, a) });
+      }
+      if (path[2] === "performance-history" && request.method === "POST") {
+        operator(a);
+        const sourceId = text(data.sourceProjectId, "source project", 100, true);
+        if (sourceId === projectId) throw new Error("Choose another campaign");
+        const project = await repo(a).mutate(a.workspaceId, state => {
+          const source = find(state.projects, sourceId, a);
+          const target = find(state.projects, projectId, a);
+          if (source.accountId !== target.accountId) throw new Error("Campaign history must stay within its account");
+          const history = performanceHistory(source).filter(row => !target.performance?.some(r => r.provenance.startsWith(`Carried from project ${sourceId}, record ${row.id}: `)));
+          if (!history.length) throw new Error("No new accepted authorised performance records in that campaign");
+          let next = target;
+          for (const row of history) next = transition(next, { ...row, type: "recordPerformance", publicAuthorised: true, provenance: (`Carried from project ${sourceId}, record ${row.id}: ` + row.provenance).slice(0,600) }, a);
+          state.projects[state.projects.findIndex(x => x.id === projectId)] = next;
+          return next;
+        });
+        return json({ project: projectView(project, a) });
+      }
+      if (path[2] === "planning" && request.method === "POST") {
+        operator(a);
+        if (data.kind !== "research" && data.kind !== "medium") throw new Error("Unknown planning task");
+        const project = data.kind === "research" ? await runResearchPlanning(repo(a), a, projectId, { force: data.retry === true, feedback: text(data.feedback, "planning feedback", 1000) }) : await runMediumSelection(repo(a), a, projectId, { force: data.retry === true });
+        return json({ project: projectView(project, a) });
+      }
+      if (path[2] === "task-plan" && request.method === "GET") {
+        operator(a);
+        const project = structuredClone(p);
+        syncTaskPlan(project);
+        return json({ plan: project.taskPlan || null });
       }
       if (path[2] === "research-plan" && request.method === "GET")
         return json({ plan: prepareResearchPlan(a.role === "operator" ? p : { ...p, scope: undefined }) });
