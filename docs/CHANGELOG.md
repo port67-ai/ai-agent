@@ -502,6 +502,7 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 
 ## CHG-0089 - 2026-11-18 - One numbered Task planner on the Overview
 - What/why: the Overview stacked Performance feedback, a Project task plan table with its own buttons, an AI research planning callout and a separate filtered task list, so it was unclear where the project was or what to press. It is now one Task planner: all active tasks in order, numbered with letters for parallel research and production items, each marked AI agent or Review with its status, a button or jump link, and expandable why/dependencies/manual completion. A single Run ready tasks button replaces the table header button; progress bar and next-action banner on top; AI research planning, agent selection and history are folded under Plan settings (opens by itself if planning failed). Performance feedback panel removed from the Overview.
+- Follow-up: the AI plans relevant research row now has Retry AI plan (paid) and Use rules plan instead buttons on the row itself, so a provider 503 is fixed where it shows.
 - Requirements: FAC-OVR-003 (new). PRD impact: added.
 - Tests: tracker numbering and plan-project rows; browser fixture updated to the new planner (not run here: needs a server and Playwright); suite passing.
 
