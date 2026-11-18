@@ -4,7 +4,7 @@ import { MIN_ACCEPTED_PER_SEGMENT } from "./producer-reviews";
 
 // Where a project is in its run: what has run, what is running, what is paused and what is waiting for an approval. Computed from the
 // project, never stored. `tab` names the page where the person acts (the portal turns it into a link).
-export type StepState = "done" | "running" | "paused" | "waiting_approval" | "pending";
+export type StepState = "done" | "running" | "paused" | "waiting_approval" | "ready" | "pending";
 /** Who has to act: the AI is working ("AI"), or a producer or admin must press something ("Producer"). Done and not-yet-started steps have no actor. */
 export type Who = "AI" | "Producer";
 /** "agent": an AI agent does the work. "review": a person reviews, chooses or approves. */
@@ -12,7 +12,7 @@ export type StepKind = "agent" | "review";
 export type AiStage = "insights" | "formats" | "audiences" | "strategy" | "content";
 export type StepAct = "share_direction" | "approve_direction" | "review_sources" | "review_insights";
 /** `ai` names an AI generation a producer can start from the row; `act` names a human decision (share or approve) the row can take. */
-export type TrackStep = { id: string; label: string; state: StepState; detail: string; tab?: "research" | "direction" | "assets" | "advert"; ai?: AiStage; act?: StepAct; who?: Who; kind?: StepKind; anchor?: string };
+export type TrackStep = { id: string; label: string; state: StepState; detail: string; tab?: "research" | "direction" | "assets" | "advert"; ai?: AiStage; act?: StepAct; who?: Who; kind?: StepKind; anchor?: string; no?: string; taskId?: string };
 const SEGS: Segment[] = ["brand", "customer", "competitor", "creative", "adjacent", "trends", "video"];
 const CORE = new Set<Segment>(["brand", "customer", "competitor", "creative"]);
 
@@ -20,13 +20,19 @@ export function runTracker(p: Project): TrackStep[] {
   if (p.taskPlan) {
     const copy = structuredClone(p);
     syncTaskPlan(copy);
-    const states = { done: "done", running: "running", blocked: "paused", waiting_approval: "waiting_approval", pending: "pending", ready: "pending", manual: "paused", skipped: "pending" } as const;
-    return copy.taskPlan!.tasks.filter(t => t.status !== "skipped").map(t => {
+    const states = { done: "done", running: "running", blocked: "paused", waiting_approval: "waiting_approval", pending: "pending", ready: "ready", manual: "paused", skipped: "pending" } as const;
+    const PEOPLE = new Set(["reviewSources", "reviewInsights", "formats", "approveDirection", "shareAssets", "assetApproval"]);
+    const rows = copy.taskPlan!.tasks.filter(t => t.status !== "skipped").map((t): TrackStep => {
       const tab = t.id.startsWith("research:") || ["planResearch", "scope", "reviewSources", "draftInsights", "reviewInsights"].includes(t.id) ? "research" : ["mediumSelection", "formats", "draftDirection", "reviewDirection", "approveDirection"].includes(t.id) ? "direction" : "assets";
       const ai = ({ draftInsights: "insights", draftDirection: "strategy", draftCopyPack: "content" } as const)[t.id as "draftInsights" | "draftDirection" | "draftCopyPack"];
       const act = t.id === "reviewSources" && p.sources.some(s => s.status === "unreviewed") ? "review_sources" : t.id === "reviewInsights" && p.insights.some(i => i.status === "draft") ? "review_insights" : t.id === "approveDirection" && p.strategies.at(-1)?.status === "shared" ? "approve_direction" : undefined;
-      return { id: t.id, label: t.title, state: states[t.status], detail: t.detail || t.reason, tab, ...(ai && ["ready", "blocked"].includes(t.status) ? { ai } : {}), ...(act ? { act } : {}) };
+      const kind: StepKind = PEOPLE.has(t.id) || t.id.startsWith("manual:") ? "review" : "agent";
+      const state = states[t.status];
+      const detail = t.status === "ready" ? "Ready: press Run ready tasks" : t.detail || t.reason;
+      const anchor = t.id === "formats" ? "formats-anchor" : t.id === "approveDirection" ? "approval-anchor" : undefined;
+      return { id: t.id, taskId: t.id, label: t.title, state, detail, tab, kind, anchor, who: state === "running" ? "AI" : state === "paused" || state === "waiting_approval" || state === "ready" ? "Producer" : undefined, ...(ai && ["ready", "blocked"].includes(t.status) ? { ai } : {}), ...(act ? { act } : {}) };
     });
+    return numberSteps(rows);
   }
   const out: TrackStep[] = [];
   const st = p.producerAgent;
@@ -80,7 +86,22 @@ export function runTracker(p: Project): TrackStep[] {
   const ANCHOR: Record<string, string> = { formats: "formats-anchor", "formats-suggest": "formats-anchor", audiences: "audiences-anchor", "audiences-suggest": "audiences-anchor", "direction-approval": "approval-anchor" };
   for (const x of out) { x.kind = REVIEW.has(x.id) ? "review" : "agent"; x.anchor = ANCHOR[x.id]; }
   for (const x of out) x.who = x.state === "running" ? "AI" : x.state === "paused" || x.state === "waiting_approval" ? "Producer" : undefined;
-  return out;
+  return numberSteps(out);
+}
+
+/** 1, 2, 3 for the main steps; 3A, 3B, 3C for the parallel research agents and for the production items under their parent. */
+export function numberSteps(rows: TrackStep[]): TrackStep[] {
+  let n = 0;
+  let letter = 0;
+  let group = "";
+  for (const r of rows) {
+    const g = r.id.startsWith("research:") ? "research" : r.id.startsWith("production:") || r.id === "draftCopyPack" || r.id.startsWith("manual:") ? "production" : "";
+    if (g && g === group) { letter++; r.no = `${n}${String.fromCharCode(65 + letter)}`; continue; }
+    if (g === "research") { n++; letter = 0; group = g; r.no = `${n}A`; continue; }
+    if (g === "production") { letter = 0; group = g; r.no = `${n}A`; continue; }
+    n++; letter = 0; group = ""; r.no = String(n);
+  }
+  return rows;
 }
 
 export type NextAction = { id: string; label: string; who: Who | "Nobody"; text: string; tab?: TrackStep["tab"] };
@@ -90,6 +111,8 @@ export function nextAction(steps: TrackStep[]): NextAction {
   if (need) return { id: need.id, label: need.label, who: "Producer", text: need.detail, tab: need.tab };
   const run = steps.find((x) => x.state === "running");
   if (run) return { id: run.id, label: run.label, who: "AI", text: `${run.label} is running. Nothing to press.` };
+  const ready = steps.find((x) => x.state === "ready");
+  if (ready) return { id: ready.id, label: ready.label, who: "Producer", text: `Press Run ready tasks to start ${ready.label}.`, tab: ready.tab };
   const todo = steps.find((x) => x.state === "pending");
   if (todo) return { id: todo.id, label: todo.label, who: "Nobody", text: `Next stage: ${todo.label}. ${todo.detail}` };
   return { id: "done", label: "Finished", who: "Nobody", text: "Every stage is done." };

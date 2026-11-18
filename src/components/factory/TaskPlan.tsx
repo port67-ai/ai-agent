@@ -5,13 +5,22 @@ import type { TaskStatus } from "@/lib/factory/task-plan";
 import { FORMATS } from "@/lib/factory/formats";
 
 const STATUS: Record<TaskStatus, string> = { pending: "Waiting for dependencies", ready: "Ready", running: "Running", blocked: "Needs attention", waiting_approval: "Waiting for approval", done: "Done", skipped: "Not selected", manual: "Producer action" };
-type Props = { p: Project; operator: boolean; busy: boolean; command: (c: Record<string, unknown>, message: string) => unknown; onRun?: () => void; onPlanning?: OnPlanning };
-export default function TaskPlanPanel({ p, operator, busy, command, onRun, onPlanning }: Props) {
+type Props = { settingsOnly?: boolean; p: Project; operator: boolean; busy: boolean; command: (c: Record<string, unknown>, message: string) => unknown; onRun?: () => void; onPlanning?: OnPlanning };
+export default function TaskPlanPanel({ settingsOnly, p, operator, busy, command, onRun, onPlanning }: Props) {
   if (!operator) return p.taskProgress ? <section className="f-panel" aria-label="Project progress"><h2>Project progress</h2><ol>{p.taskProgress.map(t => <li key={t.id}>{t.title}: {STATUS[t.status as TaskStatus] || t.status}</li>)}</ol></section> : null;
   const plan = p.taskPlan;
   if (!plan) return <section className="f-panel"><h2>Project task plan</h2><p>This project uses its existing workflow. Adopt a task plan before direction work begins to select relevant agents.</p>{!p.strategies.length && <button className="f-button" disabled={busy} onClick={() => void command({ type: "reviseTaskPlan", version: 0, research: ["brand", "customer", "competitor", "creative"], reason: "Producer adopted a project task plan" }, "Project task plan created")}>Create project task plan</button>}</section>;
   const active = plan.tasks.filter(t => t.status !== "skipped");
   const done = active.filter(t => t.status === "done").length;
+  if (settingsOnly) return <details className="f-plan-settings" open={p.researchPlanning?.status === "failed"}><summary><strong>Plan settings</strong>: AI research planning, agent selection, history</summary>
+    <PlanningPanel p={p} busy={busy} command={command} onRun={onPlanning} />
+    <details><summary>Plan details: why these agents</summary><p className="f-small">{plan.reason}. Agents run only when their dependencies and the existing authorisation, budget and approval gates pass. Task tracking is free; AI planning and recommendations are metered model calls.</p>{plan.clarifications.map(q => <p key={q} className="f-callout">{q}</p>)}</details>
+    {!p.strategies.length && <details><summary>Choose relevant research agents</summary><p className="f-small">The initial selection comes from the brief and channels. Change it with a reason when the customer needs something different. Business and customer evidence remain required.</p><form key={`${p.id}:${plan.version}`} onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); void command({ type: "reviseTaskPlan", version: plan.version, research: form.getAll("research"), reason: String(form.get("reason") || "") }, "Project task plan revised"); }}>
+      {plan.tasks.filter(t => t.id.startsWith("research:")).map(t => { const s = t.id.slice(9); const required = s === "brand" || s === "customer"; return <label key={t.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" name="research" value={s} defaultChecked={plan.research.includes(s as typeof plan.research[number])} disabled={required} /> {required && <input type="hidden" name="research" value={s} />}{t.title} — {t.reason}</label>; })}
+      <label className="f-field"><span>Reason for this selection</span><textarea name="reason" required maxLength={600} /></label><button className="f-button" disabled={busy || p.runs.some(r => r.status === "running")}>Save agent selection</button>
+    </form></details>}
+    {!!plan.history.length && <details><summary>Plan history ({plan.history.length})</summary><ul>{[...plan.history].reverse().map(h => <li key={h.version}>Version {h.version}: {h.reason} · {h.research.join(", ")} · {h.done.length} completed tasks preserved in history</li>)}</ul></details>}
+  </details>;
   return <section className="f-panel" aria-label="Project task plan">
     <div className="f-section-heading"><div><h2>Project task plan</h2><p className="f-small">Plan version {plan.version} · {done} of {active.length} tasks done · {plan.research.length} research agents selected · {plan.mode === "research" ? "Research and insights only" : "Managed campaign"}</p></div>{onRun && <button className="f-button" disabled={busy || p.runs.some(r => r.status === "running")} onClick={onRun}>Run ready tasks</button>}</div>
     <PlanningPanel p={p} busy={busy} command={command} onRun={onPlanning} />

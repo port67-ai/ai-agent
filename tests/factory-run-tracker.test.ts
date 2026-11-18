@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { nextAction, runTracker } from "../src/lib/factory/run-tracker";
 import { focusMarks, projectLines } from "../src/lib/factory/focus-map";
+import { numberSteps } from "../src/lib/factory/run-tracker";
 import type { Project } from "../src/lib/factory/model";
 
 const at = "2026-11-15T00:00:00Z";
@@ -102,4 +103,12 @@ console.log("Run tracker: running, done, paused with reason, and waiting-for-app
   assert.equal(by(q, "formats").state, "paused");
   assert.equal(by(q, "direction-approval").anchor, "approval-anchor");
   console.log("Run tracker deliverables kinds and anchors passed");
+}
+
+// Numbering: 1, 2, 3A, 3B for parallel research; letters also sit under the production parent.
+{
+  const mk = (id: string) => ({ id, label: id, state: "pending", detail: "" }) as never;
+  const rows = numberSteps(["planResearch", "scope", "research:brand", "research:customer", "reviewSources", "produce", "production:svg", "draftCopyPack", "shareAssets"].map(mk));
+  assert.deepEqual(rows.map((r) => r.no), ["1", "2", "3A", "3B", "4", "5", "5A", "5B", "6"]);
+  console.log("Run tracker numbering passed");
 }

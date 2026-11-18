@@ -1822,3 +1822,10 @@
   .f-campaign-plan .f-button { white-space: normal; max-width: 100%; text-align: left; }
   .f-campaign-plan .f-button svg { flex-shrink: 0; }
 }
+
+.f-progress{height:6px;border-radius:999px;background:rgba(148,163,184,.25);margin:4px 0 10px;overflow:hidden}
+.f-progress span{display:block;height:100%;background:#34d399}
+.f-deliverable.child{padding-left:22px}
+.f-deliverable-more{grid-column:2 / -1;color:#64748b}
+.f-deliverable-more summary{cursor:pointer;font-size:12px}
+.f-deliverable[data-state="ready"] .f-deliverable-name{color:#0284c7}

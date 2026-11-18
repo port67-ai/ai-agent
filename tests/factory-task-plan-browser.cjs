@@ -27,7 +27,8 @@ const { createProject, transition, projectView } = require("../src/lib/factory/e
     await page.goto((process.env.PORT67_TEST_ORIGIN || "http://localhost:3000") + "/portal");
     const panel = page.getByRole("region", { name: "Project task plan", exact: true });
     await panel.getByText("Plan version 1", { exact: false }).waitFor();
-    assert.equal(await panel.getByRole("row").count(), project.taskPlan.tasks.length + 1);
+    assert.equal(await panel.locator("li[data-task]").count(), project.taskPlan.tasks.filter(t => t.status !== "skipped").length);
+    await panel.getByText("Plan settings", { exact: false }).click();
     await panel.getByText("Choose relevant research agents", { exact: true }).click();
     const video = panel.getByRole("checkbox", { name: /^Video research/ });
     assert.equal(await video.isChecked(), false);
