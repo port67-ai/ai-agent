@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {providerSelection, providerConfigured, safeProviderConfiguration, invokeProvider} from '../src/lib/factory/providers';
 async function main(){
+process.env.PORT67_PROVIDER_RETRY='off';
 assert.throws(()=>providerSelection('research',{PORT67_RESEARCH_PROVIDER:'deepseek'}),/grounded/);
 assert.equal(providerConfigured('synthesis',{}),false);
 for(const provider of ['openai','anthropic','deepseek','gemini']){
@@ -30,5 +31,16 @@ globalThis.fetch=async()=>Response.json({usage:{input_tokens:100,output_tokens:5
 const creation=await invokeProvider({provider:'anthropic',model:'test',key:'secret'},{instructions:'safe',input:'test'});assert.equal(creation.usage.input_tokens,120);
 globalThis.fetch=async()=>Response.json({usageMetadata:{promptTokenCount:10,candidatesTokenCount:2},candidates:[{content:{parts:[{text:'test'}]}}]});
 const incomplete=await invokeProvider({provider:'gemini',model:'test',key:'secret'},{instructions:'safe',input:'test',research:true});assert.equal(incomplete.usage.tool_usage_unknown,1);
+// A briefly overloaded provider (503) is retried, and a persistent one still fails with its own message.
+delete process.env.PORT67_PROVIDER_RETRY;
+process.env.PORT67_PROVIDER_RETRY_MS='1,1';
+let tries=0;
+globalThis.fetch=async()=>{tries++;return tries<3?Response.json({error:{message:'This model is currently experiencing high demand.'}},{status:503}):Response.json({output:[{content:[{type:'output_text',text:'{}'}]}],usage:{input_tokens:1,output_tokens:1}})};
+const recovered=await invokeProvider({provider:'openai',model:'m',key:'secret'},{instructions:'x',input:'y'});assert.equal(recovered.error,undefined);assert.equal(tries,3);
+tries=0;globalThis.fetch=async()=>{tries++;return Response.json({error:{message:'This model is currently experiencing high demand.'}},{status:503})};
+const stuck=await invokeProvider({provider:'openai',model:'m',key:'secret'},{instructions:'x',input:'y'});assert.match(stuck.error!,/503: This model is currently experiencing high demand/);assert.equal(tries,3);
+tries=0;globalThis.fetch=async()=>{tries++;return Response.json({error:{message:'bad key'}},{status:401})};
+await invokeProvider({provider:'openai',model:'m',key:'secret'},{instructions:'x',input:'y'});assert.equal(tries,1,'authentication errors are not retried');
+delete process.env.PORT67_PROVIDER_RETRY_MS;
 console.log('provider adapters passed');}
 main().catch(e=>{console.error(e);process.exitCode=1});
