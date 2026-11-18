@@ -11,9 +11,9 @@ const TONE: Record<StepState, string> = { done: "#34d399", running: "#60a5fa", p
 /** One line per stage of the run: what has run, what is running, what is paused and what waits for a person. Waiting steps link to the page with the button. */
 const AI_LABEL: Record<AiStage, string> = { insights: "Draft insights with AI", formats: "Suggest formats with AI", audiences: "Suggest strapline and audiences with AI", strategy: "Draft direction with AI", content: "Draft copy pack with AI" };
 type Tab = "research" | "direction" | "assets" | "advert";
-type Props = { settings?: ReactNode; onRunReady?: () => void; command?: (c: Record<string, unknown>, message: string) => unknown; p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; onProducer?: () => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
+type Props = { onPlanning?: (kind: "research" | "medium", retry: boolean, feedback?: string) => unknown; settings?: ReactNode; onRunReady?: () => void; command?: (c: Record<string, unknown>, message: string) => unknown; p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; onProducer?: () => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
 /** The overview's single sheet: every deliverable top to bottom, AI agent steps and human review steps, each with the button or link that does it. */
-export default function RunTracker({ settings, onRunReady, command, onProducer, p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
+export default function RunTracker({ onPlanning, settings, onRunReady, command, onProducer, p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
   const steps = runTracker(p);
   const allSteps = steps;
   const readyCount = steps.filter((s) => s.state === "ready").length;
@@ -70,7 +70,13 @@ export default function RunTracker({ settings, onRunReady, command, onProducer, 
                   <button type="button" className="f-button small" disabled={busy} onClick={() => onAct("approve_direction")}>Approve direction</button>
                 )}
                 {s.state === "done" && s.id === "direction-approval" && <span className="f-button small done" aria-label="Approved">Approved</span>}
-                {needs && !s.ai && !s.act && open(s.kind === "review" ? "Open to complete" : "Open")}
+                {s.id === "planResearch" && needs && onPlanning && (
+                  <>
+                    <button type="button" className="f-button small" disabled={busy || !p.aiAuthorised || !p.channels?.length} title={!p.aiAuthorised ? "Authorise public project data first" : !p.channels?.length ? "Choose launch channels first" : "Runs the AI research planner again (one paid model call)"} onClick={() => void onPlanning("research", true, "")}>Retry AI plan (paid)</button>
+                    <button type="button" className="f-button secondary small" onClick={() => { const d = document.getElementById("plan-settings") as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); } }}>Use rules plan instead</button>
+                  </>
+                )}
+                {needs && s.id !== "planResearch" && !s.ai && !s.act && open(s.kind === "review" ? "Open to complete" : "Open")}
                 {needs && s.act === "approve_direction" && open("Open the direction")}
                 {s.state === "done" && s.tab && <button type="button" className="f-text-button" onClick={() => go?.(s.tab!, s.anchor)} hidden={!go}>View</button>}
               </span>

@@ -554,6 +554,7 @@ export default function Portal() {
                   {operator && (
                     <RunTracker
                       command={command}
+                      onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")}
                       onRunReady={p.taskPlan && !principal.demo ? (() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.")) : undefined}
                       settings={p.taskPlan ? <TaskPlanPanel settingsOnly p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} /> : undefined}
                       onProducer={() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Automatic checks re-run. The list below shows the result.")}
