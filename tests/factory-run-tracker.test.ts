@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { runTracker } from "../src/lib/factory/run-tracker";
+import { nextAction, runTracker } from "../src/lib/factory/run-tracker";
+import { focusMarks, projectLines } from "../src/lib/factory/focus-map";
 import type { Project } from "../src/lib/factory/model";
 
 const at = "2026-11-15T00:00:00Z";
@@ -44,7 +45,7 @@ console.log("Run tracker: running, done, paused with reason, and waiting-for-app
 // row actions: AI generation and the human decisions are offered on the row where they belong
 {
   const base = { runs: [], sources: [{ id: "s", kind: "public_source", status: "supported", segment: "brand" }], insights: [{ id: "i", status: "reviewed" }], assets: [], strategies: [], formats: { selected: ["static"], suggested: [], suggestedAt: "", decidedAt: "x" } } as unknown as Project;
-  assert.equal(by(base, "audiences").ai, "audiences");
+  assert.equal(by(base, "audiences-suggest").ai, "audiences");
   assert.equal(by(base, "direction").ai, "strategy");
   const shared = { ...base, audiences: { strapline: "S", segments: [] }, strategies: [{ status: "shared", version: 1, hash: "h" }] } as unknown as Project;
   assert.equal(by(shared, "direction-approval").act, "approve_direction");
@@ -60,4 +61,45 @@ console.log("Run tracker: running, done, paused with reason, and waiting-for-app
   assert.equal(by(mk("supported", "draft"), "insights").act, "review_insights");
   assert.equal(by(mk("supported", "reviewed"), "sources").act, undefined);
   console.log("Run tracker review actions passed");
+}
+
+// a stale AI-producer hold must not keep a step paused once a person has decided the sources
+{
+  const mk = (status: string) => ({ runs: [], producerAgent: { hold: { gate: "sources", subject: "x", notes: "The source producer left 1 of 28 sources undecided: review them by hand." } }, sources: [{ id: "s1", kind: "public_source", status, segment: "brand" }, { id: "s2", kind: "public_source", status: "supported", segment: "brand" }, { id: "s3", kind: "public_source", status: "supported", segment: "brand" }], insights: [], assets: [], strategies: [] }) as unknown as Project;
+  assert.equal(by(mk("unreviewed"), "sources").state, "paused");
+  assert.match(by(mk("unreviewed"), "sources").detail, /1 of 3 sources are waiting for you/);
+  assert.equal(by(mk("unreviewed"), "sources").act, "review_sources");
+  assert.equal(by(mk("supported"), "sources").state, "done", "stale hold ignored once nothing is undecided");
+  console.log("Run tracker stale hold passed");
+}
+
+// Next action and the project's marks on the system map: who has to press what.
+{
+  const q = { brief: { business: "Harry" }, runs: [], sources: [{ kind: "public_source", segment: "brand", status: "unreviewed" }], insights: [], strategies: [], assets: [] } as unknown as Project;
+  const n = nextAction(runTracker(q));
+  assert.equal(n.who, "Producer");
+  assert.equal(n.id, "sources");
+  assert.equal(focusMarks(q)["review:sources"].text, "YOUR TURN");
+  assert.equal(by(q, "sources").who, "Producer");
+  q.strategies.push({ status: "shared", hash: "h", version: 1 } as never);
+  assert.match(by(q, "direction-approval").detail, /producer/i, "the account level is paused: a producer approves");
+  const running = { runs: [{ id: "r", stage: "research", segment: "brand", status: "running", at: "2026-11-15T00:00:00Z" }], sources: [], insights: [], strategies: [], assets: [] } as unknown as Project;
+  assert.equal(nextAction(runTracker(running)).who, "AI");
+  assert.equal(focusMarks(running)["research:brand"].tone, "ai");
+  assert.deepEqual(projectLines([q]).map((l) => [l.name, l.who]), [["Harry", "Producer"]]);
+  console.log("Run tracker next action and map marks passed");
+}
+
+// Every row is either an AI agent step or a review step, and review rows that need a person point at their section.
+{
+  const q = { brief: { business: "H" }, runs: [], sources: [{ kind: "public_source", segment: "brand", status: "supported" }], insights: [{ status: "reviewed" }], strategies: [], assets: [] } as unknown as Project;
+  const steps = runTracker(q);
+  assert.ok(steps.every((s) => s.kind === "agent" || s.kind === "review"));
+  assert.deepEqual(steps.filter((s) => s.kind === "review").map((s) => s.id), ["sources", "insights", "formats", "audiences", "direction-approval", "asset-approval"]);
+  assert.equal(by(q, "formats-suggest").kind, "agent");
+  assert.equal(by(q, "formats-suggest").ai, "formats");
+  assert.equal(by(q, "formats").anchor, "formats-anchor");
+  assert.equal(by(q, "formats").state, "paused");
+  assert.equal(by(q, "direction-approval").anchor, "approval-anchor");
+  console.log("Run tracker deliverables kinds and anchors passed");
 }

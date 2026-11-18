@@ -37,18 +37,19 @@ q.sources.find((s) => s.id === 's2')!.status = 'supported';
 q = tr(q, { type: 'reviewAllInsights', confirm: true }, op);
 assert.equal(q.insights[2].status, 'reviewed');
 assert.throws(() => tr(q, { type: 'reviewAllInsights', confirm: true }, op), /No draft insights/, 'nothing waiting: nothing happens');
-// Customer approvals: producers are refused unless test mode is on, and then it is recorded as on the customer's behalf.
+// Customer approvals: producers approve on the customer's behalf by default (recorded as such); PORT67_ACCOUNT_APPROVALS=required refuses them.
 const r = createProject({ business: 'Brand', objective: 'Grow the business', contact: 'a@example.com' }, op, 'p3');
 r.sources.push(src('s1', 'brand', 'public_source', 'supported'));
 r.strategies.push({ id: 'st', version: 1, status: 'shared', audience: 'a', message: 'm', rationale: 'r', design: 'd', channels: 'c', format: 'f', cta: 'c', evidenceIds: ['s1'], insightIds: [], hypothesis: 'h', uncertainties: 'u', createdAt: '2026-11-13T10:00:00Z', hash: 'H' } as never);
 r.strategies[0].hash = strategyHash(r.strategies[0]);
 const H = r.strategies[0].hash;
-assert.throws(() => tr(r, { type: 'approveStrategy', hash: H }, op), /Customer approval identity/, 'off by default');
-process.env.PORT67_PRODUCER_APPROVALS = 'true';
+process.env.PORT67_ACCOUNT_APPROVALS = 'required';
+assert.throws(() => tr(r, { type: 'approveStrategy', hash: H }, op), /Customer approval identity/, 'refused when customer-only approvals are required');
+delete process.env.PORT67_ACCOUNT_APPROVALS;
 try {
   const done = tr(r, { type: 'approveStrategy', hash: H }, op);
   assert.equal(done.strategies[0].status, 'approved');
-  assert.match(done.strategies[0].approvedBy!, /producer \(on behalf of the customer, test mode\)/);
+  assert.match(done.strategies[0].approvedBy!, /producer \(on behalf of the customer\)/);
   assert.ok(done.audit.some((x) => x.action === 'approved_on_behalf'));
   const asset = (id: string, status: 'shared' | 'draft') => ({ id, version: 1, kind: 'copy' as const, title: id, strategyId: 'st', strategyHash: H, taskId: 't', evidenceIds: [], status, content: 'c', hash: 'h' + id, createdAt: '2026-11-13T10:00:00Z' });
   done.assets.push(asset('a1', 'shared'), asset('a2', 'shared'), asset('a3', 'draft'));
@@ -57,9 +58,10 @@ try {
   assert.ok(all.assets[0].approvedBy!.includes('on behalf'));
   assert.throws(() => tr(all, { type: 'approveAllAssets' }, op), /No shared assets/);
 } finally {
-  delete process.env.PORT67_PRODUCER_APPROVALS;
+  delete process.env.PORT67_ACCOUNT_APPROVALS;
 }
-assert.throws(() => tr(r, { type: 'approveAllAssets' }, op), /Customer approval identity/, 'off again once the switch is removed');
+process.env.PORT67_ACCOUNT_APPROVALS = 'required';
+try { assert.throws(() => tr(r, { type: 'approveAllAssets' }, op), /Customer approval identity/, 'refused again when required'); } finally { delete process.env.PORT67_ACCOUNT_APPROVALS; }
 console.log('Bulk insight acceptance, bulk asset approval and producer test-mode approvals passed');
 
 // Restart from the brief: admin only, confirmed, keeps the brief and removes everything produced after it.

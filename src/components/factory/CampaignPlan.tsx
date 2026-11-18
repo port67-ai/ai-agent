@@ -38,7 +38,7 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
     <section className="f-panel f-campaign-plan">
       <div className="f-eyebrow">Campaign plan</div>
       {operator && <MediumPanel p={p} busy={busy} onRun={onMedium} />}
-      <h3>Ad formats {f?.decidedAt ? <Tag tone="good">chosen</Tag> : <Tag>not chosen yet</Tag>}</h3>
+      <h3 id="formats-anchor">Ad formats {f?.decidedAt ? <Tag tone="good">chosen</Tag> : <Tag>not chosen yet</Tag>}</h3>
       {operator ? (
         <>
           <p className="f-small">After the insight review, choose what to make. Destination channels come from the customer; the formats are suggested from them and the objective, and you decide. The direction and copy are then written for these formats.</p>
@@ -70,7 +70,7 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
       ) : (
         <p className="f-small">{f?.selected?.length ? FORMATS.filter((x) => f.selected.includes(x.id)).map((x) => x.name).join(", ") : "Your producer is choosing the best ad formats for your channels."}</p>
       )}
-      <h3>Strapline, audience segments and demographics</h3>
+      <h3 id="audiences-anchor">Strapline, audience segments and demographics</h3>
       <p className="f-small">The strapline is the one message every ad carries, in every format and for every audience. Audience segments, with their demographics, change the angle, hook and tone, never the strapline.</p>
       {operator && aiReady && (
         <button className="f-button" disabled={busy || !insightsReady} onClick={onAiAudiences}>

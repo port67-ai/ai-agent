@@ -157,6 +157,7 @@ async function main() {
     403,
   );
   cookie = operatorCookie;
+  process.env.PORT67_ACCOUNT_APPROVALS = "required";
   assert.equal(
     (
       await request("projects/" + realId, {
@@ -166,6 +167,7 @@ async function main() {
     ).status,
     403,
   );
+  delete process.env.PORT67_ACCOUNT_APPROVALS;
   assert.equal(
     (await request("projects/" + realId + "/research", { segment: "brand" }))
       .status,

@@ -50,7 +50,7 @@ export default function Assets({ p, operator, busy, command, renderVideo }: Acti
                 className="f-button"
                 disabled={busy}
                 onClick={() => {
-                  if (window.confirm(`Approve all ${waiting.length} shared assets${operator ? " on the customer's behalf (test mode)" : ""}? Each one can still be downloaded only after approval.`))
+                  if (window.confirm(`Approve all ${waiting.length} shared assets${operator ? " on the customer's behalf" : ""}? Each one can still be downloaded only after approval.`))
                     void command({ type: "approveAllAssets" }, `${waiting.length} assets approved`);
                 }}
               >

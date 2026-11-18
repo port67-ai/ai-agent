@@ -6,7 +6,7 @@ import { STORAGE_LIMIT_BYTES, projectParts, trimRunSnapshots } from "./storage-g
 import { suggestFormats, validFormats, hasVideoFormat } from "./formats";
 import { buildAdvert, advertIssues, planHash, validateContinuity, MAX_SHOT_SEC } from "./advert";
 import { allSegmentEvidence, gradeContext, gradeSource } from "./evidence";
-import { producerApprovalsOn } from "./approval-mode";
+import { humanProducerApprovals, producerApprovalsOn } from "./approval-mode";
 import { accountScope, canCreateProject, linkProjectOwnership } from "./accounts";
 import { productionCapabilities } from "./registry";
 import { validChannels } from "./channels";
@@ -317,12 +317,13 @@ export function transition(
     "requestAdvertChanges",
   ];
   if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch", "setAudiences"].includes(type)) operator(a);
-  // Test mode only (PORT67_PRODUCER_APPROVALS=true, off by default): a producer may press the customer's approval buttons so the
-  // journey can be clicked through. Every such approval is recorded as given on the customer's behalf.
-  const onBehalf = customerActions.includes(type) && a.role === "operator" && producerApprovalsOn();
+  // The account level is paused: a producer or admin presses the customer's approval buttons (PORT67_ACCOUNT_APPROVALS=required turns
+  // this off). The AI producer approves only when the master switch and the admin mode allow it. Every such approval is recorded as
+  // given on the customer's behalf.
+  const onBehalf = customerActions.includes(type) && a.role === "operator" && (producerApprovalsOn() || (humanProducerApprovals() && a.subject !== "port67-producer-agent"));
   if (customerActions.includes(type) && a.role !== "customer" && !onBehalf)
     throw new Error("Customer approval identity required");
-  const approver = onBehalf ? (a.subject === "port67-producer-agent" ? "AI producer (on behalf of the customer)" : `${a.subject} (on behalf of the customer, test mode)`) : a.subject;
+  const approver = onBehalf ? (a.subject === "port67-producer-agent" ? "AI producer (on behalf of the customer)" : `${a.subject} (on behalf of the customer)`) : a.subject;
   if (requestId && p.processed.includes(requestId)) return p;
   if (type === "recordPerformance" || type === "importPerformance") {
     if ((p.performance?.length || 0) >= 100) throw new Error("Performance record limit reached");
@@ -906,7 +907,7 @@ export function transition(
     action: type,
     detail: `Revision ${p.revision}`,
   });
-  if (onBehalf) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "approved_on_behalf", detail: `${type} given by a producer on the customer's behalf (test mode)` });
+  if (onBehalf) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "approved_on_behalf", detail: `${type} given by a producer on the customer's behalf` });
   return p;
 }
 export function researchProgress(p: Project): NonNullable<Project["researchProgress"]> {
@@ -937,7 +938,7 @@ export function projectView(input: Project, a: Principal): Project {
     p.evidence = { segments: allSegmentEvidence(p) };
     p.researchPack = researchPack(p, p.evidence.segments);
     { const g = projectParts(p); p.storage = { bytes: g.bytes, limitBytes: STORAGE_LIMIT_BYTES, parts: g.parts }; }
-    p.producerApprovals = producerApprovalsOn();
+    p.producerApprovals = producerApprovalsOn() || humanProducerApprovals();
     p.aiAuthorised = hasProviderConsent(p);
     return p;
   }
