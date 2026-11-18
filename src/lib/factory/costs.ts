@@ -35,6 +35,8 @@ export function pricingFor(provider: string, model: string, admin?: Record<strin
 }
 export async function reserveApiCall(repo: Repository, input: ApiCallInput): Promise<string> {
   const metadata = Object.fromEntries(['accountId','workspaceId','projectId','runId','stage','provider','model','actor'].map(k=>[k,text(input[k as Exclude<keyof ApiCallInput,'agent'>])])) as ApiCallInput;
+  // A full ledger batch is archived automatically (history and spend totals are kept) so paid work is never blocked by housekeeping. PORT67_LEDGER_AUTO_ARCHIVE=off restores the manual archive.
+  if(process.env.PORT67_LEDGER_AUTO_ARCHIVE!=='off'){ try{ const current=(await repo.read(ADMIN_LEDGER_NAMESPACE)) as Ledger; if((current.apiCalls?.length||0)>=MAX_LEDGER_CALLS) await archiveApiCalls(repo,'auto-archive'); }catch{ /* in-flight calls: the capacity error below tells the admin */ } }
   let adminPricing: Record<string, Pricing>|undefined;
   let saved: BudgetSettings|undefined; let baseline: Baseline|undefined;
   try { const settings=await repo.read(AI_ROUTING_NAMESPACE); adminPricing=settings.aiRouting?.pricing; saved=settings.budgetSettings; baseline=settings.costBaseline; } catch { /* unreadable prices mean unknown cost, which the cap holds at its call hold */ }

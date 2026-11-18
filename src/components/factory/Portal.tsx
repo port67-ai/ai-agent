@@ -122,6 +122,8 @@ export default function Portal() {
   const [runningSegment, setRunningSegment] = useState<Segment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // A failed button press shows its message at the top of the page; bring it into view so it is never missed.
+  useEffect(() => { if (error) window.scrollTo({ top: 0, behavior: "smooth" }); }, [error]);
   const [notice, setNotice] = useState("");
   const [newProject, setNewProject] = useState(false);
   const [mobile, setMobile] = useState(false);

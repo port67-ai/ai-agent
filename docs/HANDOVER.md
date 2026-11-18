@@ -247,3 +247,4 @@ Queue agreed with the owner: spend caps (done), team access (done), live researc
 2026-11-18; Claude; CHG-0088: producer Overview now holds Research setup (channels, Start research) above the deliverables; Brief tab is read-only with Edit brief; Research tab no longer shows Start research for producers.
 2026-11-18; Claude; CHG-0089: Overview is one numbered Task planner (all tasks, AI agent vs Review, Run ready tasks, Plan settings fold). tests/factory-task-plan-browser.cjs was updated but not run.
 2026-11-18; Claude; CHG-0090: provider calls retry 429/5xx twice before failing. If the research planner still shows 503, change its model on the AI agents page.
+2026-11-18; Claude; CHG-0091: cost ledger archives itself when full. Until this is deployed, open Admin, API spend and usage, and press Archive completed ledger batch.
