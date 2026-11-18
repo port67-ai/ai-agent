@@ -539,8 +539,8 @@ export default function Portal() {
             <>
               {tab === "overview" && (
                 <>
-                  {operator && <section className="f-panel"><h2>Performance feedback</h2><p>{p.performance?.length || 0} campaign observations recorded. Review results and carry relevant history into the next campaign.</p><button className="f-button" disabled={busy} onClick={() => go("learning")}>Open performance learning</button></section>}
-                  <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} onRun={operator && !principal.demo ? () => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.") : undefined} />
+                  {operator && !p.taskPlan && <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} />}
+                  {!operator && <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} />}
                   {operator && !p.strategies.length && (
                     p.runs.length === 0 ? (
                       <ChannelPicker p={p} operator busy={busy} live={!!config?.researchReady && !principal.demo} command={command} onRunAll={runAll} />
@@ -553,6 +553,9 @@ export default function Portal() {
                   )}
                   {operator && (
                     <RunTracker
+                      command={command}
+                      onRunReady={p.taskPlan && !principal.demo ? (() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.")) : undefined}
+                      settings={p.taskPlan ? <TaskPlanPanel settingsOnly p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} /> : undefined}
                       onProducer={() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Automatic checks re-run. The list below shows the result.")}
                       p={p}
                       go={(t, anchor) => go(t, anchor, true)}
