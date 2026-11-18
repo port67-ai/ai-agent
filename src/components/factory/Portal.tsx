@@ -45,6 +45,8 @@ import CustomerApprovals from "./CustomerApprovals";
 import RunTracker from "./RunTracker";
 import TaskPlanPanel, { WorkRequestField } from "./TaskPlan";
 import { selectedResearch } from "@/lib/factory/task-plan";
+import ChannelPicker from "./ChannelPicker";
+import { channelNames } from "@/lib/factory/channels";
 import ReviewQueue from "./ReviewQueue";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
@@ -128,6 +130,7 @@ export default function Portal() {
   const [signedOut, setSignedOut] = useState(false);
   const p = projects.find((x) => x.id === selected) || projects[0];
   const operator = principal?.role === "operator";
+  const [briefEditing, setBriefEditing] = useState(false);
   const [briefAccount, setBriefAccount] = useState("");
   const [origin, setOrigin] = useState(false);
   const [queue, setQueue] = useState<"sources" | "insights" | null>(null);
@@ -214,6 +217,24 @@ export default function Portal() {
       setArrival(false);
       setSignedOut(true);
     }
+  }
+  function runAll() {
+    void run(async () => {
+                      try {
+                        if (p.taskPlan) {
+                          await api("projects/" + p.id + "/producer-agent", {});
+                          return;
+                        }
+                        for (const seg of selectedResearch(p)) {
+                          setRunningSegment(seg);
+                          await api("projects/" + p.id + "/research", { segment: seg });
+                          await refresh();
+                        }
+                      } finally {
+                        setRunningSegment(null);
+                        await refresh();
+                      }
+    }, "Research finished for the selected areas. Review the sources and gaps before drafting insights.");
   }
   function go(t: Tab, anchor?: string, fromOverview = false) {
     setArrival(false);
@@ -520,8 +541,19 @@ export default function Portal() {
                 <>
                   {operator && <section className="f-panel"><h2>Performance feedback</h2><p>{p.performance?.length || 0} campaign observations recorded. Review results and carry relevant history into the next campaign.</p><button className="f-button" disabled={busy} onClick={() => go("learning")}>Open performance learning</button></section>}
                   <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} onRun={operator && !principal.demo ? () => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.") : undefined} />
+                  {operator && !p.strategies.length && (
+                    p.runs.length === 0 ? (
+                      <ChannelPicker p={p} operator busy={busy} live={!!config?.researchReady && !principal.demo} command={command} onRunAll={runAll} />
+                    ) : (
+                      <details className="f-panel">
+                        <summary><strong>Research setup</strong>{p.channels?.length ? `: launching on ${channelNames(p.channels).join(", ")}` : ""}</summary>
+                        <ChannelPicker p={p} operator busy={busy} live={!!config?.researchReady && !principal.demo} command={command} onRunAll={runAll} />
+                      </details>
+                    )
+                  )}
                   {operator && (
                     <RunTracker
+                      onProducer={() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Automatic checks re-run. The list below shows the result.")}
                       p={p}
                       go={(t, anchor) => go(t, anchor, true)}
                       busy={busy}
@@ -751,7 +783,18 @@ export default function Portal() {
               )}
               {tab === "brief" && (
                 <>
-                  <BriefEditor p={p} busy={busy} command={command} />
+                  <section className="f-panel">
+                    <div className="f-section-heading">
+                      <h2>The brief</h2>
+                      {!briefEditing && (p.strategies.length
+                        ? <span className="f-small">Locked once direction work has started.</span>
+                        : <button type="button" className="f-button small" onClick={() => setBriefEditing(true)}>Edit brief</button>)}
+                      {briefEditing && <button type="button" className="f-button secondary small" onClick={() => setBriefEditing(false)}>Cancel</button>}
+                    </div>
+                  </section>
+                  {briefEditing && (
+                    <BriefEditor p={p} busy={busy} command={async (d, m) => { const ok = await command(d, m); if (ok) { setBriefEditing(false); setOrigin(false); setTab("overview"); window.scrollTo({ top: 0 }); } return ok; }} />
+                  )}
                   <div className="f-two-col">
                     <section className="f-panel">
                       <div className="f-section-heading">
@@ -837,6 +880,13 @@ export default function Portal() {
                       )}
                     </section>
                   </div>
+                  {operator && (p.sources.length > 0 || p.runs.length > 0 || p.strategies.length > 0) && (
+                    <section className="f-panel">
+                      <h2>Restart from the brief</h2>
+                      <p className="f-small">Admin only. Keeps this brief, the logo and the account, and removes the launch channels, research request, authorisation, scope, sources, insights, directions, drafts, assets, videos and reviews, so the whole journey can be run again from the start. The audit trail is kept and the API cost ledger is not touched.</p>
+                      <button type="button" className="f-button secondary" disabled={busy} onClick={() => { if (window.confirm("Remove everything except the brief for this project? This cannot be undone.")) void command({ type: "resetProject", confirm: true }, "Project restarted from the brief"); }}>Restart from the brief</button>
+                    </section>
+                  )}
                 </>
               )}
               {tab === "research" && (
@@ -858,24 +908,7 @@ export default function Portal() {
                   }
                   runningSegment={runningSegment}
                   onRefresh={() => void refresh()}
-                  onRunAll={() =>
-                    void run(async () => {
-                      try {
-                        if (p.taskPlan) {
-                          await api("projects/" + p.id + "/producer-agent", {});
-                          return;
-                        }
-                        for (const seg of selectedResearch(p)) {
-                          setRunningSegment(seg);
-                          await api("projects/" + p.id + "/research", { segment: seg });
-                          await refresh();
-                        }
-                      } finally {
-                        setRunningSegment(null);
-                        await refresh();
-                      }
-                    }, "Research finished for the selected areas. Review the sources and gaps before drafting insights.")
-                  }
+                  onRunAll={runAll}
                   onRecover={(id) =>
                     void run(
                       () =>
