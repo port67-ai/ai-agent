@@ -500,6 +500,11 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0088 - 2026-11-18 - One-page producer flow: research setup on the Overview, read-only brief with Edit
+- What/why: Start research and Run producer agent sat on the Research page next to each other and it was unclear which to press, and moving between tabs lost the thread. Producers now find Research setup (channels and Start research) on the Overview above the deliverables; once research has started it folds into a summary line. One Re-run automatic checks button sits with the deliverables and shows any hold note. The Brief tab shows the brief read-only with an Edit brief button; saving returns to the Overview. The Research tab drops the channel picker for producers and keeps the producer log under an advanced fold; Restart from the brief moved to the Brief tab.
+- Requirements: FAC-OVR-002 (new). PRD impact: added.
+- Tests: type check, lint, full test suite and build passing; no new automated test for the layout move.
+
 ## CHG-0087 - 2026-11-18 - Overview as one deliverables sheet; customer account on the new brief
 - What/why: producers moved between many screens to find what needed doing. The Overview now opens with Campaign deliverables: every step top to bottom, each marked AI agent or Review (insights, formats and audiences are split into an AI step and a review step), with state, detail and a button or jump link to the exact section. Finishing a share, approve, format, audience or bulk review decision returns to the Overview; Back to overview is always shown. The producer Overview drops the hero, stats and pipeline cards. New brief: producers pick the Customer account first (approval contact defaults to the account email) and land on the Overview. Map and Run progress use the split rows.
 - Limits: a customer account only exists once the customer has signed in; creating one for them in advance is not built.

@@ -10,9 +10,9 @@ const TONE: Record<StepState, string> = { done: "#34d399", running: "#60a5fa", p
 /** One line per stage of the run: what has run, what is running, what is paused and what waits for a person. Waiting steps link to the page with the button. */
 const AI_LABEL: Record<AiStage, string> = { insights: "Draft insights with AI", formats: "Suggest formats with AI", audiences: "Suggest strapline and audiences with AI", strategy: "Draft direction with AI", content: "Draft copy pack with AI" };
 type Tab = "research" | "direction" | "assets" | "advert";
-type Props = { p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
+type Props = { p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; onProducer?: () => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
 /** The overview's single sheet: every deliverable top to bottom, AI agent steps and human review steps, each with the button or link that does it. */
-export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
+export default function RunTracker({ onProducer, p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
   const allSteps = runTracker(p);
   // With a task plan, only the steps that need an action or are running are listed; without one, the whole sheet.
   const steps = p.taskPlan ? allSteps.filter((s) => s.ai || s.act || s.state === "paused" || s.state === "waiting_approval" || s.state === "running") : allSteps;
@@ -26,6 +26,15 @@ export default function RunTracker({ p, go, aiReady, busy, onAi, onAct, canAppro
         <strong>{next.who === "Producer" ? "Your turn" : next.who === "AI" ? "AI is working" : "Nothing needs pressing"}</strong>
         {next.who === "Producer" ? `: ${next.label}. ` : ". "}{next.text}
       </p>
+      {(p.producerAgent?.hold || p.researchNote) && (
+        <p className="f-small" role="status">{p.producerAgent?.hold ? `Held for a person: ${p.producerAgent.hold.notes}` : p.researchNote}</p>
+      )}
+      {onProducer && (
+        <p className="f-small" style={{ margin: "0 0 8px" }}>
+          <button type="button" className="f-button secondary small" disabled={busy} onClick={onProducer}>Re-run automatic checks</button>{" "}
+          The checks run by themselves after research and after each approval. Use this only if a step looks stuck or an AI call failed.
+        </p>
+      )}
       <ol className="f-deliverable-list">
         {steps.map((s, i) => {
           const Icon = ICON[s.state];

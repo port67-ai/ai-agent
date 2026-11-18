@@ -50,7 +50,7 @@ export function ProducerAgentPanel({ p, onChanged }: { p: Project; onChanged?: (
           <p className="f-small">Runs four walled-garden reviewers (scope, sources, insights, direction), sends work back for one redraft per gate, then hands over to a person. After the account owner approves the direction it creates the drafts and AI copy pack and shares the assets. It never approves for the account owner. {data.automatic ? "Runs automatically after research and after each approval." : "Automatic running is off (PORT67_PRODUCER_AGENT); use the button."}</p>
         </div>
         <div className="f-actions">
-          <button type="button" className="f-button" disabled={busy} onClick={() => void run()}>{busy ? <Loader2 size={14} className="f-spin" /> : null} Run producer agent</button>
+          <button type="button" className="f-button" disabled={busy} onClick={() => void run()}>{busy ? <Loader2 size={14} className="f-spin" /> : null} Re-run automatic checks</button>
         </div>
       </div>
       {error && <p className="f-team-error" role="alert">{error}</p>}
