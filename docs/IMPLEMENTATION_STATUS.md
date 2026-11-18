@@ -263,6 +263,7 @@ Local validation and limitations are recorded in docs/RESEARCH_INTELLIGENCE.md. 
 | FAC-OVR-002 | Owner-requested 2026-11-18 (CHG-0088) | IMPLEMENTED | Built (CHG-0088). Customers keep the channel picker on the Research tab. Not yet seen live. |
 | FAC-OVR-003 | Owner-requested 2026-11-18 (CHG-0089) | IMPLEMENTED | Built (CHG-0089). Projects with a task plan show the plan's tasks; older projects show the fixed sequence. Not yet seen live. The legacy task table remains in the component for the existing UI test but is no longer shown on the Overview. |
 | FAC-PRV-001 | Owner-reported 2026-11-18 (CHG-0090) | IMPLEMENTED | Built (CHG-0090): provider calls retry twice on 429/500/502/503/504 with 3 s and 8 s waits; other errors are not retried. Not yet seen against a live provider outage. |
+| FAC-COST-001 | Owner-reported 2026-11-18 (CHG-0091) | IMPLEMENTED | Built (CHG-0091): a full cost ledger batch (150 calls) is archived automatically before the next paid call; totals include archives. Not yet seen live. |
 | FAC-STO-001 | Owner-requested 2026-11-16 (CHG-0077) | IMPLEMENTED | Built (CHG-0077): storage gauge in the producer Overview and diagnostics, automatic trimming of old run copies on save, manual Trim button. |
 | FAC-STO-002 | Owner-requested 2026-11-16 (CHG-0077) | PLANNED | Not started. Split the project record into separate records; trigger is about 60 percent of the limit on the gauge or before several live customers. |
 

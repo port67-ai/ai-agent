@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LocalRepository } from '../src/lib/factory/repository';
 import { reserveApiCall, finishApiCall, adminCostReport, reconcileApiCall, normalizeApiUsage, MAX_LEDGER_CALLS } from '../src/lib/factory/costs';
+process.env.PORT67_LEDGER_AUTO_ARCHIVE='off'; // these tests exercise the manual capacity path
 async function main() {
 const repo = new LocalRepository(await mkdtemp(join(tmpdir(), 'cost-ledger-')));
 process.env.PORT67_MODEL_PRICING_JSON = JSON.stringify({'test:model':{updatedAt:'2026-11-12',inputPerMillion:2,outputPerMillion:4,cachedInputPerMillion:1,toolPerCall:0.01}});

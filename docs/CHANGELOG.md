@@ -500,6 +500,11 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0091 - 2026-11-18 - Full cost ledger archives itself; failed button presses scroll to their message
+- What/why: Retry AI research plan appeared to do nothing. The diagnostics showed every attempt failed in 0.6 s with "Admin ledger capacity reached; export and archive ledger before further API calls": the active cost ledger holds at most 150 calls and was full, so no paid call could be reserved. The earlier 503 text was an older failure. A full batch is now archived automatically before the next paid call (history and spend totals are kept; PORT67_LEDGER_AUTO_ARCHIVE=off restores the manual button). The portal also scrolls to the error banner when a button press fails, so the message is not hidden above the fold.
+- Requirements: FAC-COST-001 (new). PRD impact: added.
+- Tests: new ledger auto-archive test (a full batch is archived and totals still count every call); existing capacity tests pin the manual path; suite passing.
+
 ## CHG-0090 - 2026-11-18 - Overloaded AI providers are retried; planner failure explained
 - What/why: Retry AI research plan kept returning "AI provider returned 503: This model is currently experiencing high demand". That wording is Google Gemini's, so the research planner slot is routed to a Gemini model that was overloaded, and each press hit the same model again. Provider calls now retry twice (waits of 3 s and 8 s) on 429, 500, 502, 503 and 504; a failed call returns no output and costs nothing. Authentication and other errors are not retried. Delays can be set with PORT67_PROVIDER_RETRY_MS or switched off with PORT67_PROVIDER_RETRY=off.
 - If it still fails: on the AI agents page, click the Research planning agent and choose a different model (for example an OpenAI or a non-preview Gemini model).
