@@ -500,6 +500,12 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0090 - 2026-11-18 - Overloaded AI providers are retried; planner failure explained
+- What/why: Retry AI research plan kept returning "AI provider returned 503: This model is currently experiencing high demand". That wording is Google Gemini's, so the research planner slot is routed to a Gemini model that was overloaded, and each press hit the same model again. Provider calls now retry twice (waits of 3 s and 8 s) on 429, 500, 502, 503 and 504; a failed call returns no output and costs nothing. Authentication and other errors are not retried. Delays can be set with PORT67_PROVIDER_RETRY_MS or switched off with PORT67_PROVIDER_RETRY=off.
+- If it still fails: on the AI agents page, click the Research planning agent and choose a different model (for example an OpenAI or a non-preview Gemini model).
+- Requirements: FAC-PRV-001 (new). PRD impact: added.
+- Tests: provider test covers recovery after two 503s, persistent 503, and no retry on 401; suite passing.
+
 ## CHG-0089 - 2026-11-18 - One numbered Task planner on the Overview
 - What/why: the Overview stacked Performance feedback, a Project task plan table with its own buttons, an AI research planning callout and a separate filtered task list, so it was unclear where the project was or what to press. It is now one Task planner: all active tasks in order, numbered with letters for parallel research and production items, each marked AI agent or Review with its status, a button or jump link, and expandable why/dependencies/manual completion. A single Run ready tasks button replaces the table header button; progress bar and next-action banner on top; AI research planning, agent selection and history are folded under Plan settings (opens by itself if planning failed). Performance feedback panel removed from the Overview.
 - Follow-up: the AI plans relevant research row now has Retry AI plan (paid) and Use rules plan instead buttons on the row itself, so a provider 503 is fixed where it shows.

@@ -24,7 +24,18 @@ export type ProviderResult={text:string;usage:Record<string,number>;rawUsage?:un
 // Provider error text is kept so a failure can be diagnosed, with anything that looks like a credential removed.
 const redact = (v: unknown) => String(v ?? '').replace(/(sk-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{20,}|Bearer\s+\S+|key=\S+)/g, '[redacted]').replace(/\s+/g, ' ').trim().slice(0, 220);
 const detail = (d: { error?: { message?: unknown; status?: unknown } | string; message?: unknown } | undefined) => redact(typeof d?.error === 'string' ? d.error : d?.error?.message ?? d?.error?.status ?? d?.message);
+// A provider that is briefly overloaded (429, 500, 502, 503, 504) is retried twice with a short wait. A failed call returns no output and costs nothing.
+const TRANSIENT=/^AI provider returned (429|500|502|503|504)\b/;
 export async function invokeProvider(s:ProviderSelection,request0:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean;videoUrl?:string;maxOutputTokens?:number;reasoningEffort?:'low'|'medium'|'high';timeoutMs?:number}):Promise<ProviderResult>{
+ let result=await invokeOnce(s,request0);
+ for(const wait of (process.env.PORT67_PROVIDER_RETRY_MS||'3000,8000').split(',').map(Number).filter(n=>Number.isFinite(n)&&n>=0).slice(0,3)){
+  if(!result.error||!TRANSIENT.test(result.error)||process.env.PORT67_PROVIDER_RETRY==='off')break;
+  await new Promise(r=>setTimeout(r,wait));
+  result=await invokeOnce(s,request0);
+ }
+ return result;
+}
+async function invokeOnce(s:ProviderSelection,request0:{instructions:string;input:string;schema?:unknown;name?:string;research?:boolean;videoUrl?:string;maxOutputTokens?:number;reasoningEffort?:'low'|'medium'|'high';timeoutMs?:number}):Promise<ProviderResult>{
  const request={...request0,instructions:applySkill(request0.instructions)};
  if(request.videoUrl && s.provider !== 'gemini') throw new Error('Direct video requires Gemini');
  if(request.videoUrl) youtubeVideoUrl(request.videoUrl);
