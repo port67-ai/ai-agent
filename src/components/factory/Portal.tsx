@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Users,
   Bot,
+  ArrowLeft,
 } from "lucide-react";
 import { segments, type Account, type Principal, type Project, type Segment } from "@/lib/factory/model";
 import { Tag, Empty, Field, fields, researchLabels } from "./shared";
@@ -124,6 +125,8 @@ export default function Portal() {
   const [signedOut, setSignedOut] = useState(false);
   const p = projects.find((x) => x.id === selected) || projects[0];
   const operator = principal?.role === "operator";
+  const [briefAccount, setBriefAccount] = useState("");
+  const [origin, setOrigin] = useState(false);
   const [queue, setQueue] = useState<"sources" | "insights" | null>(null);
   const refresh = useCallback(async () => {
     const session = await api("session");
@@ -181,9 +184,11 @@ export default function Portal() {
       setBusy(false);
     }
   }
-  function command(data: Record<string, unknown>, success = "Saved") {
-    if (!p) return;
-    return run(
+  // Finishing a decision that was opened from the overview takes the producer back to the overview.
+  const RETURNS = ["selectFormats", "setAudiences", "approveStrategy", "shareStrategy", "approveAsset", "approveAllAssets", "approveAdvert", "reviewAllSources", "reviewAllInsights"];
+  async function command(data: Record<string, unknown>, success = "Saved") {
+    if (!p) return false;
+    const ok = await run(
       () =>
         api("projects/" + p.id, {
           ...data,
@@ -192,6 +197,8 @@ export default function Portal() {
         }),
       success,
     );
+    if (ok && origin && tab !== "overview" && RETURNS.includes(String(data.type))) { setOrigin(false); setTab("overview"); window.scrollTo({ top: 0 }); }
+    return ok;
   }
   async function signOut() {
     if (
@@ -205,9 +212,11 @@ export default function Portal() {
       setSignedOut(true);
     }
   }
-  function go(t: Tab) {
+  function go(t: Tab, anchor?: string, fromOverview = false) {
     setArrival(false);
+    setOrigin(fromOverview);
     setTab(t);
+    if (anchor) setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
     setMobile(false);
     setError("");
     setNotice("");
@@ -473,6 +482,9 @@ export default function Portal() {
               {notice}
             </div>
           )}
+          {origin && tab !== "overview" && operator && (
+            <p className="f-back-bar"><button type="button" className="f-button secondary small" onClick={() => { setOrigin(false); setTab("overview"); window.scrollTo({ top: 0 }); }}><ArrowLeft size={15} /> Back to overview</button> <span className="f-small">You opened this from the deliverables list. Finish the step here and you return to the overview.</span></p>
+          )}
           {tab === "admin" && principal.admin ? (
             <AdminCosts />
           ) : tab === "agents" && principal.admin ? (
@@ -506,7 +518,7 @@ export default function Portal() {
                   {operator && (
                     <RunTracker
                       p={p}
-                      go={(t) => go(t)}
+                      go={(t, anchor) => go(t, anchor, true)}
                       busy={busy}
                       aiReady={!!config?.synthesisReady && !principal.demo}
                       canApproveForCustomer={!!p.producerApprovals}
@@ -519,12 +531,13 @@ export default function Portal() {
                         const s = p.strategies.at(-1);
                         if (!s) return;
                         if (act === "share_direction") void command({ type: "shareStrategy" }, "Direction shared for customer review");
-                        else if (window.confirm("Approve this direction on the customer's behalf (test mode)? It is recorded as given by you for the customer.")) void command({ type: "approveStrategy", hash: s.hash, feedback: "" }, "Direction approved on the customer's behalf. Production can start.");
+                        else if (window.confirm("Approve this direction on the customer's behalf? It is recorded as given by you for the customer.")) void command({ type: "approveStrategy", hash: s.hash, feedback: "" }, "Direction approved on the customer's behalf. Production can start.");
                       }}
                     />
                   )}
                   {operator && queue && <ReviewQueue p={p} kind={queue} busy={busy} command={command} onClose={() => setQueue(null)} />}
                   {!operator && <CustomerApprovals p={p} go={(t) => go(t)} />}
+                  {!operator && (<>
                   <div className="f-hero-panel">
                     <div>
                       <Tag tone="light">{stage}</Tag>
@@ -728,6 +741,7 @@ export default function Portal() {
                       </button>
                     </section>
                   </div>
+                  </>)}
                 </>
               )}
               {tab === "brief" && (
@@ -1109,21 +1123,33 @@ export default function Portal() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const data = fields(e.currentTarget);
+                const chooseAccount = operator && principal.identity === "firebase" ? String(data.accountId || briefAccount || principal.workspaceId) : "";
+                delete data.accountId;
                 void run(async () => {
+                  if (chooseAccount && chooseAccount !== principal.workspaceId) await api("accounts", { accountId: chooseAccount });
                   const result = await api("projects", data);
                   setSelected(result.project.id);
                   setNewProject(false);
                   setArrival(false);
-                  setTab("research");
-                }, "Brief created");
+                  setOrigin(false);
+                  setTab("overview");
+                }, "Brief created. The deliverables below are the steps for this campaign.");
               }}
             >
+              {operator && principal.identity === "firebase" && (
+                <Field label="Customer account *">
+                  <select name="accountId" required value={briefAccount || principal.workspaceId} onChange={(e) => setBriefAccount(e.target.value)}>
+                    {accounts.map((account) => <option key={account.id} value={account.id}>{account.email || account.id}</option>)}
+                  </select>
+                  <small>The project is created inside this customer's account. A new customer signs in once to create their account; it then appears here.</small>
+                </Field>
+              )}
               <div className="f-form-grid">
                 <Field label="Business name *">
                   <input name="business" required maxLength={120} />
                 </Field>
                 <Field label="Approval contact email *">
-                  <input name="contact" type="email" required maxLength={180} />
+                  <input key={briefAccount || principal.workspaceId} name="contact" type="email" required maxLength={180} defaultValue={operator && principal.identity === "firebase" ? (accounts.find((x) => x.id === (briefAccount || principal.workspaceId))?.email || "") : ""} />
                 </Field>
               </div>
               <Field label="What do you want to achieve? *">

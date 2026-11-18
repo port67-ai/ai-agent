@@ -12,6 +12,11 @@ let cached: ApprovalMode = DEFAULT_APPROVAL_MODE;
 let loadedAt = 0;
 export const approvalMasterSwitch = () => process.env.PORT67_PRODUCER_APPROVALS === "true";
 export const approvalMode = (): ApprovalMode => cached;
+/**
+ * The account (customer) level is paused: by default a signed-in producer or admin presses the customer approval buttons, recorded as
+ * given on the customer's behalf. Setting PORT67_ACCOUNT_APPROVALS=required on Render restores customer-only approvals.
+ */
+export const humanProducerApprovals = () => process.env.PORT67_ACCOUNT_APPROVALS !== "required";
 /** True only when the Render switch is on and the admin switch is set to AI producer approval. */
 export const producerApprovalsOn = () => approvalMasterSwitch() && cached === "ai";
 

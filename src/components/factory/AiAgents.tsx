@@ -5,6 +5,9 @@ import type { agentsOverview } from "@/lib/factory/ai-agents";
 import type { AiRoute } from "@/lib/factory/model";
 import type { Pricing } from "@/lib/factory/costs";
 import SystemMap from "./SystemMap";
+import RunTracker from "./RunTracker";
+import type { Project } from "@/lib/factory/model";
+import { focusMarks, projectLines } from "@/lib/factory/focus-map";
 import FlowHealth from "./FlowHealth";
 import ModelDialog from "./ModelDialog";
 import SkillDialog from "./SkillDialog";
@@ -41,11 +44,17 @@ export default function AiAgents() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectId, setProjectId] = useState("");
   const [approval, setApproval] = useState<{ mode: "ai" | "manual"; masterSwitch: boolean; effective: boolean } | null>(null);
   const load = useCallback(async () => {
     try {
       const [agents, route, mode] = await Promise.all([post<Overview>("ai-agents"), post<Routing>("ai-routing"), post<NonNullable<typeof approval>>("approval-mode")]);
       setData(agents);
+      try {
+        const r = await fetch("/api/factory/projects");
+        if (r.ok) setProjects(((await r.json()) as { projects: Project[] }).projects || []);
+      } catch { /* the dropdown keeps the last list */ }
       setApproval(mode);
       setRouting(route);
       setError("");
@@ -106,6 +115,7 @@ export default function AiAgents() {
 
   if (!data) return <section className="f-panel">{error ? <p className="f-team-error" role="alert">{error}</p> : <p className="f-small">Loading AI agents…</p>}</section>;
   const byId = new Map(data.agents.map((a) => [a.id, a]));
+  const chosen = projects.find((x) => x.id === projectId);
   const unset = data.agents.filter((a) => a.kind === "ai" && !a.model).length;
   return (
     <>
@@ -124,12 +134,12 @@ export default function AiAgents() {
         )}
         {approval && (
           <div className="f-callout" role="group" aria-label="Direction approval">
-            <strong>Direction approval: {approval.mode === "ai" ? "AI producer" : "Manual (account owner)"}</strong>
+            <strong>Direction approval: {approval.mode === "ai" ? "AI producer" : "Manual (a producer)"}</strong>
             <p className="f-small">
               {approval.mode === "ai"
                 ? "After the direction producer passes the campaign direction, the AI producer approves it on the customer's behalf (recorded in the audit trail) and the chain carries on to copy pack and production. The account owner still approves the final assets."
-                : "The chain stops after the direction producer passes the direction until the account owner approves it."}
-              {!approval.masterSwitch && " The Render switch PORT67_PRODUCER_APPROVALS=true is off, so only the account owner can approve until it is set."}
+                : "The chain stops after the direction producer passes the direction until a producer or admin approves it on the customer's behalf."}
+              {!approval.masterSwitch && " The Render switch PORT67_PRODUCER_APPROVALS=true is off, so the AI producer will not approve; a producer or admin presses the approval buttons instead (the account level is paused)."}
             </p>
             <div className="f-actions">
               <button type="button" className="f-button" disabled={busy}
@@ -158,7 +168,35 @@ export default function AiAgents() {
         {notice && <p className="f-team-ok" role="status">{notice}</p>}
         {data.ledgerError && <p className="f-team-error" role="alert">{data.ledgerError}</p>}
       </section>
-      <SystemMap agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} />
+      <section className="f-panel" aria-label="Project progress">
+        <div className="f-project-pick">
+          <label htmlFor="project-pick"><strong>Project</strong></label>
+          <select id="project-pick" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <option value="">All projects (the map shows the whole system)</option>
+            {projects.map((x) => <option key={x.id} value={x.id}>{x.brief?.business || x.id}</option>)}
+          </select>
+        </div>
+        {chosen ? (
+          <>
+            <p className="f-small">Orange marks on the map are the steps where a producer has to press something. Blue is the AI working. Green is done. Greyed steps have not started.</p>
+            <RunTracker p={chosen} />
+          </>
+        ) : projects.length ? (
+          <>
+            <p className="f-small">Pick a project to see where it is on the map. Who has to press something, per project:</p>
+            <ul className="f-project-lines">
+              {projectLines(projects).map((l) => (
+                <li key={l.id} className="f-small">
+                  <button type="button" className="f-button small" onClick={() => setProjectId(l.id)}>{l.name}</button>
+                  <strong>{l.who === "Producer" ? "Your turn" : l.who === "AI" ? "AI working" : "Nothing to press"}</strong>
+                  <span>{l.label}: {l.text}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : <p className="f-small">No projects yet.</p>}
+      </section>
+      <SystemMap focus={chosen ? focusMarks(chosen) : undefined} agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} />
       <FlowHealth flow={data.flow} />
       {groups.map((g) => (
         <section className="f-panel" key={g.id}>

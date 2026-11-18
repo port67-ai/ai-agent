@@ -2,6 +2,7 @@
 import { Activity, Bell, Bot, Building2, Clapperboard, Cloud, Compass, Database, Download, FileText, Film, Globe, HardDrive, LayoutDashboard, PenLine, Palette, Search, Send, Share2, ShieldCheck, Sparkles, Target, UserCheck, Users } from "lucide-react";
 import { useRef, useState, type ComponentType, type MouseEvent } from "react";
 import { edgeTip, usd, type Tip } from "./edge-tip";
+import type { Focus } from "@/lib/factory/focus-map";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
 
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
@@ -27,12 +28,12 @@ const AGENT_ICON: Record<string, Icon> = {
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const secs = (ms?: number) => (ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
-type NodeProps = { onSkill?: () => void; x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
-function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint, onSkill }: NodeProps) {
+type NodeProps = { mark?: { text: string; tone: "you" | "ai" | "done" }; dim?: boolean; onSkill?: () => void; x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
+function Node({ mark, dim, x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint, onSkill }: NodeProps) {
   const stroke = state === "failed" ? COLOR.bad : state === "blocked" ? COLOR.gate : color;
   return (
     <g
-      className={"sm-node" + (state ? " " + state : "") + (onSelect ? " sm-clickable" : "")}
+      className={"sm-node" + (dim ? " sm-dim" : "") + (state ? " " + state : "") + (onSelect ? " sm-clickable" : "")}
       data-node={id}
       role={onSelect ? "button" : undefined}
       tabIndex={onSelect ? 0 : undefined}
@@ -62,6 +63,12 @@ function Node({ x, y, w = NW, h, color, icon: I, title, lines = [], pill, state 
       {lines.map((l, i) => (
         <text key={i} x={x + w / 2} y={y + (pill ? 76 : 48) + i * 15} textAnchor="middle" className="sm-sub">{short(l, Math.floor(w / 6.3))}</text>
       ))}
+      {mark && (
+        <g className={"sm-mark " + mark.tone}>
+          <rect x={x + w - 98} y={y - 9} width={86} height={18} rx={9} />
+          <text x={x + w - 55} y={y + 4} textAnchor="middle" className="sm-badgetext">{mark.text}</text>
+        </g>
+      )}
       {badge && (
         <g>
           <rect x={x + 12} y={y - 9} width={72} height={18} rx={9} className={"sm-badge " + state} />
@@ -90,8 +97,9 @@ function Link({ d, color, live = false, dim = false, hot = false, label, lx, ly,
   );
 }
 
-export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { agents: Agent[]; flow: Flow; onSelectAgent?: (id: string) => void; onSkill?: (id: string) => void }) {
+export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill }: { agents: Agent[]; flow: Flow; focus?: Focus; onSelectAgent?: (id: string) => void; onSkill?: (id: string) => void }) {
   const byId = new Map(agents.map((a) => [a.id, a]));
+  const fo = (id: string) => (focus ? { mark: focus[id], dim: !focus[id] } : {});
   const wrap = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
   const showAt = (id: string, clientX: number, clientY: number) => {
@@ -177,7 +185,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : stat.failed + stat.unknown > 0;
     const state = running ? "running" : failed ? "failed" : !a.model ? "idle" : stat.calls === 0 ? "idle" : "";
     return (
-      <Node key={id} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
+      <Node key={id} {...fo(id)} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
         lines={factLines(stat, es, !!a.model)}
         state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
@@ -221,7 +229,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
     const running = stat.inFlight > 0;
     const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : false;
     return (
-      <Node id={rid} x={x} y={y} w={w} h={h} color={COLOR.producer} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
+      <Node {...fo(rid)} id={rid} x={x} y={y} w={w} h={h} color={COLOR.producer} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
         lines={factLines(stat, edgesFor(rid), !!a.model)}
         state={running ? "running" : failed ? "failed" : waiting > 0 ? "blocked" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : waiting > 0 ? `${waiting} WAITING` : undefined}
@@ -268,7 +276,7 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           <Node id="form-brief" x={COLS[0]} y={90} h={64} color={COLOR.input} icon={FileText} title="Business brief" lines={["Account owner form"]} />
           <Node id="form-channels" x={COLS[1]} y={90} h={64} color={COLOR.input} icon={Share2} title="Launch channels" lines={[`${P.channelsChosen} of ${P.projects} projects chosen`]} />
           <Node id="form-request" x={COLS[2]} y={90} h={64} color={COLOR.input} icon={Send} title="Request research" lines={[`${P.researchRequested} requested`]} />
-          <Node id="producer-start" x={COLS[3]} y={90} h={64} color={COLOR.gate} icon={UserCheck} title="Producer start" lines={[P.waiting.producerStart ? `${P.waiting.producerStart} waiting` : "Authorise and start"]} state={gateState(P.waiting.producerStart) as NodeProps["state"]} badge={gateBadge(P.waiting.producerStart)} />
+          <Node {...fo("producer-start")} id="producer-start" x={COLS[3]} y={90} h={64} color={COLOR.gate} icon={UserCheck} title="Producer start" lines={[P.waiting.producerStart ? `${P.waiting.producerStart} waiting` : "Authorise and start"]} state={gateState(P.waiting.producerStart) as NodeProps["state"]} badge={gateBadge(P.waiting.producerStart)} />
           {COLS.map((x, i) => <Link key={"in" + i} d={`M${x + NW / 2} 154 L${x + NW / 2} 196`} color={COLOR.input} />)}
           <Bar y={198} title="Firestore · project record" sub={`${P.projects} projects · ${P.consented} authorised · ${P.researchRequested} research requests · ${S.classified} classified`} />
           <Link d={`M${COLS[0] + NW / 2} 244 L${COLS[0] + NW / 2} 318`} color={COLOR.store} label="reads brief and channels" lx={COLS[0] + NW / 2 + 8} ly={276} />
@@ -317,9 +325,9 @@ export default function SystemMap({ agents, flow, onSelectAgent, onSkill }: { ag
           <Link d={`M${COLS[0] + NW} 892 L${COLS[1] - 2} 892`} color={COLOR.gate} dim={!P.directions.approved} />
           {agentNode("synthesis:content")}
           <Link d={`M${COLS[1] + NW} 892 L${COLS[2] - 2} 892`} color={COLOR.agent} dim={!P.copyPacks} />
-          <Node id="production" x={COLS[2]} y={840} h={AH} color={COLOR.agent} icon={Clapperboard} title="Production agents" lines={["Templates, no AI model", `${P.storyboards} storyboards · ${P.copyPacks} copy packs`]} />
+          <Node {...fo("production")} id="production" x={COLS[2]} y={840} h={AH} color={COLOR.agent} icon={Clapperboard} title="Production agents" lines={["Templates, no AI model", `${P.storyboards} storyboards · ${P.copyPacks} copy packs`]} />
           <Link d={`M${COLS[2] + NW} 892 L${COLS[3] - 2} 892`} color={COLOR.agent} dim={!P.storyboards} />
-          <Node id="gate-5" x={COLS[3]} y={840} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Review and approve" lines={["Gates 4, 5 · human", `${P.assetsApproved} approved`]} state={gateState(waiting.assetApproval) as NodeProps["state"]} badge={gateBadge(waiting.assetApproval)} />
+          <Node {...fo("gate-5")} id="gate-5" x={COLS[3]} y={840} h={AH} color={COLOR.gate} icon={ShieldCheck} title="Review and approve" lines={["Gates 4, 5 · human", `${P.assetsApproved} approved`]} state={gateState(waiting.assetApproval) as NodeProps["state"]} badge={gateBadge(waiting.assetApproval)} />
           <Link d={`M${COLS[3] + NW / 2} ${840 + AH} L${COLS[3] + NW / 2} 1002`} color={COLOR.store} dim={!P.assetsApproved} />
           <Bar y={1004} title="Firestore · copy, storyboards and approvals" sub={`${P.copyPacks} copy packs · ${P.storyboards} storyboards · ${P.assetsApproved} approved assets`} />
 
