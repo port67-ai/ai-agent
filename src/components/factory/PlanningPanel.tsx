@@ -4,11 +4,13 @@ import type { Project } from "@/lib/factory/model";
 import { formatById, formatNames } from "@/lib/factory/formats";
 import { channelById } from "@/lib/factory/channels";
 import { mediumCurrent, planningCurrent } from "@/lib/factory/planning-context";
+import PlanningErrorHelp from "./PlanningErrorHelp";
+import { errorTooltip } from "@/lib/factory/error-help";
 
 type Command = (value: Record<string, unknown>, message: string) => unknown;
 export type OnPlanning = (kind: "research" | "medium", retry: boolean, feedback?: string) => unknown;
 
-export function PlanningPanel({ p, busy, command, onRun }: { p: Project; busy: boolean; command: Command; onRun?: OnPlanning }) {
+export function PlanningPanel({ p, busy, command, onRun, admin }: { p: Project; busy: boolean; command: Command; onRun?: OnPlanning; admin?: boolean }) {
   const [feedback, setFeedback] = useState("");
   const [rulesReason, setRulesReason] = useState("");
   const state = p.researchPlanning;
@@ -19,7 +21,7 @@ export function PlanningPanel({ p, busy, command, onRun }: { p: Project; busy: b
   return <section aria-label="AI research planning" className="f-callout" style={{ marginBottom: 16 }}>
     <h3>AI research planning</h3>
     <p className="f-small">{p.strategies.length ? "Plan retained for the existing direction; new performance reports inform future campaigns" : state.status === "rules" ? "Producer chose the rules plan" : current ? `AI proposal version ${state.version} validated and applied` : state.status === "running" ? "The AI planner is interpreting the brief" : state.status === "failed" ? "Planning needs attention; no automatic paid retry" : "Research awaits an AI plan for the current brief and channels"}.</p>
-    {state.error && <p role={state.status === "failed" ? "alert" : undefined}>{state.error}</p>}
+    {state.error && <p role={state.status === "failed" ? "alert" : undefined} title={errorTooltip(state.error)}>{state.error} <PlanningErrorHelp p={p} error={state.error} admin={admin} busy={running} command={command} onRetry={onRun && p.aiAuthorised && p.channels?.length ? () => void onRun("research", true, "") : undefined} /></p>}
     {current && state.proposal && <>
       <p>{state.proposal.summary}</p>{!!state.proposal.performanceIds?.length && <p className="f-small">Campaign observations considered: {state.proposal.performanceIds.join(", ")}. See feedback records for context and limitations.</p>}
       {!!state.proposal.unknowns.length && <details><summary>Questions still open</summary><ul>{state.proposal.unknowns.map(q => <li key={q}>{q}</li>)}</ul></details>}

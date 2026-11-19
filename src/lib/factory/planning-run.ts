@@ -29,7 +29,8 @@ async function runJob(repo: Repository, a: Principal, projectId: string, kind: K
     if (kind === "medium") requirePlannedTask(p, "mediumSelection");
     const context = prepare(p);
     if (p.runs.some(r => r.status === "running")) throw new Error("An agent task is already running");
-    if (p.runs.filter(r => r.stage === kind).length >= 6) throw new Error("Planning invocation limit reached");
+    // Failed runs (including ones refused before any model call, such as a full cost ledger) do not use up the allowance; only runs that ran or are running count. The provider invocation cap below still bounds total attempts.
+    if (p.runs.filter(r => r.stage === kind && r.status !== "failed").length >= 6) throw new Error("Planning invocation limit reached");
     if (p.runs.filter(r => r.stage !== "scope" && r.stage !== "review").length >= Math.max(1, Math.min(50, Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "20", 10) || 20))) throw new Error("Provider invocation cap reached for this project");
     const contextKey = kind === "planning" ? prepareResearchPlanning(p, options.feedback).inputKey : prepareMediumSelection(p).evidenceKey;
     const run: ResearchRun = { id: id(), stage: kind, capabilityId: kind === "planning" ? "planning.research" : "planning.medium", capabilityVersion: "1.0.0", at: new Date().toISOString(), status: "running", provider: selection.provider, model: selection.model, inputHash: context.inputHash, contextHash: digest(JSON.stringify(p.brief)), contextSnapshot: structuredClone(p.brief), planningContextKey: contextKey, taskInputKey: p.taskPlan?.researchKey, leaseExpiresAt: new Date(Date.now() + 120000).toISOString(), usageStatus: "unknown" };
