@@ -2,6 +2,8 @@
 import { CheckCircle2, Circle, Loader2, PauseCircle, PlayCircle, UserCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Project } from "@/lib/factory/model";
+import PlanningErrorHelp from "./PlanningErrorHelp";
+import { errorTooltip } from "@/lib/factory/error-help";
 import { nextAction, runTracker, type AiStage, type StepAct, type StepState } from "@/lib/factory/run-tracker";
 
 const LABEL: Record<StepState, string> = { done: "Done", running: "Running", paused: "Needs you", waiting_approval: "Waiting for approval", ready: "Ready to run", pending: "Not started" };
@@ -11,9 +13,9 @@ const TONE: Record<StepState, string> = { done: "#34d399", running: "#60a5fa", p
 /** One line per stage of the run: what has run, what is running, what is paused and what waits for a person. Waiting steps link to the page with the button. */
 const AI_LABEL: Record<AiStage, string> = { insights: "Draft insights with AI", formats: "Suggest formats with AI", audiences: "Suggest strapline and audiences with AI", strategy: "Draft direction with AI", content: "Draft copy pack with AI" };
 type Tab = "research" | "direction" | "assets" | "advert";
-type Props = { onPlanning?: (kind: "research" | "medium", retry: boolean, feedback?: string) => unknown; settings?: ReactNode; onRunReady?: () => void; command?: (c: Record<string, unknown>, message: string) => unknown; p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; onProducer?: () => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void };
+type Props = { onPlanning?: (kind: "research" | "medium", retry: boolean, feedback?: string) => unknown; settings?: ReactNode; onRunReady?: () => void; command?: (c: Record<string, unknown>, message: string) => unknown; p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; onProducer?: () => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void; admin?: boolean };
 /** The overview's single sheet: every deliverable top to bottom, AI agent steps and human review steps, each with the button or link that does it. */
-export default function RunTracker({ onPlanning, settings, onRunReady, command, onProducer, p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim }: Props) {
+export default function RunTracker({ onPlanning, settings, onRunReady, command, onProducer, p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim, admin }: Props) {
   const steps = runTracker(p);
   const allSteps = steps;
   const readyCount = steps.filter((s) => s.state === "ready").length;
@@ -58,7 +60,7 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
               <span className={"f-kind " + s.kind}>{s.kind === "agent" ? "AI agent" : "Review"}</span>
               <strong className="f-deliverable-name">{s.label}</strong>
               <span style={{ color: TONE[s.state] }} className="f-deliverable-state">{LABEL[s.state]}</span>
-              <span className="f-deliverable-detail">{s.detail}</span>
+              <span className="f-deliverable-detail" title={s.state === "paused" && /fail|invalid|unknown|limit|capacity|cap reached|authoris|choose|enable/i.test(s.detail) ? errorTooltip(s.detail) : undefined}>{s.detail}</span>
               <span className="f-deliverable-actions">
                 {s.ai && aiReady && onAi && <button type="button" className="f-button small" disabled={busy} onClick={() => onAi(s.ai!)}>{AI_LABEL[s.ai]}</button>}
                 {s.ai && !(aiReady && onAi) && needs && open("Open")}
@@ -74,6 +76,7 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
                   <>
                     <button type="button" className="f-button small" disabled={busy || !p.aiAuthorised || !p.channels?.length} title={!p.aiAuthorised ? "Authorise public project data first" : !p.channels?.length ? "Choose launch channels first" : "Runs the AI research planner again (one paid model call)"} onClick={() => void onPlanning("research", true, "")}>Retry AI plan (paid)</button>
                     <button type="button" className="f-button secondary small" onClick={() => { const d = document.getElementById("plan-settings") as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "center" }); } }}>Use rules plan instead</button>
+                    {p.researchPlanning?.error && <PlanningErrorHelp p={p} error={p.researchPlanning.error} admin={admin} busy={busy} command={command} onRetry={() => void onPlanning("research", true, "")} />}
                   </>
                 )}
                 {needs && s.id !== "planResearch" && !s.ai && !s.act && open(s.kind === "review" ? "Open to complete" : "Open")}

@@ -500,6 +500,16 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0094 - 2026-11-19 - Self-explanatory errors; "Invalid capability gaps" fixed at the cause
+- What/why: "Invalid capability gaps" meant the model listed more than 3 gaps, a limit enforced in code but never told to the model, so one long answer failed the whole plan. The planner prompt now states every hard limit, extra gaps are clipped to the first 3 (they are advisory), and validator messages now say what was wrong (for example "5 items, but at most 3 are allowed"). New `error-help.ts` classifies any error as Model output, Configuration, Limit or budget, Provider, Evidence or Stale input, with what/why/fix. The text is shown as hover text on the error banner, the task row and the planning error, and in the "Reset or see more" popup.
+- Requirements: FAC-PRV-002 (refined). PRD impact: none.
+- Tests: not yet run; some tests may assert the old exact validator messages (the "Invalid <label>" prefix is unchanged). Run `npm test` and `npm run lint`.
+
+## CHG-0093 - 2026-11-19 - Failed planning runs no longer use up the allowance; "Reset or see more" help beside planning errors
+- What/why: A project showed "Planning invocation limit reached" because every failed attempt, including retries refused by the full cost ledger before any model call, counted towards the 6-run planning allowance. Only runs that did not fail now count; the provider invocation cap still bounds total attempts. A "Reset or see more" button now sits beside the planning error (Task planner row and Plan settings) and opens a popup with the cause, the run counts, Retry AI plan, Use rules plan, and for admins Restart from the brief.
+- Requirements: FAC-PRV-002 (refined). PRD impact: none.
+- Tests: not yet run (no shell access to the repo from this session); run `npm test` and `npm run lint` before merging.
+
 ## CHG-0092 - 2026-11-19 - AI plans accept a channel's display name
 - What/why: Retry AI plan failed with "Unknown launch channel". The planner was given the chosen channels as ids (for example x_threads) but a model may answer with the display name ("X & Threads"), and the validator accepted only the id, so a correct plan was thrown away. The planner and medium-selection validators now map the id, the display name, any case or punctuation back to the allowed id, and the model is also constrained to the chosen ids in its output schema. A channel that was not chosen is still refused.
 - Requirements: FAC-PRV-002 (new). PRD impact: added.

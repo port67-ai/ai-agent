@@ -47,6 +47,7 @@ import TaskPlanPanel, { WorkRequestField } from "./TaskPlan";
 import { selectedResearch } from "@/lib/factory/task-plan";
 import ChannelPicker from "./ChannelPicker";
 import { channelNames } from "@/lib/factory/channels";
+import { errorTooltip } from "@/lib/factory/error-help";
 import ReviewQueue from "./ReviewQueue";
 import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
@@ -495,7 +496,7 @@ export default function Portal() {
             </div>}
           </div>
           {error && (
-            <div className="f-alert error" role="alert">
+            <div className="f-alert error" role="alert" title={errorTooltip(error)}>
               {error}
               <button aria-label="Dismiss error" onClick={() => setError("")}>
                 <X size={16} />
@@ -555,10 +556,11 @@ export default function Portal() {
                   )}
                   {operator && (
                     <RunTracker
+                      admin={!!principal.admin}
                       command={command}
                       onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")}
                       onRunReady={p.taskPlan && !principal.demo ? (() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.")) : undefined}
-                      settings={p.taskPlan ? <TaskPlanPanel settingsOnly p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} /> : undefined}
+                      settings={p.taskPlan ? <TaskPlanPanel settingsOnly admin={!!principal.admin} p={p} operator={operator} busy={busy} command={command} onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")} /> : undefined}
                       onProducer={() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Automatic checks re-run. The list below shows the result.")}
                       p={p}
                       go={(t, anchor) => go(t, anchor, true)}
