@@ -6,6 +6,7 @@ import type { Repository } from "./repository";
 import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
 import { generateAudiences, generateFormats, generateIdeas, prepareAudiences, prepareFormats, prepareIdeas } from "./advisory";
 import { MAX_IDEAS } from "./ideas";
+import { maxProjectRuns } from "./run-cap";
 
 type Kind = "formats" | "ideas" | "audiences";
 const CAP = { formats: "analysis.formats", ideas: "drafting.ideas", audiences: "analysis.audiences" } as const;
@@ -25,7 +26,7 @@ export async function runAdvisory(repo: Repository, a: Principal, projectId: str
     if (current.taskPlan?.mode === "research") throw new Error("Campaign advisory agents are excluded from this research-only task plan");
     const context = prepare(current);
     if (current.runs.some((r) => r.status === "running")) throw new Error("A provider task is already running; wait or recover its expired lease");
-    if (current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >= Math.max(1, Math.min(50, Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "12", 10) || 12)))
+    if (current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >= maxProjectRuns())
       throw new Error("Provider invocation cap reached for this project");
     const run: ResearchRun = {
       capabilityId: capability.id, capabilityVersion: capability.version, id: id(), stage: kind, at: new Date().toISOString(), status: "running",

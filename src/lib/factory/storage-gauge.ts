@@ -9,6 +9,19 @@ const size = (v: unknown) => Buffer.byteLength(JSON.stringify(v ?? null));
 export function storageLimit(db: Database) {
   return STORAGE_LIMIT_BYTES - db.projects.reduce((n, p) => n + p.runs.filter((r) => r.status === "running").length, 0) * 80_000;
 }
+// Firebase accounts store every project as its own document (Firestore allows 1 MiB per document), so the Firebase repository
+// checks each project on its own instead of adding all projects of an account together. The margin covers JSON versus Firestore sizing.
+export const PROJECT_DOC_LIMIT_BYTES = 850_000;
+export const projectDocLimit = (p: Project) => PROJECT_DOC_LIMIT_BYTES - p.runs.filter((r) => r.status === "running").length * 80_000;
+/** The first project whose own document is too big to save, if any. */
+export function oversizedProject(db: Database): { id: string; bytes: number; limit: number } | undefined {
+  for (const p of db.projects) {
+    const bytes = size(p);
+    const limit = projectDocLimit(p);
+    if (bytes > limit) return { id: p.id, bytes, limit };
+  }
+  return undefined;
+}
 /** How big one project is and which lists take the room. */
 export function projectParts(p: Project) {
   const parts = Object.entries(p as unknown as Record<string, unknown>)

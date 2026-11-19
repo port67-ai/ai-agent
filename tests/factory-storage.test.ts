@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { accountUsage, projectParts, trimRunSnapshots, STORAGE_LIMIT_BYTES } from "../src/lib/factory/storage-gauge";
+import { accountUsage, projectParts, trimRunSnapshots, oversizedProject, STORAGE_LIMIT_BYTES } from "../src/lib/factory/storage-gauge";
+import { maxProjectRuns } from "../src/lib/factory/run-cap";
 import type { Database, Project } from "../src/lib/factory/model";
 
 let PAD = 3000;
@@ -43,6 +44,17 @@ async function main() {
     assert.equal(stored.projects[0].runs.length, 60);
     await assert.rejects(repo.mutate("ws", (db) => { db.projects[0].audit.push({ id: "a", at: "", actor: "x", role: "operator", action: "pad", detail: "z".repeat(800_000) } as never); }), /storage limit/);
   } finally { await rm(dir, { recursive: true, force: true }); }
+  // Firebase accounts hold one document per project: several projects that together pass the old whole-account limit are fine,
+  // but a single project over its own document limit is not, and a running task reserves room inside its own project.
+  const pad = (id: string, kb: number, running = 0) => ({ ...project(0), id, audit: [{ id: "a", at: "", actor: "x", role: "operator", action: "pad", detail: "z".repeat(kb * 1024) }], runs: Array.from({ length: running }, (_, i) => run(i, "running", false)) }) as unknown as Project;
+  const acct = (...projects: Project[]) => ({ schemaVersion: 1, projects, invitations: [] }) as unknown as Database;
+  assert.equal(oversizedProject(acct(pad("a", 250), pad("b", 250), pad("c", 250), pad("d", 250))), undefined, "four projects of about 250 KB are one MB in total yet each fits its own document");
+  assert.equal(oversizedProject(acct(pad("a", 900)))?.id, "a", "one project over its own document limit is refused");
+  assert.equal(oversizedProject(acct(pad("a", 800, 1)))?.id, "a", "a running task reserves room in its project");
+  // The per-project run limit is high by default and still adjustable
+  assert.equal(maxProjectRuns({}), 500);
+  assert.equal(maxProjectRuns({ PORT67_MAX_RESEARCH_RUNS: "30" }), 30);
+  assert.equal(maxProjectRuns({ PORT67_MAX_RESEARCH_RUNS: "999999" }), 5000);
   console.log("Storage gauge and safe trimming passed");
 }
 void main().catch((e) => { console.error(e); process.exit(1); });

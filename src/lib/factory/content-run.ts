@@ -6,6 +6,7 @@ import type { Principal, Project, ResearchRun } from "./model";
 import type { Repository } from "./repository";
 import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
 import { generateContent, prepareContent, renderCopyPack } from "./content";
+import { maxProjectRuns } from "./run-cap";
 
 /** Draft the AI copy pack for the approved direction. Metered and capped like every managed model call; no retry. */
 export async function runContent(repo: Repository, a: Principal, projectId: string): Promise<Project> {
@@ -24,7 +25,7 @@ export async function runContent(repo: Repository, a: Principal, projectId: stri
       throw new Error("Create the production drafts first so the copy pack has a task to attach to");
     if (current.assets.filter((x) => x.title === "AI copy pack").length >= 10) throw new Error("This project has reached its copy pack limit");
     if (current.runs.some((r) => r.status === "running")) throw new Error("A provider task is already running; wait or recover its expired lease");
-    if (current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >= Math.max(1, Math.min(50, Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "12", 10) || 12)))
+    if (current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >= maxProjectRuns())
       throw new Error("Provider invocation cap reached for this project");
     const run: ResearchRun = { ...(current.taskPlan ? { taskInputKey: current.taskPlan.researchKey } : {}),
       capabilityId: capability.id, capabilityVersion: capability.version, id: id(), stage: "content",

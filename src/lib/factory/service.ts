@@ -66,6 +66,7 @@ import {
   type Segment,
   type Video,
 } from "./model";
+import { maxProjectRuns } from "./run-cap";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -272,16 +273,7 @@ async function runResearchSegment(a: Principal, projectId: string, segment: Segm
         );
       if (
         current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >=
-        Math.max(
-          1,
-          Math.min(
-            50,
-            Number.parseInt(
-              process.env.PORT67_MAX_RESEARCH_RUNS || "20",
-              10,
-            ) || 20,
-          ),
-        )
+        maxProjectRuns()
       )
         throw new Error("Research invocation cap reached for this project");
       if (current.runs.some((r) => r.status === "running"))

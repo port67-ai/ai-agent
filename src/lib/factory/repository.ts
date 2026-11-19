@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import type { Database } from "./model";
-import { storageLimit, trimDatabase } from "./storage-gauge";
+import { storageLimit, trimDatabase, oversizedProject } from "./storage-gauge";
 export interface Repository {
   read(workspace: string): Promise<Database>;
   mutate<T>(workspace: string, fn: (db: Database) => T): Promise<T>;
@@ -98,10 +98,14 @@ export class FirebaseRepository implements Repository {
       const before=new Map(db.projects.map(p=>[p.id,JSON.stringify(p)]));
       const result=fn(db);
       db.projects=db.projects.map(p => { syncTaskPlan(p); return linkProjectOwnership(p); });
-      let serialized=JSON.stringify(db);
-      if(Buffer.byteLength(serialized)>snapshotLimit(db) && trimDatabase(db)) serialized=JSON.stringify(db);
-      if(Buffer.byteLength(serialized)>snapshotLimit(db)) throw Error("Workspace storage limit reached");
-      if(workspace.startsWith("acct_")) {
+      // Account workspaces keep one Firestore document per project, so each project is checked on its own; other workspaces are one document.
+      const perProject=workspace.startsWith("acct_");
+      const tooBig=()=>perProject ? oversizedProject(db) : Buffer.byteLength(JSON.stringify(db))>snapshotLimit(db);
+      if(tooBig()) trimDatabase(db);
+      const big=tooBig();
+      if(big) throw Error(perProject && typeof big==="object" ? `Project storage limit reached: one project is ${Math.round(big.bytes/1024)} KB of about ${Math.round(big.limit/1024)} KB. Trim old runs on the Overview or start a new brief.` : "Workspace storage limit reached");
+      const serialized=JSON.stringify(db);
+      if(perProject) {
         const stored=serializeAccount(workspace,db);
         // No deletion is implicit: archival/migration needs a separate explicit operation.
         if([...before.keys()].some(id=>!stored.metadata.projectIds.includes(id))) throw Error("Project deletion requires explicit archival");
