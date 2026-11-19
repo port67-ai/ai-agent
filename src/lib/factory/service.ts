@@ -41,6 +41,10 @@ import {
 import {
   access,
   createProject,
+  createStudioProject,
+  requireStudioIntakeApproved,
+  requireStudioStrategyOpen,
+  refuseStudioClassicProduction,
   digest,
   id,
   operator,
@@ -67,6 +71,16 @@ import {
   type Video,
 } from "./model";
 import { maxProjectRuns } from "./run-cap";
+import { STUDIO_UPLOAD_RULES, attachBriefAsset, findPiece, isStudioSlot, requireIntakeEditable, requirePieceEditable, sniffMime, studioAssetRefs } from "./studio";
+import { applyPieceUpload, applyStudioRerunResult, requireStudio } from "./studio-commands";
+import { StudioRerunError, studioRerunHandler } from "./studio-rerun";
+// Importing the pre-production module registers its rerun generators for every piece kind it creates (piece B).
+import { draftPreproduction, generateStudioImage } from "./studio-preproduction";
+import { getStudioFile, putStudioFile, studioKey, studioKeyAccount } from "./studio-store";
+import { mediaInfo } from "./studio-media";
+import { generateStudioStill, startNextCycle } from "./studio-production-run";
+import { studioDeliveryDocument } from "./studio-delivery";
+import type { StudioAssetRef, StudioBrief } from "./model";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -166,6 +180,69 @@ async function body(request: Request) {
     throw new Error("Invalid request");
   return parsed as Record<string, unknown>;
 }
+/** Read a raw upload body, refusing it as soon as it passes the slot's size limit. */
+async function rawBody(request: Request, max: number, label: string): Promise<Buffer> {
+  const declared = Number(request.headers.get("content-length") || 0);
+  if (declared > max) throw new Error("File too large. " + label);
+  const reader = request.body?.getReader();
+  if (!reader) return Buffer.alloc(0);
+  let bytes = 0;
+  const parts: Uint8Array[] = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.length;
+    if (bytes > max) {
+      await reader.cancel();
+      throw new Error("File too large. " + label);
+    }
+    parts.push(value);
+  }
+  // A body shorter than its declared length was cut off on the way in (for example by a proxy limit): never store part of a file.
+  if (declared && bytes !== declared) throw new Error("The upload was cut short; try again");
+  return Buffer.concat(parts);
+}
+/** The Brand Kit is kept per customer account in its own small record and copied into each new studio project's intake. */
+const brandKitNamespace = (accountId: string) => "factory-brandkit-" + accountId;
+async function readBrandKit(a: Principal): Promise<StudioBrief["brandKit"] | undefined> {
+  if (a.demo) return undefined;
+  try { return (await repository.read(brandKitNamespace(a.accountId || a.workspaceId))).brandKit?.kit; } catch { return undefined; }
+}
+async function saveBrandKit(a: Principal, p: Project) {
+  if (a.demo || !p.studio) return;
+  const kit = structuredClone(p.studio.brief.brandKit);
+  await repository.mutate(brandKitNamespace(p.accountId || p.workspaceId), (db) => {
+    db.brandKit = { kit, savedAt: new Date().toISOString(), savedBy: a.subject, projectId: p.id };
+  });
+}
+/** Run a recorded studio rerun when piece B has registered a generator for the piece's kind. Without one the request stays pending. */
+async function runStudioRerun(a: Principal, projectId: string) {
+  const current = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
+  const request = current.studio?.rerunRequests?.filter((r) => r.status === "pending").at(-1);
+  const piece = request && current.studio!.pieces.find((x) => x.id === request.pieceId);
+  const handler = piece && studioRerunHandler(piece.kind);
+  if (!request || !piece || !handler) return;
+  requireProviderConsent(current);
+  await repo(a).mutate(a.workspaceId, (state) => {
+    const live = find(state.projects, projectId, a).studio?.rerunRequests?.find((r) => r.id === request.id);
+    if (!live || live.status !== "pending") throw new Error("Rerun request is no longer waiting");
+    live.status = "running";
+  });
+  let result: Parameters<typeof applyStudioRerunResult>[2];
+  let run: ResearchRun | undefined;
+  try { const out = await handler({ project: current, piece, request, principal: a, repo: repo(a) }); run = out.run; result = { text: out.text, image: out.image, runId: out.runId }; }
+  catch (error) { run = error instanceof StudioRerunError ? error.run : undefined; result = { error: error instanceof Error ? error.message : "Rerun failed" }; }
+  await repo(a).mutate(a.workspaceId, (state) => {
+    const live = find(state.projects, projectId, a);
+    // Piece C: the rerun's paid call is kept as a project run (with its usage or error) so it shows in project diagnostics.
+    if (run && !live.runs.some((r) => r.id === run!.id)) live.runs.push(run);
+    // If the output can no longer be stored (for example the stage was approved meanwhile), the request is closed as failed.
+    try { applyStudioRerunResult(live, request.id, result, a); }
+    catch (error) { applyStudioRerunResult(live, request.id, { error: error instanceof Error ? error.message : "Rerun result could not be stored" }, a); }
+    live.revision++;
+    live.updatedAt = new Date().toISOString();
+  });
+}
 async function seed(a: Principal) {
   return demoRepository.mutate(a.workspaceId, (db) => {
     let p = createProject(
@@ -236,6 +313,8 @@ async function seed(a: Principal) {
 }
 async function runResearchSegment(a: Principal, projectId: string, segment: Segment, guidance?: string, videoUrl?: string) {
   let initial = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
+  requireStudioIntakeApproved(initial);
+  requireStudioStrategyOpen(initial);
   requireProviderConsent(initial);
   if (initial.researchPlanning?.enabled) { await runResearchPlanning(repo(a), a, projectId); initial = find((await repo(a).read(a.workspaceId)).projects, projectId, a); }
   if (!selectedResearch(initial).includes(segment)) throw new Error("This research agent is excluded from the project task plan; revise the plan first");
@@ -425,7 +504,9 @@ export async function handleFactory(
       return json({ error: "Cross-origin request rejected" }, 403);
     const a = await principal(request, identityLookup);
     await loadApprovalMode(repository);
-    const data = request.method === "POST" ? await body(request) : {};
+    // Studio uploads carry the raw file as the request body; every other POST is a small JSON body.
+    const upload = request.method === "POST" && path.length === 4 && path[0] === "projects" && path[2] === "studio" && path[3] === "upload";
+    const data = request.method === "POST" && !upload ? await body(request) : {};
     const visitorName = "port67_factory_visitor";
     const visitor = readSession(cookie(request, visitorName), sessionKey());
     if (request.method === "POST" && route !== "logout") {
@@ -655,7 +736,8 @@ export async function handleFactory(
     }
     if (route === "projects" && request.method === "POST") {
       if(!canCreateProject(a)) operator(a);
-      const p = createProject({ ...data, workRequest: data.workRequest ?? "campaign", useAIPlanner: data.workRequest !== undefined && data.useAIPlanner !== false }, a);
+      const studioInput = data.studio && typeof data.studio === "object" ? (data.studio as Record<string, unknown>) : undefined;
+      const p = studioInput ? createStudioProject(studioInput, a, undefined, await readBrandKit(a)) : createProject({ ...data, workRequest: data.workRequest ?? "campaign", useAIPlanner: data.workRequest !== undefined && data.useAIPlanner !== false }, a);
       await repo(a).mutate(a.workspaceId, (db) => {
         if (db.projects.length >= 20)
           throw new Error("Workspace project limit reached");
@@ -667,12 +749,127 @@ export async function handleFactory(
       const projectId = path[1];
       const db = await repo(a).read(a.workspaceId);
       const p = find(db.projects, projectId, a);
+      // Studio projects run nothing paid before gate 1 (the intake) is approved.
+      if (request.method === "POST" && ["planning", "producer-agent", "synthesis", "video-analysis", "research", "video"].includes(path[2] || "")) requireStudioIntakeApproved(p);
+      // Stage gating (piece B): no classic production, copy pack or video render on a studio project; research, scoping and drafting
+      // only while Creative strategy is open; studio projects do not use AI research planning or medium selection.
+      if (request.method === "POST" && p.studio) {
+        if (path[2] === "video" || (path[2] === "synthesis" && data.stage === "content")) refuseStudioClassicProduction(p);
+        if (path[2] === "planning") throw new Error("Studio projects use the studio research set; AI research planning and medium selection are not used");
+        if (["synthesis", "video-analysis", "research", "scope"].includes(path[2] || "")) requireStudioStrategyOpen(p);
+      }
+      if (upload) {
+        if (a.demo) throw new Error("Uploads are disabled in the synthetic demo");
+        const url = new URL(request.url);
+        const slot = url.searchParams.get("slot");
+        if (!isStudioSlot(slot)) throw new Error("Unknown upload slot");
+        const s = requireStudio(p);
+        const pieceId = url.searchParams.get("pieceId") || "";
+        if (slot === "piece") {
+          operator(a);
+          requirePieceEditable(s, findPiece(s, pieceId));
+        } else {
+          requireIntakeEditable(s);
+          if (url.searchParams.get("rights") !== "confirmed") throw new Error("Confirm that you have the right to use these files");
+        }
+        const disclosure = url.searchParams.get("aiDisclosure") || "none";
+        if (disclosure !== "none" && (slot !== "piece" || !["ai_generated", "ai_edited"].includes(disclosure))) throw new Error("Unknown AI disclosure");
+        const rule = STUDIO_UPLOAD_RULES[slot];
+        const bytes = await rawBody(request, rule.maxBytes, rule.label);
+        if (!bytes.length) throw new Error("The file is empty");
+        const mime = sniffMime(bytes.subarray(0, 16));
+        if (!mime || !rule.mimes.includes(mime)) throw new Error("That file type is not accepted here. " + rule.label);
+        const assetId = id();
+        const at = new Date().toISOString();
+        const name = ((url.searchParams.get("name") || "").slice(0, 200).replace(/[^\w .()-]/g, "_").trim() || "upload").slice(0, 120);
+        // Piece C: a piece upload may carry its rights (source and licence); the pixel size and length are read from the file itself.
+        const rightsSource = (url.searchParams.get("rightsSource") || "").trim().slice(0, 300);
+        const rightsLicence = (url.searchParams.get("rightsLicence") || "").trim().slice(0, 300);
+        const ref: StudioAssetRef = {
+          id: assetId, name, mime, bytes: bytes.length, storageKey: studioKey(p.accountId || p.workspaceId, p.id, assetId, mime), uploadedAt: at, uploadedBy: a.subject,
+          ...(slot === "piece"
+            ? rightsSource && rightsLicence ? { rights: { source: rightsSource, licence: rightsLicence, confirmedBy: a.subject } } : {}
+            : { rights: { source: a.role === "customer" ? "Client upload" : "Uploaded by Port67 for the client", licence: "Confirmed by the uploader as usable for this project", confirmedBy: a.subject } }),
+          aiDisclosure: disclosure as NonNullable<StudioAssetRef["aiDisclosure"]>,
+          ...(mediaInfo(bytes, mime) || {}),
+        };
+        // Bytes go to the private file store first; only the reference is written to the project document.
+        await putStudioFile(ref.storageKey, bytes, mime);
+        const result = await repo(a).mutate(a.workspaceId, (state) => {
+          const current = find(state.projects, projectId, a);
+          if (slot === "piece") applyPieceUpload(current, pieceId, ref, a);
+          else {
+            attachBriefAsset(requireStudio(current), slot, ref);
+            current.audit.push({ id: id(), at, actor: a.subject, role: a.role, action: "studio_asset_uploaded", detail: `${slot}: ${name} (${mime}, ${bytes.length} bytes)` });
+          }
+          current.revision++;
+          current.updatedAt = at;
+          return projectView(current, a);
+        });
+        return json({ project: result, asset: ref }, 201);
+      }
+      if (path[2] === "studio" && path[3] === "asset" && path[4] && path.length === 5 && request.method === "GET") {
+        const view = projectView(p, a);
+        const ref = view.studio ? studioAssetRefs(view.studio).find((x) => x.id === path[4]) : undefined;
+        if (!ref || studioKeyAccount(ref.storageKey) !== (p.accountId || p.workspaceId)) throw new Error("Forbidden: file access");
+        const bytes = await getStudioFile(ref.storageKey);
+        const headers: Record<string, string> = {
+          "content-type": ref.mime,
+          "content-disposition": `${new URL(request.url).searchParams.get("download") === "1" ? "attachment" : "inline"}; filename="${ref.name.replace(/[^\w .()-]/g, "_")}"`,
+          "cache-control": "private, no-store",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "sandbox; default-src 'none'",
+          "accept-ranges": "bytes",
+        };
+        // Browsers (Safari in particular) need byte ranges to play video previews.
+        const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+        if (range && (range[1] || range[2])) {
+          const size = bytes.length;
+          const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+          const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+          if (start >= size || start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+          return new Response(new Uint8Array(bytes.subarray(start, end + 1)), { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) } });
+        }
+        return new Response(new Uint8Array(bytes), { headers: { ...headers, "content-length": String(bytes.length) } });
+      }
       if (path.length === 2 && request.method === "GET") {
         // Self-healing: a request made before the switch was on, or one that could not start, is retried on the next view.
         if (autoApproveProducer() && !a.demo && p.researchRequest) void autoStartResearch(a, projectId).catch(() => undefined);
         // The producer orchestrator resumes on a view too (skipped when nothing changed), so a missed kick never leaves a step waiting.
         if (p.runs.length && !p.runs.some((r) => r.status === "running")) kickProducerAgent(a, projectId, "project view");
         return json({ project: projectView(p, a) });
+      }
+      if (path[2] === "studio" && path[3] === "preproduction" && path.length === 4 && request.method === "POST") {
+        operator(a);
+        if (data.action === "draft") return json({ project: projectView(await draftPreproduction(repo(a), a, projectId), a) });
+        if (data.action === "image") return json({ project: projectView(await generateStudioImage(repo(a), a, projectId, text(data.pieceId, "piece", 100, true)), a) });
+        throw new Error("Unknown pre-production action");
+      }
+      // Stage 4 Production (piece C): prepare the pieces, add motion loops, draw one still, or start the next cycle. Producers only.
+      if (path[2] === "studio" && path[3] === "production" && path.length === 4 && request.method === "POST") {
+        operator(a);
+        if (data.action === "prepare" || data.action === "loops") {
+          const result = await repo(a).mutate(a.workspaceId, (state) => {
+            const index = state.projects.findIndex((x) => x.id === projectId);
+            if (index < 0) throw new Error("Forbidden: project access");
+            const next = transition(state.projects[index], data.action === "prepare" ? { type: "prepareStudioProduction", requestId: id() } : { type: "setStudioLoops", count: data.count, requestId: id() }, a);
+            state.projects[index] = next;
+            return projectView(next, a);
+          });
+          return json({ project: result });
+        }
+        if (data.action === "image") return json({ project: projectView(await generateStudioStill(repo(a), a, projectId, text(data.pieceId, "piece", 100, true)), a) });
+        if (data.action === "nextCycle") {
+          const { previous, next } = await startNextCycle(repo(a), a, projectId);
+          return json({ project: projectView(previous, a), next: projectView(next, a) }, 201);
+        }
+        throw new Error("Unknown production action");
+      }
+      // Delivery documents (piece C): producers always; the client once the project is delivered. Built from the caller's own view.
+      if (path[2] === "studio" && path[3] === "delivery" && path[4] && path.length === 5 && request.method === "GET") {
+        const view = projectView(p, a);
+        const doc = studioDeliveryDocument(view, path[4], a.role === "operator");
+        return new Response(doc.body, { headers: { "content-type": doc.type, "content-disposition": `attachment; filename="${doc.name}"`, "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
       }
       if (path[2] === "performance-history" && request.method === "POST") {
         operator(a);
@@ -997,6 +1194,12 @@ export async function handleFactory(
         });
         if (data.type === "requestResearch" && autoApproveProducer() && !a.demo)
           void autoStartResearch(a, projectId).catch(() => undefined);
+        if ((data.type === "approveStudioGate" || data.type === "approveStudioGateWithNote") && data.stage === "intake")
+          await saveBrandKit(a, find((await repo(a).read(a.workspaceId)).projects, projectId, a)).catch(() => undefined);
+        if (data.type === "requestStudioRerun") {
+          await runStudioRerun(a, projectId);
+          return json({ project: projectView(find((await repo(a).read(a.workspaceId)).projects, projectId, a), a) });
+        }
         if (["approveStrategy", "approveAsset", "approveAllAssets", "reviewAllSources", "reviewAllInsights"].includes(String(data.type)))
           kickProducerAgent(a, projectId, String(data.type));
         return json({ project: result });

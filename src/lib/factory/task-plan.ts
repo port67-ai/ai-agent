@@ -68,6 +68,13 @@ function relevance(p: Project): Record<Segment, { selected: boolean; reason: str
   };
 }
 
+/** Studio projects (CHG-0097): a fixed research set suited to the two studio offers. */
+export const STUDIO_RESEARCH_ROLES: readonly Segment[] = ["brand", "customer", "competitor", "creative", "channel"];
+function studioRelevance(): Record<Segment, { selected: boolean; reason: string }> {
+  return Object.fromEntries(segments.map(s => [s, STUDIO_RESEARCH_ROLES.includes(s)
+    ? { selected: true, reason: "Studio projects research the brand, customer, competitors, creative references and the offer's channels." }
+    : { selected: false, reason: "Not part of the studio research set (brand, customer, competitor, creative and channel)." }])) as Record<Segment, { selected: boolean; reason: string }>;
+}
 /** Build a versioned bounded plan from trusted capability choices, never executable brief text. */
 export function planProject(p: Project, actor: string, reason: string, override?: Segment[]): boolean {
   const previous = p.taskPlan;
@@ -75,11 +82,12 @@ export function planProject(p: Project, actor: string, reason: string, override?
   const overrides = override ?? (previous?.researchKey === researchKey ? previous.overrides : undefined);
   if (overrides && (!overrides.length || overrides.some(s => !segments.includes(s)) || !overrides.includes("brand") || !overrides.includes("customer"))) throw new Error("Research selection must include brand and customer and known research agents only");
   const overrideReason = override ? reason : overrides ? previous?.overrideReason || previous?.reason : undefined;
-  const decisions = relevance(p);
-  const ai = planningCurrent(p) ? p.researchPlanning!.proposal : undefined;
-  const research = segments.filter(s => overrides ? overrides.includes(s) : ai ? effectiveResearchDecision(p, s)?.selected === true : decisions[s].selected);
+  const decisions = p.studio ? studioRelevance() : relevance(p);
+  const ai = !p.studio && planningCurrent(p) ? p.researchPlanning!.proposal : undefined;
+  // Studio projects research brand, customer, competitor, creative and channel only; a producer override can narrow, never widen, that set.
+  const research = segments.filter(s => p.studio && !decisions[s].selected ? false : overrides ? overrides.includes(s) : ai ? effectiveResearchDecision(p, s)?.selected === true : decisions[s].selected);
   const mode = p.brief.workRequest === "research" ? "research" : "campaign";
-  const inputKey = JSON.stringify([researchKey, p.formats?.selected || [], research, mode, overrideReason || null, p.researchPlanning?.enabled || false, p.researchPlanning?.version || 0, ai ? "ai" : "rules"]);
+  const inputKey = JSON.stringify([researchKey, p.formats?.selected || [], research, mode, overrideReason || null, p.researchPlanning?.enabled || false, p.researchPlanning?.version || 0, ai ? "ai" : "rules", ...(p.studio ? ["studio-v2"] : [])]);
   if (previous?.inputKey === inputKey) { syncTaskPlan(p); return false; }
   if (previous && previous.researchKey !== researchKey) {
     for (const s of p.sources) s.status = "rejected";
@@ -108,7 +116,13 @@ export function planProject(p: Project, actor: string, reason: string, override?
   add("reviewSources", "Review research evidence", "review.sources", research.map(s => "research:" + s), "Decide which sources can support the customer's work.");
   add("draftInsights", "Draft evidence-backed insights", "analysis.insights", ["reviewSources"], "Interpret accepted findings for the customer's objective.");
   add("reviewInsights", "Review insights", "review.insights", ["draftInsights"], "Accept interpretations before they guide deliverables.");
-  if (mode === "campaign") {
+  if (mode === "campaign" && p.studio) {
+    // Studio projects (piece B): the offer fixes the format, and the plan ends at the direction approval. Pre-production and
+    // production happen in the studio stages, never through the classic production drafts.
+    add("draftDirection", "Draft campaign direction", "drafting.direction", ["reviewInsights"], "Develop the offer's direction from accepted insights.");
+    add("reviewDirection", "Review campaign direction", "review.direction", ["draftDirection"], "Check relevance, evidence and unsupported claims.");
+    add("approveDirection", "Approve campaign direction", "human.direction", ["reviewDirection"], "Existing version-specific customer approval policy applies.");
+  } else if (mode === "campaign") {
     if (p.researchPlanning?.enabled) add("mediumSelection", "Recommend evidence-backed channel media", "planning.medium", ["reviewInsights"], "Compare requested outputs with audience/channel suitability, reviewed evidence and explicit uncertainty.");
     add("formats", "Choose campaign formats", "human.formats", [p.researchPlanning?.enabled ? "mediumSelection" : "reviewInsights"], "A producer confirms the deliverables required for this customer.");
     add("draftDirection", "Draft campaign direction", "drafting.direction", ["formats"], "Develop the approved deliverable types from accepted insights.");
@@ -127,7 +141,7 @@ export function planProject(p: Project, actor: string, reason: string, override?
   }
   validateTaskGraph(tasks);
   const history = previous ? [...previous.history, { version: previous.version, at: previous.createdAt, by: previous.updatedBy, reason: previous.reason, research: previous.research, done: previous.tasks.filter(t => t.status === "done").map(t => t.id) }].slice(-10) : [];
-  p.taskPlan = { version: (previous?.version || 0) + 1, createdAt: new Date().toISOString(), updatedBy: actor, reason, researchKey, inputKey, research, ...(overrides ? { overrides: [...research], overrideReason } : {}), mode, tasks, history, clarifications: mode === "campaign" && !p.formats?.decidedAt ? ["Confirm the campaign deliverables at the format decision before direction work."] : [] };
+  p.taskPlan = { version: (previous?.version || 0) + 1, createdAt: new Date().toISOString(), updatedBy: actor, reason, researchKey, inputKey, research, ...(overrides ? { overrides: [...research], overrideReason } : {}), mode, tasks, history, clarifications: mode === "campaign" && !p.studio && !p.formats?.decidedAt ? ["Confirm the campaign deliverables at the format decision before direction work."] : [] };
   syncTaskPlan(p);
   return true;
 }
@@ -174,7 +188,7 @@ export function syncTaskPlan(p: Project) {
     else if (t.id === "assetApproval") done = !!assets.length && assets.every(a => a.status === "approved");
     else if (t.id.startsWith("manual:")) done = !!t.completion;
     const hold = p.producerAgent?.hold;
-    if (hold && ({ sources: "reviewSources", insights: "reviewInsights", direction: "reviewDirection", scope: "scope" }[hold.gate] === t.id)) {
+    if (hold && !isThinResearchHold(hold) && ({ sources: "reviewSources", insights: "reviewInsights", direction: "reviewDirection", scope: "scope" }[hold.gate] === t.id)) {
       t.status = "blocked"; t.detail = hold.notes; continue;
     }
     const pending = p.producerAgent?.pending?.gate;
@@ -189,6 +203,14 @@ export function syncTaskPlan(p: Project) {
     else if (t.id === "formats") { t.status = "manual"; t.detail = "A producer must choose the campaign formats"; }
     else { t.status = "ready"; t.detail = "Ready when authorisation and execution controls pass"; }
   }
+}
+
+/**
+ * Thin research is a warning, not a stop (spec rule 7, CHG-0098). Older passes could leave a "Fewer than 2 accepted sources" hold on a
+ * project; it is ignored everywhere and cleared on the next producer agent pass.
+ */
+export function isThinResearchHold(hold: { gate: string; notes: string } | undefined): boolean {
+  return !!hold && hold.gate === "sources" && hold.notes.startsWith("Fewer than");
 }
 
 export function nextReadyTask(p: Project): ProjectTask | undefined {

@@ -215,7 +215,7 @@ export type ResearchRun = {
   projectId?: string;
   capabilityId?: string;
   capabilityVersion?: string;
-  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences" | "planning" | "medium";
+  stage?: "scope" | "review" | "research" | "insights" | "strategy" | "content" | "formats" | "ideas" | "audiences" | "planning" | "medium" | "studio";
   inputHash?: string;
   sourceIds?: string[];
   leaseExpiresAt?: string;
@@ -290,7 +290,78 @@ export type Idea = {
   criteria: string[]; productionNotes: string; sourceIds: string[]; rank: number;
   by?: "ai" | "rules"; status: "proposed" | "kept" | "dropped"; priority: "high" | "medium" | "low"; createdAt: string; decidedBy?: string;
 };
+/**
+ * Studio stages (CHG-0097, docs/superpowers/specs/2026-11-20-studio-stages-design.md). Four gated stages and two offers.
+ * Large binaries never live in the project document: only a StudioAssetRef pointing at the private file store.
+ */
+export type StudioOffer = "scene_pack" | "hook_pack";
+export type ParkedOffer = "hero_spot" | "creator_localisation" | "b2b_trailer";
+export type StudioStage = "intake" | "strategy" | "preproduction" | "production";
+export type StudioGateStatus = "locked" | "active" | "approved" | "stale";
+export type StudioGate = { stage: StudioStage; status: StudioGateStatus; approvedBy?: string; approvedAt?: string; onBehalfOfClient?: boolean; note?: string; /** Piece B: what still blocked a plain approval when the gate was approved with a note. */ gaps?: string[]; history: { at: string; by: string; action: "approve" | "approve_with_note" | "reopen" | "stale"; note?: string; gaps?: string[] }[] };
+export type StudioAssetRef = {
+  id: string; name: string; mime: string; bytes: number; storageKey: string; uploadedAt: string; uploadedBy: string; rights?: { source: string; licence: string; confirmedBy?: string }; aiDisclosure?: "ai_generated" | "ai_edited" | "none";
+  /** Piece C: pixel size (and length for video) read from the file's own header when it was stored; absent on older files. */
+  width?: number; height?: number; seconds?: number;
+};
+export type StudioBrief = {
+  client: { businessName: string; website: string; sector?: string; markets?: string; approverName: string; approverEmail: string };
+  project: { name: string; quantity?: number; deadline?: string };
+  brandKit: { logo?: StudioAssetRef; colours: string[]; fonts: string[]; tone: string; avoid: string };
+  references: { liked: string[]; disliked: string[]; mood: StudioAssetRef[] };
+  product: { url: string; names: string; benefits: string; offer: string; cta: string };
+  assets: { packshots: StudioAssetRef[]; clips: StudioAssetRef[] };
+  socials: Partial<Record<"instagram" | "tiktok" | "youtube" | "facebook" | "pinterest" | "linkedin" | "x", string>>;
+  themes: string[];
+};
+export type StudioPieceStatus = "draft" | "changes_requested" | "approved" | "stale";
+export type StudioPieceVersion = { n: number; text?: string; image?: StudioAssetRef; createdAt: string; createdBy: string; source: "ai" | "human" | "upload"; runId?: string; brief?: string };
+export type StudioComment = { id: string; at: string; by: string; text: string; region?: { x: number; y: number; w: number; h: number }; resolved?: boolean };
+export type StudioPiece = { id: string; stage: StudioStage; kind: string; title: string; status: StudioPieceStatus; dependsOn: string[]; versions: StudioPieceVersion[]; comments: StudioComment[]; aiDisclosure?: "ai_generated" | "ai_edited" | "none" };
+/** Piece A extension: a recorded request to redraw one piece. Piece B's generator fulfils it (see studio-rerun.ts). */
+export type StudioRerunRequest = { id: string; pieceId: string; at: string; by: string; brief: string; instruction?: string; impact: string[]; status: "pending" | "running" | "done" | "failed"; finishedAt?: string; runId?: string; error?: string };
+/** A person's confirmation, tied to a fingerprint of what was confirmed: it lapses when that changes. */
+export type StudioConfirmation = { by: string; at: string; fingerprint: string; note?: string };
+/** A rights record the producer adds for something that is not an uploaded file (music, voice, font) or for a file missing its rights. */
+export type StudioRightsRecord = { id: string; kind: "music" | "voice" | "font" | "footage" | "image" | "other"; name: string; source: string; licence: string; usedIn?: string; addedBy: string; addedAt: string };
+/** Go-to-market records for Stage 4 (piece C, CHG-0099). Computed checks live in studio-gtm.ts; only decisions are stored. */
+export type StudioGtm = {
+  /** Producer confirmed the pack scope (quantities, ratios, revision rounds) against the offer. */
+  scope?: StudioConfirmation;
+  /** Rights records for music, voice, fonts and anything else used that is not an uploaded file. */
+  rights: StudioRightsRecord[];
+  /** Rights filled in for an uploaded or generated file that had none, keyed by asset id. */
+  assetRights: Record<string, { source: string; licence: string; by: string; at: string }>;
+  /** Claim flags the producer cleared, keyed by flag id, with the reason. */
+  claimClearances: Record<string, { reason: string; by: string; at: string; text: string; pieceId: string }>;
+  /** Producer confirmed the AI disclosure tags and the per-channel disclosure lines. */
+  disclosure?: StudioConfirmation;
+  /** Per piece: spec exceptions, safe-zone checks and product accuracy spot checks, each tied to the piece's current version. */
+  specs: Record<string, StudioConfirmation>;
+  safeZones: Record<string, StudioConfirmation>;
+  productAccuracy: Record<string, StudioConfirmation>;
+  /** Production pieces a producer marked as winners after the results came in; the next cycle carries them as liked references. */
+  winners: string[];
+  /** Motion loops chosen for a Scene Pack (offer option, 0 to 10). */
+  loops?: number;
+  /** The next cycle started from this project. */
+  nextCycle?: { projectId: string; at: string; by: string };
+  /** The project this one continues, when it was started with Start next cycle. */
+  previousCycle?: { projectId: string; name: string };
+};
+export type StudioState = {
+  schemaVersion: 1; offer: StudioOffer; stage: StudioStage | "delivered"; brief: StudioBrief; briefVersion: number;
+  gates: Record<StudioStage, StudioGate>; pieces: StudioPiece[];
+  /** Piece C: go-to-market records (what a person decided). Everything that can be computed is computed from the pieces (studio-gtm.ts). */
+  gtm?: StudioGtm;
+  /** Rerun requests, newest last. Producers only; removed from customer views. */
+  rerunRequests?: StudioRerunRequest[];
+  /** Piece B: client stages a producer has opened for client review. Until then customers do not see that stage's pieces. */
+  readyForClient?: Partial<Record<StudioStage, { at: string; by: string }>>;
+};
 export type Project = {
+  /** Present only on studio projects (four gated stages). Legacy projects have no studio field and keep today's flow. */
+  studio?: StudioState;
   performance?: import("./performance").PerformanceRecord[];
   researchPlanning?: import("./research-planner").ResearchPlanning;
   mediumSelection?: import("./medium-selection").MediumSelection;
@@ -403,6 +474,8 @@ export type AiRoutingConfig = {
   history?: { at: string; actor: string; summary: string }[];
 };
 export type Database = {
+  /** Studio Brand Kit for one customer account, kept in its own small record (factory-brandkit-<account>). */
+  brandKit?: { kit: StudioBrief["brandKit"]; savedAt: string; savedBy: string; projectId: string };
   accounts?: Account[];
   aiRouting?: AiRoutingConfig;
   budgetSettings?: BudgetSettings;

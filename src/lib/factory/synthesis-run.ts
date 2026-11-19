@@ -7,6 +7,7 @@ import {
   digest,
   id,
   operator,
+  requireStudioStrategyOpen,
   strategyHash,
   transition,
 } from "./engine";
@@ -35,6 +36,7 @@ export async function runSynthesis(
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
     access(current, a);
+    requireStudioStrategyOpen(current);
     requirePlannedTask(current, stage === "insights" ? "draftInsights" : "draftDirection");
     const context = prepareSynthesis(current, stage);
     if (current.runs.some((r) => r.status === "running"))

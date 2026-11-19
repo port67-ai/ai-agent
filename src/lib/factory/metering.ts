@@ -7,6 +7,7 @@ export function agentOf(run:ResearchRun):string {
  if(stage==='planning') return 'synthesis:planner';
  if(stage==='medium') return 'synthesis:medium';
  if(stage==='scope') return 'scope:business';
+ if(stage==='studio') return run.capabilityId==='studio.image'?'studio:image':'studio:preproduction';
  if(stage==='review') return 'review:'+String(run.capabilityId||'').replace('review.','');
  return stage==='research'?'research:'+(run.segment||'brand'):stage==='insights'?'synthesis:insights':stage==='content'?'synthesis:content':stage==='formats'?'synthesis:formats':stage==='ideas'?'synthesis:ideas':stage==='audiences'?'synthesis:audiences':'synthesis:strategy';
 }

@@ -28,7 +28,9 @@ export default function ModelDialog({ agent, routing, suggest, onClose, onSaved 
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [onClose]);
-  const options = routing.providers.filter((p) => !research || p.research);
+  // The studio image job is OpenAI Images only (CHG-0098).
+  const image = agent.id === "studio:image";
+  const options = routing.providers.filter((p) => (!research || p.research) && (!image || p.id === "openai"));
   const models = suggest?.models[provider] || [];
   const label = options.find((p) => p.id === provider)?.label || provider;
 
@@ -72,7 +74,7 @@ export default function ModelDialog({ agent, routing, suggest, onClose, onSaved 
         <div className="f-section-heading">
           <div>
             <h2 id="f-modal-title">Choose the model for {agent.name}</h2>
-            <p className="f-small">{research ? "Research agents can use OpenAI or Gemini, the providers with live web search." : "Drafting agents can use any provider with a key set in Render."} API keys stay in Render and are never shown here.</p>
+            <p className="f-small">{image ? "Image generation uses the OpenAI Images API: enter an image model such as gpt-image-1." : research ? "Research agents can use OpenAI or Gemini, the providers with live web search." : "Drafting agents can use any provider with a key set in Render."} API keys stay in Render and are never shown here.</p>
           </div>
           <button type="button" className="f-text-button" onClick={onClose} aria-label="Close"><X size={16} /></button>
         </div>

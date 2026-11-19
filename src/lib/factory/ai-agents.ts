@@ -29,6 +29,8 @@ const PURPOSE: Record<string, { capability: string; purpose: string }> = {
   "review:scope": { capability: "review.scope", purpose: "Walled garden: sees only the brief and the stored classification and questions. Checks they fit the business; sends them back once if not." },
   "review:sources": { capability: "review.sources", purpose: "Walled garden: sees only each source, the business and the questions its segment was asked. Accepts or rejects each source; never sees insights or the direction." },
   "review:insights": { capability: "review.insights", purpose: "Walled garden: sees only each draft insight and its own evidence. Accepts or rejects each; sends the set back once with notes if too few are supported. Never sees the direction." },
+  "studio:preproduction": { capability: "studio.preproduction", purpose: "Studio Stage 3: writes the pre-production pieces for the offer (Scene Pack: mood board, continuity profile, one scene per product and theme; Hook pack: body script, three narratives with four opening hooks each, shot list, voice and captions) from the approved direction, its key messages, the accepted insights and the studio brief only. Strict JSON; a figure not in that material or an unknown key message rejects the draft. Reruns one piece with its open comments." },
+  "studio:image": { capability: "studio.image", purpose: "Studio Stages 3 and 4: draws one test frame per scene or one keyframe per hook, and the Scene Pack stills (4:5 and 1:1, with the approved test frame and the client's packshots as reference images), with OpenAI Images, from a prompt built by code from the mood board, continuity profile, the scene or hook text and the brand colours. Every image is stored privately and tagged AI generated." },
   "review:direction": { capability: "review.direction", purpose: "Walled garden: sees only the draft direction, its accepted insights, the objective and the launch channels. Decides whether it is ready for the account owner; sends it back once with notes. Never sees raw sources." },
 };
 export const purposeOf = (agent: string) => PURPOSE[agent]?.purpose || "";
@@ -65,7 +67,7 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
     const eff = routing.effective.find((e) => e.slot === slot.id);
     return {
       id: slot.id as string,
-      group: ["synthesis:planner", "synthesis:medium"].includes(slot.id) ? "planning" : slot.id === "scope:business" ? "scoping" : slot.id.startsWith("review:") ? "review" : slot.stage === "research" ? "research" : "drafting",
+      group: ["synthesis:planner", "synthesis:medium"].includes(slot.id) ? "planning" : slot.id.startsWith("studio:") ? "studio" : slot.id === "scope:business" ? "scoping" : slot.id.startsWith("review:") ? "review" : slot.stage === "research" ? "research" : "drafting",
       name: cap?.name || slot.label,
       purpose: meta.purpose,
       kind: "ai" as const,

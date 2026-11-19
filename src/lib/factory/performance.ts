@@ -1,9 +1,11 @@
 import type { Project } from './model';
 import { CHANNELS } from './channels';
 import { FORMATS } from './formats';
-export type PerformanceInput = { campaign: string; channel: string; format: string; objective: string; audience: string; offer: string; start: string; end: string; provenance: string; attribution: string; currency: string; impressions?: number; clicks?: number; conversions?: number; spend?: number; revenue?: number; publicAuthorised: boolean };
+export type PerformanceInput = { campaign: string; channel: string; format: string; objective: string; audience: string; offer: string; start: string; end: string; provenance: string; attribution: string; currency: string; impressions?: number; clicks?: number; conversions?: number; spend?: number; revenue?: number; publicAuthorised: boolean;
+  /** Studio read-back (CHG-0099): the delivered variant's name, and video metrics. All optional; legacy records have none. */
+  variant?: string; views3s?: number; thruplays?: number; purchases?: number };
 export type PerformanceRecord = PerformanceInput & { id: string; status: 'pending' | 'accepted' | 'rejected'; createdAt: string; createdBy: string; reviewedAt?: string; reviewedBy?: string; reviewReason?: string };
-const counts = ['impressions','clicks','conversions'] as const;
+const counts = ['impressions','clicks','conversions','views3s','thruplays','purchases'] as const;
 const metrics = [...counts,'spend','revenue'] as const;
 export function validatePerformance(raw: Record<string, unknown>): PerformanceInput {
   const out: Record<string, unknown> = {};
@@ -22,6 +24,10 @@ export function validatePerformance(raw: Record<string, unknown>): PerformanceIn
     out[name] = n;
   }
   if (!metrics.some(name => out[name] !== undefined)) throw new Error('At least one observed metric is required');
+  if (raw.variant !== undefined && raw.variant !== '') {
+    if (typeof raw.variant !== 'string' || raw.variant.trim().length > 200 || !/^[A-Za-z0-9_.-]+$/.test(raw.variant.trim())) throw new Error('Performance variant must be a file name of letters, numbers, dots, dashes and underscores (at most 200 characters)');
+    out.variant = raw.variant.trim();
+  }
   // Different event definitions can legitimately make conversions exceed clicks; never silently repair imported counts.
   out.publicAuthorised = raw.publicAuthorised === true;
   return out as PerformanceInput;
@@ -32,7 +38,7 @@ export function performanceMetrics(r: PerformanceInput) {
 }
 /** Project-local only: no business-name joins, sibling accounts or unreviewed observations. */
 export function performanceHistory(p: Pick<Project,'performance'>) {
-  return (p.performance || []).filter(r => r.status === 'accepted' && r.publicAuthorised).slice(-30).map(r => ({ id:r.id, reviewNotes:r.reviewReason || "", campaign:r.campaign, channel:r.channel, format:r.format, objective:r.objective, audience:r.audience, offer:r.offer, start:r.start, end:r.end, provenance:r.provenance, attribution:r.attribution, currency:r.currency, impressions:r.impressions, clicks:r.clicks, conversions:r.conversions, spend:r.spend, revenue:r.revenue, metrics:performanceMetrics(r), limitation:'Producer-reviewed supplied observation; not independently verified or proof of causal or incremental performance.' }));
+  return (p.performance || []).filter(r => r.status === 'accepted' && r.publicAuthorised).slice(-30).map(r => ({ id:r.id, reviewNotes:r.reviewReason || "", campaign:r.campaign, channel:r.channel, format:r.format, objective:r.objective, audience:r.audience, offer:r.offer, start:r.start, end:r.end, provenance:r.provenance, attribution:r.attribution, currency:r.currency, impressions:r.impressions, clicks:r.clicks, conversions:r.conversions, spend:r.spend, revenue:r.revenue, ...(r.variant!==undefined?{variant:r.variant}:{}), ...(r.views3s!==undefined?{views3s:r.views3s}:{}), ...(r.thruplays!==undefined?{thruplays:r.thruplays}:{}), ...(r.purchases!==undefined?{purchases:r.purchases}:{}), metrics:performanceMetrics(r), limitation:'Producer-reviewed supplied observation; not independently verified or proof of causal or incremental performance.' }));
 }
 export function parsePerformanceCsv(csv: string): PerformanceInput[] {
   if (typeof csv !== 'string' || csv.length > 25000) throw new Error('CSV exceeds 25000 characters');
@@ -47,7 +53,7 @@ export function parsePerformanceCsv(csv: string): PerformanceInput[] {
   if(quoted) throw new Error('Unterminated CSV quote');
   row.push(cell);if(row.some(Boolean))rows.push(row);
   const header=rows.shift()?.map(x=>x.trim().replace(/^\uFEFF/,'')) || [];
-  const allowed=['campaign','channel','format','objective','audience','offer','start','end','provenance','attribution','currency',...metrics];
+  const allowed=['campaign','channel','format','objective','audience','offer','start','end','provenance','attribution','currency','variant',...metrics];
   if(!header.length || new Set(header).size!==header.length || header.some(h=>!allowed.includes(h)))throw new Error('Invalid CSV headers');
   if(!rows.length || rows.length>30)throw new Error('CSV needs 1 to 30 result rows');
   return rows.map((r,i)=>{if(r.length!==header.length)throw new Error(`CSV row ${i+2} has the wrong column count`);return validatePerformance(Object.fromEntries(header.map((h,j)=>[h,r[j]])));});

@@ -1,6 +1,7 @@
 import { gradeContext, gradeSource, insightEvidence } from "./evidence";
 import { channelById } from "./channels";
 import { segments, type Project, type ReviewGate, type Segment } from "./model";
+import { requiredResearchSegments } from "./research-catalog";
 
 // The four producer reviewers. Each is a walled garden: it is built from its own view of the project and nothing else, has
 // its own instructions, answer format and model slot, and can only say what it was asked to judge. The source reviewer never
@@ -10,6 +11,17 @@ import { segments, type Project, type ReviewGate, type Segment } from "./model";
 export const PRODUCER_AGENT = "port67-producer-agent";
 export const SOURCE_BATCH = 25;
 export const MIN_ACCEPTED_PER_SEGMENT = 2;
+/**
+ * Research areas whose research has run and whose sources are all decided, but which have fewer than MIN_ACCEPTED_PER_SEGMENT
+ * accepted public sources. Thin research is a warning for producers on legacy and studio projects, never a hold (spec rule 7).
+ */
+export function thinResearchSegments(p: Project): Segment[] {
+  return requiredResearchSegments(p).filter((k) => {
+    const own = p.sources.filter((s) => s.segment === k && s.kind === "public_source");
+    const ran = p.runs.some((r) => (r.stage || "research") === "research" && r.segment === k && r.status === "completed");
+    return ran && !own.some((s) => s.status === "unreviewed") && own.filter((s) => s.status === "supported").length < MIN_ACCEPTED_PER_SEGMENT;
+  });
+}
 export const GATES: ReviewGate[] = ["scope", "sources", "insights", "direction"];
 export const GATE_LABEL: Record<ReviewGate, string> = { scope: "Scope producer", sources: "Source producer", insights: "Insight producer", direction: "Direction producer" };
 export type Item = { id: string; verdict: "accept" | "reject"; reason: string; score?: number };
