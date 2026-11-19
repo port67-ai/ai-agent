@@ -24,6 +24,7 @@ const AGENT_ICON: Record<string, Icon> = {
   "scope:business": Compass, "research:brand": Building2, "research:customer": Users, "research:competitor": Target, "research:creative": Palette, "research:adjacent": Building2, "research:trends": Activity, "research:video": Film, "research:channel": Users, "research:offer": Building2, "research:measurement": Target,
   "synthesis:insights": Search, "synthesis:strategy": Sparkles, "synthesis:content": PenLine, "synthesis:formats": Compass, "synthesis:audiences": Users, "synthesis:ideas": Sparkles,
   "review:scope": Compass, "review:sources": ShieldCheck, "review:insights": Search, "review:direction": Sparkles,
+  "studio:preproduction": PenLine, "studio:image": Palette,
 };
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const secs = (ms?: number) => (ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
@@ -161,6 +162,8 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
     "synthesis:ideas": { x: COLS[2], y: 1480 },
     "synthesis:planner": { x: COLS[0], y: 1640 },
     "synthesis:medium": { x: COLS[1], y: 1640 },
+    "studio:preproduction": { x: COLS[0], y: 1800 },
+    "studio:image": { x: COLS[1], y: 1800 },
   };
   const supplemental = (id: string) => ["research:adjacent", "research:trends", "research:video", "research:channel", "research:offer", "research:measurement"].includes(id);
   /** The same four facts on every AI agent node: calls and cost, health, and how many failed. */
@@ -256,7 +259,7 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
   const researchIds = ["research:brand", "research:customer", "research:competitor", "research:creative", "research:adjacent", "research:trends", "research:video", "research:channel", "research:offer", "research:measurement"];
   const REVIEW_TITLE: Record<string, string> = { "review:scope": "Scope review", "review:sources": "Source review", "review:insights": "Insight review", "review:direction": "Approve direction" };
   const PR = { approvesDirection: false, ...(P.producer || { passes: 0, reviews: 0, byAi: 0, byRules: 0, holds: 0, pending: 0 }) };
-  const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:audiences", "synthesis:ideas"];
+  const ids = ["scope:business", "review:scope", ...researchIds, "review:sources", "review:insights", "review:direction", "synthesis:insights", "synthesis:strategy", "synthesis:content", "synthesis:formats", "synthesis:audiences", "synthesis:ideas", "studio:preproduction", "studio:image"];
   const S = P.scopes || { classified: 0, ai: 0, template: 0, manual: 0, stale: 0, byCategory: {} };
   const top = Object.entries(S.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(" · ");
   const DY = 150;
@@ -375,6 +378,9 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
           <text x="30" y="1626" className="sm-band">9 · RESEARCH AND MEDIUM PLANNING</text>
           {agentNode("synthesis:planner")}
           {agentNode("synthesis:medium")}
+          <text x="30" y="1786" className="sm-band">10 · STUDIO PRE-PRODUCTION</text>
+          {agentNode("studio:preproduction")}
+          {agentNode("studio:image")}
           {PROVIDERS.map((p, i) => <Link key={"tel" + p.id} d={`M${PX + PW} ${providerY[p.id] + PH / 2} L${1088 - i * 4} ${providerY[p.id] + PH / 2} L${1088 - i * 4} 1280 L${COLS[1] + 62 + 380} 1280`} color={COLOR.mon} dim />)}
 
           <text x="30" y="1236" className="sm-band">7 · MONITORING</text>

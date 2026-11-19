@@ -1,7 +1,7 @@
 import { requirePlannedTask } from "./task-plan";
 import { meteredModelCall } from "./metering";
 import { capabilityRegistry } from "./registry";
-import { access, digest, id, operator } from "./engine";
+import { access, digest, id, operator, refuseStudioClassicProduction } from "./engine";
 import type { Principal, Project, ResearchRun } from "./model";
 import type { Repository } from "./repository";
 import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
@@ -19,6 +19,7 @@ export async function runContent(repo: Repository, a: Principal, projectId: stri
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
     access(current, a);
+    refuseStudioClassicProduction(current);
     requirePlannedTask(current, "draftCopyPack");
     const context = prepareContent(current);
     if (!current.assets.some((x) => x.kind === "copy" && x.strategyHash === context.strategy.hash))

@@ -30,6 +30,7 @@ const groups: { id: string; title: string; note: string }[] = [
   { id: "scoping", title: "Scoping agent", note: "Classifies the business from the brief and saves the classification and each researcher's questions to Firestore. Optional: without a model a free template scope is used." },
   { id: "research", title: "Research agents", note: "Search the public web and cite every finding." },
   { id: "drafting", title: "Drafting agents", note: "Write only from reviewed evidence and the approved direction." },
+  { id: "studio", title: "Studio pre-production", note: "Studio projects only. The pre-production writer drafts mood boards, scenes, scripts and hooks from the approved direction; the image job draws test frames and keyframes (OpenAI Images; gpt-image-1 unless you choose another model or set PORT67_IMAGE_MODEL)." },
   { id: "production", title: "Production agents", note: "Template builders: no AI model, no AI cost." },
   { id: "review", title: "Producer reviewers", note: "Four walled-garden reviewers, each seeing only its own inputs: scope, sources, insights, direction. Free rule checks run first; a model is used only if you choose one here. Pick a different model from the drafters so a model does not mark its own work." },
   { id: "producer", title: "Producer orchestrator", note: "Rules only: no model and no cost of its own. Decides which reviewer or drafter goes next, carries notes back once, and enforces the loop limits. It never approves for the account owner." },

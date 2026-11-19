@@ -1,6 +1,6 @@
 "use client";
 import PerformancePanel from "./PerformancePanel";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -53,6 +53,16 @@ import Capabilities from "./Capabilities";
 import BriefEditor from "./BriefEditor";
 import { LogoField } from "./BriefEditor";
 import UserMenu from "./UserMenu";
+import StudioIntake from "./StudioIntake";
+import StudioNewBrief from "./StudioNewBrief";
+import { StudioSettings, StudioSidebar, StudioStagePage, STUDIO_TAB_TITLES, stageTab, tabStage, type StudioTab } from "./StudioStages";
+import { DiagnosticsPanel } from "./DiagnosticsPanel";
+import StudioStrategy from "./StudioStrategy";
+import StudioPreproduction, { FIRST_IMAGE_BATCH, pendingImages } from "./StudioPreproduction";
+import StudioProduction, { type UploadOptions } from "./StudioProduction";
+import { deliverables, variantKey } from "@/lib/factory/studio-gtm";
+import { preproductionPieces } from "@/lib/factory/studio-gates";
+import type { StudioUploadSlot } from "@/lib/factory/studio";
 import { roleLabel, userInitials, userLabel } from "@/lib/factory/user-display";
 type Config = {
   demoEnabled: boolean;
@@ -76,7 +86,8 @@ type Tab =
   | "team"
   | "agents"
   | "skillwriter"
-  | "admin";
+  | "admin"
+  | StudioTab;
 const nav: { id: Tab; label: string; icon: typeof Layers3 }[] = [
   { id: "overview", label: "Overview", icon: Layers3 },
   { id: "brief", label: "Business brief", icon: FileText },
@@ -137,6 +148,14 @@ export default function Portal() {
   const [briefAccount, setBriefAccount] = useState("");
   const [origin, setOrigin] = useState(false);
   const [queue, setQueue] = useState<"sources" | "insights" | null>(null);
+  const [classicBrief, setClassicBrief] = useState(false);
+  // Studio projects open on their current stage; legacy projects never show studio pages. Runs when the shown project changes.
+  const [shownProject, setShownProject] = useState("");
+  if (p && p.id !== shownProject) {
+    setShownProject(p.id);
+    if (p.studio && (tab === "overview" || tabStage(tab) !== undefined)) setTab(stageTab(p.studio.stage));
+    else if (!p.studio && (tabStage(tab) !== undefined || tab === "studio-settings" || tab === "diagnostics")) setTab("overview");
+  }
   const refresh = useCallback(async () => {
     const session = await api("session");
     setPrincipal(session.principal);
@@ -239,6 +258,67 @@ export default function Portal() {
                       }
     }, "Research finished for the selected areas. Review the sources and gaps before drafting insights.");
   }
+  const [imageProgress, setImageProgress] = useState("");
+  /** Draw studio test frames or keyframes one at a time (one metered image call each); stops at the first error. */
+  async function drawImages(projectId: string, ids: string[]) {
+    let n = 0;
+    try {
+      return await run(async () => {
+        for (const pieceId of ids) {
+          setImageProgress(`Drawing ${n + 1} of ${ids.length}…`);
+          await api("projects/" + projectId + "/studio/preproduction", { action: "image", pieceId });
+          n++;
+          await refresh();
+        }
+      }, `${ids.length} image${ids.length === 1 ? "" : "s"} drawn. Review them next to their pieces.`);
+    } finally {
+      setImageProgress(n < ids.length ? `${n} of ${ids.length} drawn.` : "");
+    }
+  }
+  async function draftPreproduction(projectId: string) {
+    const ok = await run(() => api("projects/" + projectId + "/studio/preproduction", { action: "draft" }), "Pre-production drafted. Drawing the first images next.");
+    if (!ok) return;
+    const fresh = (await api("projects/" + projectId)).project as Project;
+    const ids = pendingImages(preproductionPieces(fresh.studio!)).slice(0, FIRST_IMAGE_BATCH).map((x) => x.id);
+    if (ids.length) await drawImages(projectId, ids);
+  }
+  // Stage 4 stills (piece C): drawn one per request like test frames, with a Stop button that ends the loop after the current image.
+  const stopStills = useRef(false);
+  const [drawingStills, setDrawingStills] = useState(false);
+  async function drawStills(projectId: string, ids: string[]) {
+    let n = 0;
+    stopStills.current = false;
+    setDrawingStills(true);
+    try {
+      return await run(async () => {
+        for (const pieceId of ids) {
+          if (stopStills.current) break;
+          setImageProgress(`Drawing still ${n + 1} of ${ids.length}…`);
+          await api("projects/" + projectId + "/studio/production", { action: "image", pieceId });
+          n++;
+          await refresh();
+        }
+      }, "Stills drawn. Review them on their cards.");
+    } finally {
+      setDrawingStills(false);
+      setImageProgress(n < ids.length ? `${n} of ${ids.length} stills drawn${stopStills.current ? " (stopped)" : ""}.` : "");
+    }
+  }
+  async function startNextCycle(projectId: string) {
+    if (!window.confirm("Start the next cycle? A new studio project is created for the same account and offer with the Brand Kit, the brief and the marked winners. It starts at the intake.")) return;
+    let nextId = "";
+    const ok = await run(async () => { nextId = (await api("projects/" + projectId + "/studio/production", { action: "nextCycle" })).next.id; }, "Next cycle created. Check the copied intake, then approve the brief.");
+    if (ok && nextId) { setSelected(nextId); setTab("studio-intake"); }
+  }
+  async function uploadStudio(slot: StudioUploadSlot, file: File, pieceId = "", options?: UploadOptions) {
+    if (!p) return false;
+    const query = new URLSearchParams({ slot, name: file.name, ...(slot === "piece" ? { pieceId, ...(options ? { aiDisclosure: options.aiDisclosure, ...(options.rightsSource && options.rightsLicence ? { rightsSource: options.rightsSource, rightsLicence: options.rightsLicence } : {}) } : {}) } : { rights: "confirmed" }) });
+    return run(async () => {
+      const response = await fetch(`/api/factory/projects/${p.id}/studio/upload?${query}`, { method: "POST", headers: { "content-type": file.type || "application/octet-stream" }, body: file, cache: "no-store" });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Upload failed");
+    }, `${file.name} uploaded`);
+  }
   function go(t: Tab, anchor?: string, fromOverview = false) {
     setArrival(false);
     setOrigin(fromOverview);
@@ -308,6 +388,29 @@ export default function Portal() {
           PORT67<span> / EXPLAIN</span>
         </Link>
         <div className="f-workspace-label">CREATIVE WORKSPACE</div>
+        {p?.studio ? (
+          <StudioSidebar
+            p={p}
+            tab={tab}
+            admin={!!principal.admin && principal.identity === "firebase" && !principal.demo}
+            go={(t, anchor) => go(t as Tab, anchor)}
+            extra={
+              <details className="f-classic-nav">
+                <summary>Classic pages</summary>
+                <nav aria-label="Classic pages">
+                  {nav
+                    .filter((n) => (["team", "agents", "skillwriter", "admin"].includes(n.id) ? !!principal.admin && principal.identity === "firebase" && !principal.demo && n.id !== "admin" : operator || !["production", "capabilities", "setup", "ideas"].includes(n.id)))
+                    .map(({ id, label, icon: Icon }) => (
+                      <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => go(id)}>
+                        <Icon size={16} />
+                        {label}
+                      </button>
+                    ))}
+                </nav>
+              </details>
+            }
+          />
+        ) : (
         <nav aria-label="Workspace navigation">
           {nav
             .filter(
@@ -329,6 +432,7 @@ export default function Portal() {
               </button>
             ))}
         </nav>
+        )}
         <div className="f-sidebar-bottom">
           <div className="f-producer-icon" aria-hidden="true">
             {userInitials(principal)}
@@ -445,12 +549,12 @@ export default function Portal() {
           <div className="f-page-header">
             <div>
               <div className="f-eyebrow">
-                EXPLAIN / {nav.find((x) => x.id === tab)?.label.toUpperCase()}
+                {tab in STUDIO_TAB_TITLES ? "STUDIO" : "EXPLAIN"} / {(nav.find((x) => x.id === tab)?.label || (tab in STUDIO_TAB_TITLES ? STUDIO_TAB_TITLES[tab as StudioTab] : "")).toUpperCase()}
               </div>
               <h1>
                 {tab === "overview"
                   ? "Good work starts with understanding."
-                  : nav.find((x) => x.id === tab)?.label}
+                  : nav.find((x) => x.id === tab)?.label || (tab in STUDIO_TAB_TITLES ? STUDIO_TAB_TITLES[tab as StudioTab] : "")}
               </h1>
               <p>
                 {tab === "overview"
@@ -540,6 +644,65 @@ export default function Portal() {
             </>
           ) : (
             <>
+              {p.studio && tab === "studio-intake" && <StudioIntake key={p.id} p={p} operator={operator} busy={busy} command={command} onUpload={(slot, file) => uploadStudio(slot, file)} />}
+              {p.studio && tabStage(tab) && tabStage(tab) !== "intake" && (
+                <StudioStagePage
+                  p={p}
+                  stage={tabStage(tab) as "strategy" | "preproduction" | "production"}
+                  operator={operator}
+                  busy={busy}
+                  command={command}
+                  onUpload={operator ? (pieceId, file) => uploadStudio("piece", file, pieceId) : undefined}
+                  hidePieces={tabStage(tab) === "preproduction" || tabStage(tab) === "production"}
+                >
+                  {tabStage(tab) === "strategy" ? (
+                    <StudioStrategy
+                      p={p}
+                      operator={operator}
+                      busy={busy}
+                      command={command}
+                      live={!!config?.researchReady && !principal.demo}
+                      aiReady={!!config?.synthesisReady && !principal.demo}
+                      runningSegment={runningSegment}
+                      onRefresh={() => void refresh()}
+                      onStartResearch={runAll}
+                      onAi={(stage) => void run(() => api("projects/" + p.id + "/synthesis", { stage }), stage === "insights" ? "AI insight drafts created. Review their evidence before accepting them." : stage === "audiences" ? "AI strapline and audience suggestions ready. Use what fits, then save." : "AI ideas added to the bank. Keep the best and drop the rest.")}
+                      onDirection={() => run(() => api("projects/" + p.id + "/synthesis", { stage: "strategy" }), "AI campaign direction saved as an unshared draft. Review before sharing.")}
+                    />
+                  ) : tabStage(tab) === "preproduction" ? (
+                    <StudioPreproduction
+                      p={p}
+                      operator={operator}
+                      busy={busy}
+                      command={command}
+                      aiReady={!!config?.synthesisReady && !principal.demo}
+                      onDraft={operator ? () => void draftPreproduction(p.id) : undefined}
+                      onImages={operator ? (ids) => void drawImages(p.id, ids) : undefined}
+                      imageProgress={imageProgress}
+                      onUpload={operator ? (pieceId, file) => uploadStudio("piece", file, pieceId) : undefined}
+                    />
+                  ) : tabStage(tab) === "production" ? (
+                    <StudioProduction
+                      p={p}
+                      operator={operator}
+                      busy={busy}
+                      command={command}
+                      aiReady={!!config?.synthesisReady && !principal.demo}
+                      onPrepare={operator ? () => void run(() => api("projects/" + p.id + "/studio/production", { action: "prepare" }), "Production prepared. Draw or upload each piece next.") : undefined}
+                      onLoops={operator ? (count) => void run(() => api("projects/" + p.id + "/studio/production", { action: "loops", count }), "Motion loops added. Make each clip from its loop prompt and upload it.") : undefined}
+                      onStills={operator ? (ids) => void drawStills(p.id, ids) : undefined}
+                      onStop={() => { stopStills.current = true; }}
+                      drawing={drawingStills}
+                      stillProgress={imageProgress}
+                      onUpload={operator ? (pieceId, file, options) => uploadStudio("piece", file, pieceId, options) : undefined}
+                      onNextCycle={operator ? () => void startNextCycle(p.id) : undefined}
+                      results={operator ? <details><summary>Enter or import results</summary><PerformancePanel p={p} busy={busy} command={command} projects={projects} variants={deliverables(p.studio!).map((x) => variantKey(p.studio!, x))} onCarry={sourceProjectId => void run(() => api("projects/" + p.id + "/performance-history", { sourceProjectId }), "History copied for review")} /></details> : undefined}
+                    />
+                  ) : undefined}
+                </StudioStagePage>
+              )}
+              {p.studio && tab === "studio-settings" && <StudioSettings p={p} operator={operator} busy={busy} command={command} />}
+              {tab === "diagnostics" && principal.admin && <DiagnosticsPanel p={p} />}
               {tab === "overview" && (
                 <>
                   {operator && !p.taskPlan && <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} />}
@@ -1080,7 +1243,7 @@ export default function Portal() {
               )}
               {tab === "learning" && (
                 <>
-                  {operator && <PerformancePanel p={p} busy={busy} command={command} projects={projects} onCarry={sourceProjectId => void run(() => api("projects/" + p.id + "/performance-history", { sourceProjectId }), "History copied for review")} />}
+                  {operator && <PerformancePanel p={p} busy={busy} command={command} projects={projects} variants={p.studio ? deliverables(p.studio).map((x) => variantKey(p.studio!, x)) : undefined} onCarry={sourceProjectId => void run(() => api("projects/" + p.id + "/performance-history", { sourceProjectId }), "History copied for review")} />}
                   <div className="f-panel f-production-head">
                     <div>
                       <Tag tone="orange">PERFORMANCE LEARNING</Tag>
@@ -1161,14 +1324,37 @@ export default function Portal() {
             <button
               className="f-modal-close"
               aria-label="Close new brief"
-              onClick={() => setNewProject(false)}
+              onClick={() => { setNewProject(false); setClassicBrief(false); }}
             >
               <X />
             </button>
-            <div className="f-eyebrow">START WITH THE ESSENTIALS</div>
-            <h2 id="brief-title">What are we creating for?</h2>
-            <p>A small brief to start. We build the understanding together.</p>
-            <form
+            <div className="f-eyebrow">{classicBrief ? "START WITH THE ESSENTIALS" : "NEW STUDIO PROJECT"}</div>
+            <h2 id="brief-title">{classicBrief ? "What are we creating for?" : "Which offer are we making?"}</h2>
+            <p>{classicBrief ? "A small brief to start. We build the understanding together." : "Pick the offer, name the client, and the project opens on Stage 1: the intake."}</p>
+            {!classicBrief && (
+              <StudioNewBrief
+                busy={busy}
+                accounts={accounts}
+                chooseAccount={operator && principal.identity === "firebase"}
+                account={briefAccount || principal.workspaceId}
+                onAccount={setBriefAccount}
+                defaultEmail={operator && principal.identity === "firebase" ? accounts.find((x) => x.id === (briefAccount || principal.workspaceId))?.email || "" : principal.email || ""}
+                onClassic={() => setClassicBrief(true)}
+                onSubmit={({ accountId, studio }) => {
+                  void run(async () => {
+                    if (accountId && accountId !== principal.workspaceId) await api("accounts", { accountId });
+                    const result = await api("projects", { studio });
+                    setSelected(result.project.id);
+                    setShownProject(result.project.id);
+                    setNewProject(false);
+                    setArrival(false);
+                    setOrigin(false);
+                    setTab("studio-intake");
+                  }, "Studio project created. Complete the intake, then approve the brief.");
+                }}
+              />
+            )}
+            {classicBrief && <form
               onSubmit={(e) => {
                 e.preventDefault();
                 const data: Record<string, unknown> = fields(e.currentTarget);
@@ -1179,6 +1365,7 @@ export default function Portal() {
                   const result = await api("projects", data);
                   setSelected(result.project.id);
                   setNewProject(false);
+                  setClassicBrief(false);
                   setArrival(false);
                   setOrigin(false);
                   setTab("overview");
@@ -1257,8 +1444,9 @@ export default function Portal() {
               </details>
               <button className="f-button" disabled={busy}>
                 Create brief <ArrowRight size={17} />
-              </button>
-            </form>
+              </button>{" "}
+              <button type="button" className="f-button secondary" onClick={() => setClassicBrief(false)}>Back to the studio intake</button>
+            </form>}
           </section>
         </div>
       )}

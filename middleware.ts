@@ -7,8 +7,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
 }
 
+// /api/factory is excluded: this middleware does nothing for it, and a matching middleware makes Next.js buffer request
+// bodies and cut them at 10 MB, which would truncate Studio uploads (CHG-0097).
 export const config = {
     matcher: [
-        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+        '/((?!_next|api/factory|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     ],
 }

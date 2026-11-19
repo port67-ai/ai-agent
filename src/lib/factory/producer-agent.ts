@@ -1,5 +1,6 @@
 import { runResearchPlanning, runMediumSelection } from "./planning-run";
-import { syncTaskPlan, taskResearchCurrent } from "./task-plan";
+import { isThinResearchHold, syncTaskPlan, taskResearchCurrent } from "./task-plan";
+import { STUDIO_STAGE_LABELS, currentStudioStage } from "./studio";
 import { requiredResearchSegments } from "./research-catalog";
 import { loadApprovalMode, producerApprovalsOn } from "./approval-mode";
 import { access, digest, id, operator, transition } from "./engine";
@@ -7,7 +8,8 @@ import { runContent } from "./content-run";
 import { runSynthesis } from "./synthesis-run";
 import { ensureScope } from "./scope-run";
 import { reviewGate, saveReview } from "./producer-review-run";
-import { GATE_LABEL, MIN_ACCEPTED_PER_SEGMENT, PRODUCER_AGENT } from "./producer-reviews";
+import { GATE_LABEL, MIN_ACCEPTED_PER_SEGMENT, PRODUCER_AGENT, thinResearchSegments } from "./producer-reviews";
+export { thinResearchSegments };
 import { stageReady } from "./ai-routing";
 import { type Principal, type Project, type ReviewGate, type Segment } from "./model";
 import { insightEvidence, researchGuidance, segmentEvidence } from "./evidence";
@@ -28,6 +30,8 @@ const INSIGHT_RULES = "Rules for the redraft: every insight must cite at least t
 /** Evidence the producer is unhappy with. Recomputed on every pass so it never goes stale. Warnings inform people; they never block. */
 export function evidenceWarnings(p: Project, at: string): { at: string; gate: string; text: string }[] {
   const out: { at: string; gate: string; text: string }[] = [];
+  const thin = thinResearchSegments(p);
+  if (thin.length) out.push({ at, gate: "research", text: `Thin research: fewer than ${MIN_ACCEPTED_PER_SEGMENT} accepted sources for ${thin.join(", ")}. This is a warning, not a stop: re-run that research or add sources by hand if the work needs more evidence.` });
   for (const e of requiredResearchSegments(p).map((k) => segmentEvidence(p, k))) {
     if (e.weak && p.sources.some((s) => s.segment === e.segment)) out.push({ at, gate: "research", text: `${e.segment} research evidence is ${e.rating} (${e.score}/100)${p.producerAgent?.researchRetries?.[e.segment] ? ", after one re-run" : ""}: ${e.reasons.join(" ")}` });
   }
@@ -103,6 +107,15 @@ export const holdSubject = (ids: string[]) => (ids.length ? digest(ids.join(",")
 
 /** The single next thing the orchestrator would do, or the reason it stops. Pure: no calls, no writes. */
 export function planNext(input: Project, aiReady: boolean): Plan {
+  // Studio projects (CHG-0097): nothing runs until a producer approves the intake at gate 1.
+  if (input.studio && input.studio.gates.intake.status !== "approved") return wait("waiting_human", "Approve the studio intake (Stage 1) first.");
+  // Studio projects (CHG-0098): the orchestrator runs Creative strategy work only while that stage is open, and never runs anything
+  // after the direction approval (no classic production drafts or copy pack). Pre-production has its own generators.
+  if (input.studio) {
+    const open = currentStudioStage(input.studio);
+    if (open !== "strategy") return wait("done", open === "delivered" ? "The studio project is delivered." : `Creative strategy is approved; ${STUDIO_STAGE_LABELS[open as Exclude<typeof open, "delivered">].toLowerCase()} is the open stage and has its own tools. Reopen Creative strategy to change research or the direction.`);
+    if (input.strategies.at(-1)?.status === "approved") return wait("waiting_human", "Direction approved: approve research and strategy (gate 2) to open Pre-production.");
+  }
   if (!input.taskPlan) return legacyPlanNext(input, aiReady);
   const p = structuredClone(input);
   syncTaskPlan(p);
@@ -146,7 +159,7 @@ function legacyPlanNext(p: Project, aiReady: boolean): Plan {
   const waiting = unreviewedIds(p);
   // Weak evidence in a segment: the producer sends that researcher back once with clear rules, then carries on and warns.
   if (!waiting.length && researchRunner && weakSegment(p, st)) return { step: "reResearch" };
-  if (st?.hold?.gate === "sources" && st.hold.subject === holdSubject(waiting)) return wait("waiting_human", st.hold.notes);
+  if (st?.hold?.gate === "sources" && !isThinResearchHold(st.hold) && st.hold.subject === holdSubject(waiting)) return wait("waiting_human", st.hold.notes);
   if (waiting.length) return { step: "reviewSources" };
   if (!p.sources.some((s) => s.status === "supported")) return wait("waiting_human", "Every source was rejected by the source producer, so there is nothing to build insights from.");
   // Insights
@@ -221,6 +234,8 @@ export async function runProducerAgent(repo: Repository, a: Principal, projectId
     if ((state?.passes || 0) >= MAX_PASSES) return first;
     if (!opts.force && state?.lastFingerprint === progressFingerprint(first)) return first;
     if (opts.force && state) await patchAgent(repo, op, projectId, (s) => { s.reworks = {}; delete s.pending; delete s.hold; });
+    // A thin-research hold left by an older pass is now only a warning (CHG-0098): clear it.
+    else if (isThinResearchHold(state?.hold)) await patchAgent(repo, op, projectId, (s) => { delete s.hold; });
     await loadApprovalMode(repo, 0);
     const aiReady = await stageReady(repo, "synthesis").catch(() => false);
     for (let n = 0; n < MAX_STEPS; n++) {
@@ -327,10 +342,10 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
     await saveReview(repo, op, projectId, rec);
     const after = await current();
     const left = unreviewedIds(after);
-    const short = requiredResearchSegments(after).filter((k) => after.sources.filter((s) => s.segment === k && s.kind === "public_source" && s.status === "supported").length < MIN_ACCEPTED_PER_SEGMENT);
     if (left.length) await patchAgent(repo, op, projectId, (s) => { s.hold = { gate: "sources", subject: holdSubject(left), notes: `The source producer left ${left.length} of ${waiting.length} sources undecided: review them by hand.` }; });
-    else if (short.length) await patchAgent(repo, op, projectId, (s) => { s.hold = { gate: "sources", subject: holdSubject([]), notes: `Fewer than ${MIN_ACCEPTED_PER_SEGMENT} accepted sources for ${short.join(", ")}: re-run that research or add sources by hand, then run the agent again.` }; });
-    return `${rec.summary} (${rec.by})`;
+    // Thin research (fewer than MIN_ACCEPTED_PER_SEGMENT accepted sources in an area) is a warning for producers, not a hold.
+    const thin = thinResearchSegments(after);
+    return `${rec.summary} (${rec.by})${thin.length ? `; warning: thin research for ${thin.join(", ")}` : ""}`;
   }
   if (step === "reviewInsights") {
     const rec = await reviewGate(repo, op, projectId, "insights");

@@ -20,8 +20,11 @@ import {
   type Segment,
   type KeyMessage,
   type Strategy,
+  type StudioBrief,
 } from "./model";
 import { autoApproveProducer } from "./auto-approve";
+import { STUDIO_COMMANDS, applyStudioCommand } from "./studio-commands";
+import { STUDIO_CLASSIC_PRODUCTION_REFUSED, applyAccountBrandKit, bridgeStudioBrief, initialStudio, normaliseStudioBrief, selectableOffer, studioCommandRefusal, studioStageVisibleToClient, studioStrategyClosed } from "./studio";
 export const digest = (s: string) =>
   createHash("sha256").update(s).digest("hex");
 const now = () => new Date().toISOString();
@@ -195,6 +198,55 @@ export function createProject(
   if (!a.demo && brief.workRequest) planProject(project, a.subject, "Initial customer brief");
   return project;
 }
+/**
+ * Create a studio project (CHG-0097). The producer (or the account owner) picks the offer and submits the intake; the project starts
+ * in Stage 1 with the intake gate active. The legacy brief is a provisional mapping of the intake so existing views keep working;
+ * it is mapped again, the channels set and the task plan built when gate 1 is approved. No task plan and no research before that.
+ */
+export function createStudioProject(input: Record<string, unknown>, a: Principal, projectId: string = id(), accountKit?: StudioBrief["brandKit"]): Project {
+  if (!canCreateProject(a)) operator(a);
+  const offer = selectableOffer(input.offer);
+  const brief = normaliseStudioBrief(input.brief);
+  if (!brief.client.businessName) throw new Error("Business name is required");
+  const studio = initialStudio(offer, brief);
+  // One Brand Kit per customer account: copied into the new intake where the intake left it empty. The copy is what the project uses.
+  if (accountKit) applyAccountBrandKit(studio, accountKit, accountScope(a));
+  const mapped = bridgeStudioBrief(studio);
+  const at = now();
+  return {
+    id: projectId,
+    workspaceId: a.workspaceId,
+    accountId: accountScope(a),
+    createdBy: a.subject,
+    createdAt: at,
+    updatedAt: at,
+    revision: 1,
+    studio,
+    brief: mapped.brief,
+    sources: [],
+    insights: [],
+    strategies: [],
+    tasks: [],
+    assets: [],
+    capabilities: [],
+    audit: [{ id: id(), at, actor: a.subject, role: a.role, action: "studio_intake_submitted", detail: `Studio intake recorded for ${offer}; Stage 1 is open` }],
+    runs: [],
+    processed: [],
+  };
+}
+/** Studio projects run no paid research, planning or drafting until gate 1 (the intake) is approved. Legacy projects are unaffected. */
+export function requireStudioIntakeApproved(p: Project) {
+  if (p.studio && p.studio.gates.intake.status !== "approved") throw new Error("Approve the studio intake (Stage 1) before research or drafting starts");
+}
+/** Studio projects run research, reviews, insights, strapline and audiences, ideas and the direction only while Creative strategy is open. */
+export function requireStudioStrategyOpen(p: Project) {
+  const closed = p.studio && studioStrategyClosed(p.studio);
+  if (closed) throw new Error(closed);
+}
+/** Studio projects never use the classic flow after direction approval (production drafts, copy pack, assets, video). */
+export function refuseStudioClassicProduction(p: Project) {
+  if (p.studio) throw new Error(STUDIO_CLASSIC_PRODUCTION_REFUSED);
+}
 function latest(p: Project) {
   const s = p.strategies.at(-1);
   if (!s) throw new Error("Create a direction first");
@@ -316,7 +368,16 @@ export function transition(
     "approveAdvert",
     "requestAdvertChanges",
   ];
-  if (!customerActions.includes(type) && !["updateBrief", "setChannels", "requestResearch", "setAudiences"].includes(type)) operator(a);
+  // Studio commands check their own roles (producer gates, client gates, piece actions) in studio-commands.ts.
+  if (!customerActions.includes(type) && !STUDIO_COMMANDS.has(type) && !["updateBrief", "setChannels", "requestResearch", "setAudiences"].includes(type)) operator(a);
+  if (p.studio) {
+    if (type === "updateBrief") throw new Error("This is a studio project: edit the Stage 1 intake instead");
+    if (type === "enableAIPlanning" || type === "useRulesResearchPlan") throw new Error("Studio projects use the studio research set; AI research planning is not used");
+    if (type === "setChannels" || type === "requestResearch") requireStudioIntakeApproved(p);
+    // Stage gating (piece B): strategy work only while Creative strategy is open; no classic production or format choice at all.
+    const refused = studioCommandRefusal(p.studio, type);
+    if (refused) throw new Error(refused);
+  }
   // The account level is paused: a producer or admin presses the customer's approval buttons (PORT67_ACCOUNT_APPROVALS=required turns
   // this off). The AI producer approves only when the master switch and the admin mode allow it. Every such approval is recorded as
   // given on the customer's behalf.
@@ -325,7 +386,10 @@ export function transition(
     throw new Error("Customer approval identity required");
   const approver = onBehalf ? (a.subject === "port67-producer-agent" ? "AI producer (on behalf of the customer)" : `${a.subject} (on behalf of the customer)`) : a.subject;
   if (requestId && p.processed.includes(requestId)) return p;
-  if (type === "recordPerformance" || type === "importPerformance") {
+  let studioOnBehalf = false;
+  if (STUDIO_COMMANDS.has(type)) {
+    studioOnBehalf = applyStudioCommand(p, c, a, type);
+  } else if (type === "recordPerformance" || type === "importPerformance") {
     if ((p.performance?.length || 0) >= 100) throw new Error("Performance record limit reached");
     const rows = type === "importPerformance" ? parsePerformanceCsv(String(c.csv || "")) : [validatePerformance(c)];
     if ((p.performance?.length || 0) + rows.length > 100) throw new Error("Performance record limit reached");
@@ -416,6 +480,9 @@ export function transition(
     // produced after it so the whole journey can be run from the start. The audit trail is kept and records what was removed; the cost
     // ledger is separate and untouched, because that money was spent.
     if (!a.admin) throw new Error("Forbidden: only an admin can restart a project from its brief");
+    // Studio projects (piece C decision): restarting would discard approved gates, pieces and their file references, so it is refused.
+    // Reopen Stage 1 instead; every later stage is then marked out of date with its work kept.
+    if (p.studio) throw new Error("Studio projects cannot be restarted from the brief: reopen Stage 1 (Client intake) instead; later stages are marked out of date and their work is kept");
     if (c.confirm !== true) throw new Error("Confirm that you want to remove everything except the brief");
     const removed = `${p.sources.length} sources, ${p.insights.length} insights, ${p.strategies.length} directions, ${p.assets.length} assets, ${p.runs.length} runs, ${(p.videos || []).length} videos`;
     p.sources = [];
@@ -907,7 +974,7 @@ export function transition(
     action: type,
     detail: `Revision ${p.revision}`,
   });
-  if (onBehalf) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "approved_on_behalf", detail: `${type} given by a producer on the customer's behalf` });
+  if (onBehalf || studioOnBehalf) p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "approved_on_behalf", detail: `${type} given by a producer on the customer's behalf` });
   return p;
 }
 export function researchProgress(p: Project): NonNullable<Project["researchProgress"]> {
@@ -956,6 +1023,14 @@ export function projectView(input: Project, a: Principal): Project {
   delete p.reviews;
   delete p.ideas;
   delete p.audienceSuggestion;
+  if (p.studio) {
+    delete p.studio.rerunRequests;
+    // Client stages stay with the producer until they are marked ready for client review (piece B).
+    const studio = p.studio;
+    studio.pieces = studio.pieces.filter((x) => studioStageVisibleToClient(studio, x.stage));
+    // Go-to-market records (piece C) are shown to the client with the Production stage, once it is shared or approved.
+    if (!studioStageVisibleToClient(studio, "production")) delete studio.gtm;
+  }
   if (p.advert && p.advert.status !== "shared" && p.advert.status !== "approved") delete p.advert;
   p.deliveryPaused = p.strategies.at(-1)?.status !== "approved";
   p.strategies = p.strategies.filter((s) => s.status !== "draft");

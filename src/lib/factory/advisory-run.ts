@@ -1,6 +1,6 @@
 import { meteredModelCall } from "./metering";
 import { capabilityRegistry } from "./registry";
-import { access, digest, id, operator } from "./engine";
+import { access, digest, id, operator, requireStudioStrategyOpen } from "./engine";
 import type { Principal, Project, ResearchRun } from "./model";
 import type { Repository } from "./repository";
 import { resolveSelection, stageReady, synthesisSlot } from "./ai-routing";
@@ -23,6 +23,8 @@ export async function runAdvisory(repo: Repository, a: Principal, projectId: str
     const current = state.projects.find((p) => p.id === projectId);
     if (!current) throw new Error("Forbidden: project access");
     access(current, a);
+    requireStudioStrategyOpen(current);
+    if (kind === "formats" && current.studio) throw new Error("The studio offer fixes the format; there is no format suggestion on a studio project");
     if (current.taskPlan?.mode === "research") throw new Error("Campaign advisory agents are excluded from this research-only task plan");
     const context = prepare(current);
     if (current.runs.some((r) => r.status === "running")) throw new Error("A provider task is already running; wait or recover its expired lease");

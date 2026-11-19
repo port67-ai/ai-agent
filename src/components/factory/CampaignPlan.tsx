@@ -15,7 +15,7 @@ const fromLines = (t: string) => t.split("\n").map((l) => l.trim()).filter(Boole
 });
 
 /** The two decisions that shape every ad: which formats to make (a producer decides, the system suggests) and the strapline plus audience segments. */
-export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi, onAiAudiences, onMedium }: Actions & { aiReady?: boolean; onAi?: () => void; onAiAudiences?: () => void; onMedium?: () => unknown }) {
+export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi, onAiAudiences, onMedium, fixedFormat }: Actions & { aiReady?: boolean; onAi?: () => void; onAiAudiences?: () => void; onMedium?: () => unknown; /** Studio projects: the offer fixes the format, so the format choice and medium selection are hidden and this text is shown. */ fixedFormat?: string }) {
   const f = p.formats;
   const [rationale, setRationale] = useState(p.mediumDecision?.rationale || "");
   const [picked, setPicked] = useState<string[]>(f?.selected || []);
@@ -37,6 +37,9 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
   return (
     <section className="f-panel f-campaign-plan">
       <div className="f-eyebrow">Campaign plan</div>
+      {fixedFormat !== undefined ? (
+        <p className="f-small"><strong>Format:</strong> {fixedFormat}</p>
+      ) : (<>
       {operator && <MediumPanel p={p} busy={busy} onRun={onMedium} />}
       <h3 id="formats-anchor">Ad formats {f?.decidedAt ? <Tag tone="good">chosen</Tag> : <Tag>not chosen yet</Tag>}</h3>
       {operator ? (
@@ -70,6 +73,7 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
       ) : (
         <p className="f-small">{f?.selected?.length ? FORMATS.filter((x) => f.selected.includes(x.id)).map((x) => x.name).join(", ") : "Your producer is choosing the best ad formats for your channels."}</p>
       )}
+      </>)}
       <h3 id="audiences-anchor">Strapline, audience segments and demographics</h3>
       <p className="f-small">The strapline is the one message every ad carries, in every format and for every audience. Audience segments, with their demographics, change the angle, hook and tone, never the strapline.</p>
       {operator && aiReady && (

@@ -296,3 +296,51 @@ Supports FAC-WFL-001/002 and FAC-AGT-003 with a bounded project graph and persis
 | FAC-PLN-006 | Implemented locally; promotion remains manual | Proposed capability gaps are non-executable and use the existing backlog; no new researcher/tool permissions are granted. |
 
 Independent review identified pending-planner scoping bypass, stale format confirmation, repeated rules-scope reviews and stale manual UI decisions. Reproductions and regression tests accompany fixes. Final verification and release references are recorded in HANDOVER/CHANGELOG; no paid live-provider quality acceptance is inferred from simulated transport tests.
+
+
+## CHG-0097: Studio stages, piece A (20 November 2026)
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-STU-001 | IMPLEMENTED locally; not deployed or seen live | `STUDIO_OFFERS` and `OfferPicker`; parked offers refused by `selectableOffer`. Covered by factory-studio.test.ts and factory-studio-ui.test.tsx. |
+| FAC-STU-002 | IMPLEMENTED locally; not deployed or seen live | `createStudioProject`, `POST projects` with `studio`, New brief dialog (`StudioNewBrief`). factory-studio-api.test.ts. |
+| FAC-STU-003 | IMPLEMENTED locally; not deployed or seen live | `studioCompleteness`, `fieldRule`, `normaliseStudioBrief`, `StudioIntake`. factory-studio.test.ts and factory-studio-ui.test.tsx. Not checked visually in a browser. |
+| FAC-STU-004 | IMPLEMENTED locally; not deployed or seen live | Upload and file routes in service.ts, studio-store.ts. API test checks type sniffing, limits, rights confirmation, document size, byte ranges and customer isolation. Firebase Storage path not exercised here. |
+| FAC-STU-005 | IMPLEMENTED locally; not deployed or seen live | `approveStudioGate`, `reopenStudioGate`, `studio-commands.ts` role rules. factory-studio.test.ts. |
+| FAC-STU-006 | IMPLEMENTED locally; not deployed or seen live | Piece operations in studio.ts; `PieceCard`. Pieces are created by producers by hand until pieces B and C add generators. |
+| FAC-STU-007 | IMPLEMENTED locally; generators added by piece B (CHG-0098, FAC-STU-017) | Rerun requests and the `registerStudioRerun` hook; tested with a test generator. Real generation and its cost display are piece B. |
+| FAC-STU-008 | IMPLEMENTED locally; not deployed or seen live | `bridgeStudioBrief`, `bridgeAtGate1`, studio branch in `planProject`, gate 1 guards. Stage 2 orchestration past the active gate is piece B. |
+| FAC-STU-009 | IMPLEMENTED locally; not deployed or seen live | `StudioSidebar`, `StudioStagePage`, `GateBar`, `PieceCard`, portal.css. Server-render tests only; browser journeys not run. |
+| FAC-STU-010 | IMPLEMENTED locally; not deployed or seen live | Account record `factory-brandkit-<account>`; saved at gate 1, copied at creation. API test. |
+| FAC-STU-011 | IMPLEMENTED locally; not deployed or seen live | Audit entries in studio-commands.ts and the upload route; asserted in tests. |
+
+## CHG-0098: Studio stages, piece B (20 November 2026)
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-STU-012 | IMPLEMENTED locally; not deployed or seen live | `studioCommandRefusal` and `studioStrategyClosed` (studio.ts), transition guard (engine.ts), route guards and `runResearchSegment` (service.ts), guards in runSynthesis, runAdvisory and runContent, studio guard in `planNext`, studio task plan without format or production tasks, formats fixed at the gate 1 bridge. factory-studio-strategy.test.ts and factory-studio-preproduction-api.test.ts. |
+| FAC-STU-013 | IMPLEMENTED locally; not deployed or seen live | `thinResearchSegments` (producer-reviews.ts), warning in `evidenceWarnings` and run-tracker, `isThinResearchHold` ignored in planNext and syncTaskPlan and cleared on the next pass; the hold is no longer set. factory-studio-strategy.test.ts (legacy flow). No existing test asserted the old hold. |
+| FAC-STU-014 | IMPLEMENTED locally; not checked in a browser | `StudioStrategy.tsx` reusing ResearchProgress, ReviewQueue, InsightEditor, CampaignPlan (new `fixedFormat` prop), Ideas and Direction; `studioDirectionFraming` in the strategy payload and `STUDIO_DIRECTION_RULE` for studio projects only. factory-studio-pages.test.tsx (server render) and factory-studio-strategy.test.ts. Quality of real model output with the framing not seen. |
+| FAC-STU-015 | IMPLEMENTED locally; not deployed or seen live | `strategyGateBlockers` registered in studio-gates.ts; gate `gaps` recorded on approve with a note. factory-studio-strategy.test.ts. |
+| FAC-STU-016 | IMPLEMENTED locally; no live model call made | studio-preproduction.ts (`preproductionContext`, `validateScenePack`, `validateHookPack`, `draftPreproduction`), slot `studio:preproduction`, default skill. Validators and the draft route tested with a stubbed provider only. |
+| FAC-STU-017 | IMPLEMENTED locally; no live model call made | `createPreproductionPieces`, rerun handlers registered for moodboard, continuity, scene, script, narrative, hook, shotlist, voice_captions, test_frame and keyframe. API test reruns a text and an image piece with stubbed calls and checks stale marking. |
+| FAC-STU-018 | IMPLEMENTED locally; no paid image call made | image-provider.ts (`openAiImageProvider`, `meteredImage`, `storeGeneratedImage`), `IMAGE_SLOT` resolution in ai-routing.ts, AI agents page group and system map band 10. Stubbed fetch tests: success, 429 retry, 5xx retries, error message with redaction, non-image bytes, edits endpoint for references, ledger rows. The edits (reference image) path has never been called against the real API. |
+| FAC-STU-019 | IMPLEMENTED locally; not checked in a browser | Portal `draftPreproduction` and `drawImages` (client loop, one POST per image), `StudioPreproduction` buttons and error states. Server render tests only. |
+| FAC-STU-020 | IMPLEMENTED locally; not deployed or seen live | `preproductionGateBlockers`, `setStudioReadyForClient`, `studioStageVisibleToClient` used in projectView, gate and piece commands and (through the view) the file route. factory-studio-preproduction-api.test.ts and factory-studio.test.ts. |
+| FAC-STU-021 | IMPLEMENTED locally; not checked in a browser | `StudioPreproduction.tsx`, `StudioStagePage` `hidePieces`, GateBar share button, portal.css. factory-studio-pages.test.tsx (server render). |
+
+## CHG-0099: Studio stages, piece C (20 November 2026)
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-STU-022 | IMPLEMENTED locally; not deployed or seen live | `planProduction`, `planLoops`, `applyProductionPlan` (studio-production.ts), commands `prepareStudioProduction`, `setStudioLoops`, `removeStudioPiece`, route `POST .../studio/production` (`prepare`, `loops`). factory-studio-production.test.ts (counts, quantity cap, skipped scenes, dependsOn) and factory-studio-production-api.test.ts. |
+| FAC-STU-023 | IMPLEMENTED locally; no paid image call made | `generateStudioStill` and the `still` rerun generator (studio-production-run.ts), `buildStillPrompt`, `stillReferences`, `cropPngToRatio`; Portal `drawStills` (one request per still, Stop button). Stubbed fetch only: the edits endpoint with the test frame and packshot, 2:3 drawn and stored cropped to 4:5. The real OpenAI edits endpoint has never been called. |
+| FAC-STU-024 | IMPLEMENTED locally; no video tool connected | `variantPromptPack`, `promptPackMarkdown`, `loopPrompt`, prompt pack and loop prompt downloads, upload slot with required AI disclosure and optional rights, `VideoProvider` interface with no provider (video-provider.ts). API and server-render tests. |
+| FAC-STU-025 | IMPLEMENTED locally; best-effort MP4 reader | `mediaInfo` (studio-media.ts) for PNG, JPEG, WebP, MP4 and MOV (tkhd size, quarter-turn rotation, mvhd length); sizes stored on upload and generation. Tested on PNG, JPEG, WebP and minimal MP4 fixtures built in code, not on real phone or editor exports. |
+| FAC-STU-026 | IMPLEMENTED locally; not deployed or seen live | `StudioGtm` (model.ts), `gtmChecks`, `claimFlags`, confirmation fingerprints (studio-gtm.ts), commands `confirmStudioGtm`, `addStudioRights`, `removeStudioRights`, `setStudioAssetRights`, `clearStudioClaimFlag`. factory-studio-production.test.ts. The claim word list and disclosure lines are a first cut, not legal advice. |
+| FAC-STU-027 | IMPLEMENTED locally; not deployed or seen live | `specRule`, `specCheck`, `confirmStudioPieceCheck` (specs, safe zones, product accuracy). Safe-zone margins deliberately not coded; no AI vision check. |
+| FAC-STU-028 | IMPLEMENTED locally; not checked in a browser | `fileBase`, `testMatrixCsv`, `deliveryManifest`, `manifestMarkdown`, `handoffMarkdown`, `studioDeliveryDocument` and `GET .../studio/delivery/:file`. No ZIP: per-file downloads plus the manifest. |
+| FAC-STU-029 | IMPLEMENTED locally; not deployed or seen live | `productionGateBlockers` registered for the production gate, `studio_delivered` audit, `DeliveredView`, sidebar Delivered links, customer visibility of `gtm`. Domain, API and server-render tests. |
+| FAC-STU-030 | IMPLEMENTED locally; not deployed or seen live | Optional `variant`, `views3s`, `thruplays`, `purchases` in performance.ts and PerformancePanel; `readback`, `readbackTemplateCsv`. Legacy rows unchanged (tested). No advertising platform is connected. |
+| FAC-STU-031 | IMPLEMENTED locally; not deployed or seen live | `startNextCycle` (studio-production-run.ts), route action `nextCycle`, `setStudioWinner`. API test. |
+| FAC-STU-032 | IMPLEMENTED locally; not deployed or seen live | `StudioRerunError` and `run` on rerun output (studio-rerun.ts), runs stored by `runStudioRerun` (service.ts) for text, image and still reruns; `resetProject` refused on studio projects (engine.ts). API and domain tests. |

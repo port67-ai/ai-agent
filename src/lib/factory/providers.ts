@@ -66,3 +66,4 @@ async function invokeOnce(s:ProviderSelection,request0:{instructions:string;inpu
  }catch(e){const timedOut=e instanceof Error&&(e.name==='TimeoutError'||e.name==='AbortError');result.error=timedOut?`AI provider timed out after ${Math.round((request.timeoutMs ?? (request.research || request.videoUrl?100000:60000))/1000)} seconds; usage unknown unless reported`:`AI provider request failed${/^[A-Z_]{3,30}$/.test(String((e as {cause?:{code?:unknown}})?.cause?.code))?' ('+(e as {cause:{code:string}}).cause.code+')':''}; usage unknown unless reported`;}
  return result;
 }
+export { redact as redactProviderText, detail as providerErrorDetail };

@@ -38,11 +38,16 @@ export const SLOTS = [
   { id: "review:sources", stage: "synthesis", label: "Producer: source review", hint: "Accepts or rejects each source. Sees only the sources, the business and its questions." },
   { id: "review:insights", stage: "synthesis", label: "Producer: insight review", hint: "Accepts or rejects each draft insight against its own evidence. Sees no direction." },
   { id: "review:direction", stage: "synthesis", label: "Producer: direction review", hint: "Decides whether the direction is ready for the account owner. Sees no raw sources." },
+  { id: "studio:preproduction", stage: "synthesis", label: "Studio: pre-production writer", hint: "Writes the mood board, continuity profile, scenes, script, narratives, hooks, shot list and voice notes from the approved direction only." },
+  { id: "studio:image", stage: "synthesis", label: "Studio: image generation", hint: "Draws studio test frames, keyframes and Scene Pack stills. OpenAI Images only; without a route it uses PORT67_IMAGE_MODEL or gpt-image-1." },
 ] as const satisfies readonly { id: string; stage: ProviderStage; label: string; hint: string }[];
 export type SlotId = (typeof SLOTS)[number]["id"];
 export const researchSlot = (segment: string) => `research:${segment}` as SlotId;
 export const synthesisSlot = (stage: string) => (stage === "insights" ? "synthesis:insights" : stage === "content" ? "synthesis:content" : stage === "formats" ? "synthesis:formats" : stage === "ideas" ? "synthesis:ideas" : stage === "audiences" ? "synthesis:audiences" : "synthesis:strategy") as SlotId;
 const MODEL = /^[a-zA-Z0-9._:/-]{1,180}$/;
+/** The studio image slot (CHG-0098) is OpenAI Images only and never inherits the drafting default (a text model cannot draw). */
+export const IMAGE_SLOT = "studio:image";
+export const DEFAULT_IMAGE_MODEL = "gpt-image-1";
 const PRICE_KEY = /^(openai|anthropic|deepseek|gemini):[a-zA-Z0-9._:/-]{1,180}$/;
 const MAX_PRICES = 40;
 const MAX_HISTORY = 100;
@@ -78,6 +83,7 @@ export function validateRoutingInput(raw: unknown, env: Env = process.env) {
   for (const slot of SLOTS) {
     const value = input.slots?.[slot.id];
     if (value) slots[slot.id] = validateRoute(value, slot.stage, slot.label, env);
+    if (value && slot.id === IMAGE_SLOT && slots[slot.id].provider !== "openai") throw new Error(`${slot.label}: only OpenAI image models are built so far`);
   }
   const pricing: Record<string, Pricing> = {};
   const entries = Object.entries(input.pricing || {});
@@ -138,6 +144,15 @@ export async function resolveSelection(repo: Repository, slotId: SlotId, env: En
     config = {};
   }
   const own = config.slots?.[slotId];
+  if (slotId === IMAGE_SLOT) {
+    // Own route, else PORT67_IMAGE_MODEL, else gpt-image-1; always OpenAI, never the drafting default.
+    if (own && own.provider !== "openai") throw new Error(`${slot.label} only supports OpenAI image models`);
+    const model = own?.model || env.PORT67_IMAGE_MODEL?.trim() || DEFAULT_IMAGE_MODEL;
+    if (!MODEL.test(model)) throw new Error("PORT67_IMAGE_MODEL is not a valid model ID");
+    const key = env[keyNames.openai];
+    if (!key?.trim()) throw new Error(`${slot.label} uses OpenAI, but ${keyNames.openai} is not set in Render`);
+    return { provider: "openai", model, key, source: own ? "slot" : "env" };
+  }
   const inherited = slotId === "synthesis:planner" ? config.slots?.["scope:business"] : slotId === "synthesis:medium" ? config.slots?.["synthesis:formats"] : undefined;
   const route = own || config.defaults?.[slot.stage] || inherited;
   if (route) {
@@ -153,7 +168,7 @@ export async function resolveSelection(repo: Repository, slotId: SlotId, env: En
 export async function stageReady(repo: Repository, stage: ProviderStage, env: Env = process.env) {
   if (env[stage === "research" ? "PORT67_RESEARCH_ENABLED" : "PORT67_SYNTHESIS_ENABLED"] !== "true") return false;
   if (providerConfigured(stage, env)) return true;
-  for (const slot of SLOTS.filter((s) => s.stage === stage && !/^(scope|review):/.test(s.id))) {
+  for (const slot of SLOTS.filter((s) => s.stage === stage && !/^(scope|review):/.test(s.id) && s.id !== IMAGE_SLOT)) {
     try {
       await resolveSelection(repo, slot.id, env);
       return true;
@@ -290,6 +305,6 @@ export async function routingOverview(repo: Repository, env: Env = process.env) 
     effective,
     envDefaults: { research: envDefault("research"), synthesis: envDefault("synthesis") },
     switches: { research: env.PORT67_RESEARCH_ENABLED === "true", synthesis: env.PORT67_SYNTHESIS_ENABLED === "true" },
-    images: { available: false, note: "Image and video generation by a model is not built yet: production drafts use built-in templates. A model slot will appear here when it exists." },
+    images: { available: true, note: "Studio test frames and keyframes use the Studio: image generation job (OpenAI Images; PORT67_IMAGE_MODEL or gpt-image-1 by default). Video generation is not built." },
   };
 }

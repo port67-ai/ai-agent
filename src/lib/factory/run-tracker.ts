@@ -1,6 +1,6 @@
-import { syncTaskPlan } from "./task-plan";
+import { isThinResearchHold, syncTaskPlan } from "./task-plan";
 import type { Project, Segment } from "./model";
-import { MIN_ACCEPTED_PER_SEGMENT } from "./producer-reviews";
+import { MIN_ACCEPTED_PER_SEGMENT, thinResearchSegments } from "./producer-reviews";
 
 // Where a project is in its run: what has run, what is running, what is paused and what is waiting for an approval. Computed from the
 // project, never stored. `tab` names the page where the person acts (the portal turns it into a link).
@@ -28,7 +28,8 @@ export function runTracker(p: Project): TrackStep[] {
       const act = t.id === "reviewSources" && p.sources.some(s => s.status === "unreviewed") ? "review_sources" : t.id === "reviewInsights" && p.insights.some(i => i.status === "draft") ? "review_insights" : t.id === "approveDirection" && p.strategies.at(-1)?.status === "shared" ? "approve_direction" : undefined;
       const kind: StepKind = PEOPLE.has(t.id) || t.id.startsWith("manual:") ? "review" : "agent";
       const state = states[t.status];
-      const detail = t.status === "ready" ? "Ready: press Run ready tasks" : t.detail || t.reason;
+      const thin = t.id === "reviewSources" && t.status === "done" ? thinResearchSegments(copy) : [];
+      const detail = t.status === "ready" ? "Ready: press Run ready tasks" : thin.length ? `Warning: fewer than ${MIN_ACCEPTED_PER_SEGMENT} accepted sources for ${thin.join(", ")} (thin research; work continues)` : t.detail || t.reason;
       const anchor = t.id === "formats" ? "formats-anchor" : t.id === "approveDirection" ? "approval-anchor" : undefined;
       return { id: t.id, taskId: t.id, label: t.title, state, detail, tab, kind, anchor, who: state === "running" ? "AI" : state === "paused" || state === "waiting_approval" || state === "ready" ? "Producer" : undefined, ...(ai && ["ready", "blocked"].includes(t.status) ? { ai } : {}), ...(act ? { act } : {}) };
     });
@@ -51,10 +52,12 @@ export function runTracker(p: Project): TrackStep[] {
   const unreviewed = p.sources.filter((s) => s.status === "unreviewed").length;
   const anyPublic = p.sources.some((s) => s.kind === "public_source");
   // A hold is the AI producer's note from an earlier pass. It only counts while what it names is still open: a person may have decided the sources since.
-  const shortSegments = [...CORE].filter((k) => p.sources.filter((s) => s.segment === k && s.kind === "public_source" && s.status === "supported").length < MIN_ACCEPTED_PER_SEGMENT);
-  const srcHold = st?.hold?.gate === "sources" && (unreviewed > 0 || (st.hold.notes.startsWith("Fewer than") && shortSegments.length > 0));
+  const shortSegments = thinResearchSegments(p);
+  // Thin research (fewer than MIN_ACCEPTED_PER_SEGMENT accepted sources) is a warning, never a pause (CHG-0098).
+  const srcHold = st?.hold?.gate === "sources" && !isThinResearchHold(st.hold) && unreviewed > 0;
+  const thinWarning = shortSegments.length ? `. Warning: fewer than ${MIN_ACCEPTED_PER_SEGMENT} accepted sources for ${shortSegments.join(", ")} (thin research; work continues)` : "";
   step("sources", "Source review", runningStage("review") && unreviewed ? "running" : !anyPublic ? "pending" : srcHold ? "paused" : unreviewed ? "paused" : "done",
-    srcHold && unreviewed ? `${unreviewed} of ${p.sources.filter((x) => x.kind === "public_source").length} sources are waiting for you (the AI source producer left them undecided)` : srcHold ? st!.hold!.notes : unreviewed ? `${unreviewed} sources await review` : anyPublic ? "All sources decided" : "Waiting for research", "research", unreviewed ? { act: "review_sources" } : {});
+    srcHold ? `${unreviewed} of ${p.sources.filter((x) => x.kind === "public_source").length} sources are waiting for you (the AI source producer left them undecided)` : unreviewed ? `${unreviewed} sources await review` : anyPublic ? "All sources decided" + thinWarning : "Waiting for research", "research", unreviewed ? { act: "review_sources" } : {});
   const drafts = p.insights.filter((i) => i.status === "draft").length;
   const reviewed = p.insights.filter((i) => (i.status || "reviewed") === "reviewed").length;
   const readyToDraft = !p.insights.length && anyPublic && !unreviewed;
