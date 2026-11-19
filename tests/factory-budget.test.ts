@@ -6,6 +6,7 @@ import { LocalRepository } from '../src/lib/factory/repository';
 import { adminCostReport, archiveApiCalls, finishApiCall, reserveApiCall } from '../src/lib/factory/costs';
 import { assertWithinBudget, budgetConfig, budgetStatus, monthWindow } from '../src/lib/factory/budget';
 
+process.env.PORT67_SPEND_LIMITS = 'on'; // limits are off by default; these tests cover the enforcing mode
 const input = { accountId: 'a', workspaceId: 'w', projectId: 'p', runId: 'r', stage: 'research', provider: 'test', model: 'model', actor: 'owner' };
 const reset = () => { for (const k of ['PORT67_MONTHLY_BUDGET_USD', 'PORT67_PROJECT_BUDGET_USD', 'PORT67_CALL_HOLD_USD', 'PORT67_MODEL_PRICING_JSON']) delete process.env[k]; };
 
@@ -96,6 +97,16 @@ async function main() {
   const defRepo = new LocalRepository(await mkdtemp(join(tmpdir(), 'budget-default-')));
   for (let i = 0; i < 25; i++) await reserveApiCall(defRepo, { ...input, runId: 'r' + i });
   await assert.rejects(reserveApiCall(defRepo, input), /Monthly AI spend cap reached.*\$2\.50 used or held of \$2\.50/);
+  reset();
+  // Off by default: calls past a configured amount are recorded and allowed, and the report still shows spend against it
+  delete process.env.PORT67_SPEND_LIMITS;
+  process.env.PORT67_MONTHLY_BUDGET_USD = '0.1';
+  const openRepo = new LocalRepository(await mkdtemp(join(tmpdir(), 'budget-off-')));
+  for (let i = 0; i < 5; i++) await reserveApiCall(openRepo, { ...input, runId: 'o' + i });
+  const openReport = await adminCostReport(openRepo);
+  assert.equal(openReport.summary.callCount, 5, 'every call past the amount was recorded');
+  assert.ok(!('error' in openReport.budget) && openReport.budget.remainingMicroUsd === 0, 'spend over the amount shows nothing remaining');
+  process.env.PORT67_SPEND_LIMITS = 'on';
   reset();
   console.log('Factory spend caps passed');
 }

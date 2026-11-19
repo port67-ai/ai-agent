@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repository';
 import { standardPrice } from './standard-prices';
-import { assertWithinBudget, budgetConfig, budgetStatus, validateBudgetSettings, type BudgetSettings } from './budget';
+import { assertWithinBudget, budgetConfig, budgetStatus, spendLimitsEnforced, validateBudgetSettings, type BudgetSettings } from './budget';
 export const ADMIN_LEDGER_NAMESPACE = 'factory-admin-ledger';
 export const MAX_LEDGER_CALLS = 150;
 export type ApiUsage = { inputTokens: number; outputTokens: number; cachedInputTokens?: number; cacheCreationInputTokens?: number; toolCalls?: number; toolUsageUnknown?: boolean };
@@ -41,8 +41,8 @@ export async function reserveApiCall(repo: Repository, input: ApiCallInput): Pro
   let saved: BudgetSettings|undefined; let baseline: Baseline|undefined;
   try { const settings=await repo.read(AI_ROUTING_NAMESPACE); adminPricing=settings.aiRouting?.pricing; saved=settings.budgetSettings; baseline=settings.costBaseline; } catch { /* unreadable prices mean unknown cost, which the cap holds at its call hold */ }
   const pricing=pricingFor(metadata.provider,metadata.model,adminPricing);
-  // Invalid cap settings throw here, before any reservation, so a typo blocks paid calls rather than lifting the cap.
-  const budget=budgetConfig(process.env,saved);
+  // Spend limits are off unless PORT67_SPEND_LIMITS=on (see budget.ts): calls are always recorded and shown, never refused. When on, invalid cap settings throw here, before any reservation.
+  const budget=spendLimitsEnforced()?budgetConfig(process.env,saved):undefined;
   // Archived batches are immutable history. Their ids are re-checked inside the mutation so archiving cannot hide spend.
   const archiveIds=(await ledgerNamespaces(repo)).slice(1);
   const archived=(await Promise.all(archiveIds.map(async id=>{const db=await repo.read(id) as Ledger; if(!db.apiCalls) throw Error('Ledger archive is unavailable; spend cannot be checked'); return db.apiCalls;}))).flat();
@@ -50,7 +50,7 @@ export async function reserveApiCall(repo: Repository, input: ApiCallInput): Pro
   const row: ApiCall={...metadata,...(agent?{agent}:{}),id:randomUUID(),createdAt:new Date().toISOString(),status:'reserved',...(pricing?{pricing}:{})};
   return repo.mutate(ADMIN_LEDGER_NAMESPACE,db=>{ const ledger=db as Ledger; const rows=ledger.apiCalls??=[]; if(rows.length>=MAX_LEDGER_CALLS) throw new Error('Admin ledger capacity reached; export and archive ledger before further API calls');
     if(JSON.stringify(ledger.ledgerArchives||[])!==JSON.stringify(archiveIds)) throw new Error('Ledger archive changed during the spend check; retry');
-    assertWithinBudget(sinceBaseline([...archived,...rows],baseline),budget,metadata.projectId,new Date(),{runId:metadata.runId,provider:metadata.provider,model:metadata.model});
+    if(budget) assertWithinBudget(sinceBaseline([...archived,...rows],baseline),budget,metadata.projectId,new Date(),{runId:metadata.runId,provider:metadata.provider,model:metadata.model});
     rows.push(row); return row.id; });
 }
 /** Provider adapters must normalize inputTokens to include cached and cache-creation input. */

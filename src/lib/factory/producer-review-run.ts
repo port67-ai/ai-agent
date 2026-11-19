@@ -9,7 +9,7 @@ import type { Repository } from "./repository";
 // Runs one producer reviewer: free rule checks first (a rule rejection is final), then, when a model is chosen and the brief is
 // authorised, one bounded call that sees only that reviewer's own view. If the model cannot be used the rules verdict stands and
 // the record says why. Reviewers never change the project themselves: the orchestrator applies their verdicts.
-const MAX_REVIEW_RUNS = 20;
+const MAX_REVIEW_RUNS = 1000; // effectively unlimited: human approvals, not a call count, stop a project
 const MAX_REVIEWS = 60;
 const find = (projects: Project[], projectId: string, a: Principal) => {
   const p = projects.find((x) => x.id === projectId);

@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.29.1  
+**Version:** 1.29.2  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -969,7 +969,7 @@ Record resource consumption for **provider + model + tool call + task attempt + 
 
 ### 15.2 Budgets
 
-Budget scopes: `per_model_call`, `per_task`, `per_workflow`, `per_project`, `per_tenant/day`. Preflight reserve a conservative estimate before new work. Stop the *next* paid task once the ceiling is reached; an in-flight model call may cost more than estimate, so report overruns rather than promise mathematically impossible hard spend guarantees. Rate-limit and concurrency guard at queue and provider levels.
+Budget scopes: `per_model_call`, `per_task`, `per_workflow`, `per_project`, `per_tenant/day`. Preflight reserve a conservative estimate before new work. Owner decision 19 November 2026 (CHG-0096): spend limits are OFF by default. Every call is still metered and the owner cost page shows spend against the configured amounts, but nothing is refused unless `PORT67_SPEND_LIMITS=on`; approvals, not caps, stop a project. When enforcement is on: stop the *next* paid task once the ceiling is reached; an in-flight model call may cost more than estimate, so report overruns rather than promise mathematically impossible hard spend guarantees. Rate-limit and concurrency guard at queue and provider levels.
 
 **Initial EXPLAIN text-agent budget hypothesis:** £50 maximum targeted per project for combined research, message strategy, script and text QA, excluding video rendering, licensed media, human/contractor time and project-specific paid services. Overall AI/software production target hypothesis: below 5% of project revenue unless explicitly justified. Test and revise against real usage.
 

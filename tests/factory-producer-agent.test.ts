@@ -179,8 +179,8 @@ async function main() {
       s.projects[i] = transition(s.projects[i], { type: "approveAllAssets" }, cust);
     });
     assert.equal((await runProducerAgent(repo, op, "agent", { force: true })).producerAgent?.status, "done");
-    await repo.mutate("w", (s) => void (s.projects.find((x) => x.id === "agent")!.producerAgent!.passes = 30));
-    assert.equal((await runProducerAgent(repo, op, "agent", { force: true })).producerAgent?.passes, 30, "pass cap");
+    await repo.mutate("w", (s) => void (s.projects.find((x) => x.id === "agent")!.producerAgent!.passes = 1000));
+    assert.equal((await runProducerAgent(repo, op, "agent", { force: true })).producerAgent?.passes, 1000, "pass cap");
     await assert.rejects(() => runProducerAgent(repo, cust, "agent", {}), /operator/i);
     await assert.rejects(() => runProducerAgent(repo, { ...op, demo: true }, "agent", {}), /demo/);
 

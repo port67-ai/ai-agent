@@ -9,6 +9,7 @@ import { costSeries } from '../src/lib/factory/cost-series';
 import type { ApiCall } from '../src/lib/factory/costs';
 import { pricingFor } from '../src/lib/factory/costs';
 import { standardPrice } from '../src/lib/factory/standard-prices';
+process.env.PORT67_SPEND_LIMITS = 'on'; // limits are off by default; these tests cover the enforcing mode
 
 
 const now = new Date('2026-11-14T12:30:00Z');

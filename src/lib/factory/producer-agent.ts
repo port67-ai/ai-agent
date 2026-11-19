@@ -41,8 +41,8 @@ export function evidenceWarnings(p: Project, at: string): { at: string; gate: st
   }
   return out.slice(0, 12);
 }
-const MAX_STEPS = 24;
-const MAX_PASSES = 30;
+const MAX_STEPS = 60;
+const MAX_PASSES = 1000; // effectively unlimited: a pass that changes nothing is already skipped, and every gate needs a person
 const MAX_LOG = 40;
 const MAX_REWORKS = 1;
 

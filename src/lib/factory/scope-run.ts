@@ -13,7 +13,7 @@ import type { Repository } from "./repository";
 // four research agents should ask, prefer and skip. The result is saved on the project record in Firestore, so every later
 // step (researchers, preparation panel, dossier, GET projects/{id}/scope) reads the same classification.
 // If the agent cannot run for any reason a deterministic template scope is saved instead: research never waits on it.
-const MAX_SCOPE_RUNS = 6;
+const MAX_SCOPE_RUNS = 1000; // effectively unlimited: human approvals, not a call count, stop a project
 const nextScopeVersion = (p: Project) => Math.max(p.scope?.version || 0, ...(p.scopeHistory || []).map(s => s.version)) + 1;
 const MAX_HISTORY = 10;
 export const scopingEnabled = (env: Record<string, string | undefined> = process.env) => env.PORT67_SCOPING_ENABLED !== "false" && env.PORT67_RESEARCH_ENABLED === "true";

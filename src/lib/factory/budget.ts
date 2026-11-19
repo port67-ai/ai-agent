@@ -40,6 +40,11 @@ export type BudgetStatus = {
   heldMicroUsd: number;
   remainingMicroUsd: number;
 };
+/**
+ * Spend limits only block calls when PORT67_SPEND_LIMITS=on. By default they are off: every call is still recorded and the Private API
+ * costs page still shows spend against the configured amounts, so you can see when consumption is over, but nothing is refused.
+ */
+export const spendLimitsEnforced = (e: Record<string, string | undefined> = process.env) => e.PORT67_SPEND_LIMITS?.trim().toLowerCase() === "on";
 export const DEFAULT_MONTHLY_BUDGET_USD = "25";
 export const DEFAULT_CALL_HOLD_USD = "0.1";
 type Env = Record<string, string | undefined>;
