@@ -12,7 +12,10 @@ import FlowHealth from "./FlowHealth";
 import ModelDialog from "./ModelDialog";
 import SkillDialog from "./SkillDialog";
 import { post, type Routing, type Suggest } from "./agent-client";
-type Overview = Awaited<ReturnType<typeof agentsOverview>>;
+import RerunDialog, { postRerun, type RerunReply } from "./RerunDialog";
+import type { FailedAgent } from "@/lib/factory/failed-agents";
+/** With a project chosen, the overview also carries that project's failed agents (CHG-0100). */
+type Overview = Awaited<ReturnType<typeof agentsOverview>> & { failed?: FailedAgent[] };
 type Agent = Overview["agents"][number];
 const icons: Record<string, typeof Bot> = {
   "scope:business": Compass, "review:scope": Compass, "review:sources": Search, "review:insights": Search, "review:direction": Sparkles,
@@ -36,6 +39,32 @@ const groups: { id: string; title: string; note: string }[] = [
   { id: "producer", title: "Producer orchestrator", note: "Rules only: no model and no cost of its own. Decides which reviewer or drafter goes next, carries notes back once, and enforces the loop limits. It never approves for the account owner." },
 ];
 
+type Quota = { provider: string; label: string; at: string; message: string; agents: string[] };
+/**
+ * CHG-0100: one banner per provider whose latest call failed with a quota or billing error and that agents still use, with the
+ * admin's one-press move of those agents to another provider (research agents only to OpenAI or Gemini).
+ */
+export function QuotaBanners({ quota, target, onMove, busy }: { quota: Quota[]; target: (provider: string) => string; onMove?: (provider: string) => void; busy?: boolean }) {
+  return (
+    <>
+      {quota.filter((q) => q.agents.length > 0).map((q) => {
+        const to = target(q.provider);
+        return (
+          <div key={q.provider} className="f-callout f-quota-banner" role="alert" data-quota={q.provider}>
+            <strong>{q.label} has no quota left. {q.agents.length} agent{q.agents.length === 1 ? "" : "s"} still use{q.agents.length === 1 ? "s" : ""} it.</strong>
+            <p className="f-small">Its latest call failed with a quota or billing error ({q.at.slice(0, 16).replace("T", " ")} UTC): {q.message} Every call to {q.label} fails the same way until credit is added, so move these agents to another provider, then rerun the failed agents.</p>
+            {onMove && (
+              <div className="f-actions">
+                <button type="button" className="f-button small" disabled={busy || !to} title={to ? "Sets each affected agent's own route; research agents only move to OpenAI or Gemini" : "No other provider has a key in Render"} onClick={() => onMove(q.provider)}>Move these agents to {to || "another provider"}</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 export default function AiAgents() {
   const [data, setData] = useState<Overview | null>(null);
   const [routing, setRouting] = useState<Routing | null>(null);
@@ -49,10 +78,15 @@ export default function AiAgents() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState("");
   const [approval, setApproval] = useState<{ mode: "ai" | "manual"; masterSwitch: boolean; effective: boolean } | null>(null);
+  /** The failed agent being rerun, kept as it was when the dialog opened so the result stays on screen after the map refreshes. */
+  const [rerunFor, setRerunFor] = useState<FailedAgent | null>(null);
+  const [loadedFor, setLoadedFor] = useState("");
+  const [offerRerun, setOfferRerun] = useState(false);
   const load = useCallback(async () => {
     try {
-      const [agents, route, mode] = await Promise.all([post<Overview>("ai-agents"), post<Routing>("ai-routing"), post<NonNullable<typeof approval>>("approval-mode")]);
+      const [agents, route, mode] = await Promise.all([post<Overview>("ai-agents" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")), post<Routing>("ai-routing"), post<NonNullable<typeof approval>>("approval-mode")]);
       setData(agents);
+      setLoadedFor(projectId);
       try {
         const r = await fetch("/api/factory/projects");
         if (r.ok) setProjects(((await r.json()) as { projects: Project[] }).projects || []);
@@ -63,17 +97,17 @@ export default function AiAgents() {
     } catch (e) {
       setError((e as Error).message);
     }
-  }, []);
+  }, [projectId]);
   useEffect(() => {
     const first = setTimeout(() => void load(), 0);
     const timer = setInterval(() => {
-      if (document.visibilityState === "visible" && !picking) void load();
+      if (document.visibilityState === "visible" && !picking && !rerunFor) void load();
     }, 10000);
     return () => {
       clearTimeout(first);
       clearInterval(timer);
     };
-  }, [load, picking]);
+  }, [load, picking, rerunFor]);
 
   async function openPicker(id: string) {
     setNotice("");
@@ -87,6 +121,49 @@ export default function AiAgents() {
     }
     setPicking(id);
   }
+  async function openRerun(slot: string) {
+    const entry = data?.failed?.find((x) => x.slot === slot);
+    if (!entry) return;
+    setNotice("");
+    setError("");
+    if (!suggest) {
+      try { setSuggest(await post<Suggest>("ai-routing", { action: "suggest" })); } catch { /* the model field still accepts typing */ }
+    }
+    setRerunFor(entry);
+  }
+  /** "Rerun failed agents (n)": every failed agent of the chosen project in dependency order, stopping at the first new failure. */
+  const rerunAll = () =>
+    run(async () => {
+      setOfferRerun(false);
+      const reply: RerunReply = await postRerun(projectId, "rerun-failed", {});
+      const done = (reply.results || []).filter((r) => r.ok).map((r) => r.label);
+      const skipped = (reply.results || []).filter((r) => r.notRun && r !== reply.stopped);
+      if (reply.stopped) {
+        await load();
+        throw new Error(`${done.length ? `Reran ${done.join(", ")}. ` : ""}Stopped at ${reply.stopped.label}: ${reply.stopped.failure?.title || "it could not run"}. ${reply.stopped.failure?.recommendation || ""} ${reply.stopped.error || ""}`.trim());
+      }
+      return `${done.length ? `Reran ${done.join(", ")} successfully; the project carries on.` : "Nothing was rerun."}${skipped.length ? ` Not run: ${skipped.map((r) => `${r.label} (${r.error})`).join("; ")}.` : ""}`;
+    });
+  /** The "no quota left" banner's bulk move: research jobs to the other web-search provider, every other job to a keyed provider. */
+  const moveTargets = (from: string, s: Suggest | null) => {
+    const keyed = (routing?.providers || []).filter((p) => p.keyConfigured && p.id !== from);
+    const known = (id: string) => [routing?.config.defaults?.research, routing?.config.defaults?.synthesis, ...Object.values(routing?.config.slots || {})].find((r) => r?.provider === id)?.model;
+    const modelFor = (id: string) => s?.best[id] || known(id);
+    const research = keyed.find((p) => p.research && modelFor(p.id));
+    const synthesis = research || keyed.find((p) => modelFor(p.id));
+    return { research: research ? { provider: research.id, model: modelFor(research.id)! } : null, synthesis: synthesis ? { provider: synthesis.id, model: modelFor(synthesis.id)! } : null, label: (synthesis || research) ? (routing?.providers.find((p) => p.id === (research || synthesis)!.id)?.label || "") : "" };
+  };
+  const moveOff = (from: string) =>
+    run(async () => {
+      const s = suggest || (await post<Suggest>("ai-routing", { action: "suggest" }).catch(() => null));
+      if (s) setSuggest(s);
+      const t = moveTargets(from, s);
+      if (!t.research && !t.synthesis) throw new Error("No other provider has a key set in Render and a model to use. Set another provider's key, or choose models on the map first.");
+      const r = await post<{ moved: string[]; skipped: { slot: string; why: string }[] }>("ai-routing", { action: "move", from, research: t.research, synthesis: t.synthesis });
+      setOfferRerun(!!projectId);
+      const where = [t.research && `research agents to ${t.research.provider} ${t.research.model}`, t.synthesis && `other agents to ${t.synthesis.provider} ${t.synthesis.model}`].filter(Boolean).join(", ");
+      return `Moved ${r.moved.length} agent${r.moved.length === 1 ? "" : "s"} (${where}).${r.skipped.length ? ` Not moved: ${r.skipped.map((x) => `${x.slot} (${x.why})`).join("; ")}.` : ""} ${projectId ? "Now rerun the failed agents." : "Choose the project above, then press Rerun failed agents on the map."}`;
+    });
   async function run(fn: () => Promise<string | void>) {
     setBusy(true);
     setError("");
@@ -118,6 +195,7 @@ export default function AiAgents() {
   if (!data) return <section className="f-panel">{error ? <p className="f-team-error" role="alert">{error}</p> : <p className="f-small">Loading AI agents…</p>}</section>;
   const byId = new Map(data.agents.map((a) => [a.id, a]));
   const chosen = projects.find((x) => x.id === projectId);
+  const failed = chosen && loadedFor === projectId ? data.failed || [] : undefined;
   const unset = data.agents.filter((a) => a.kind === "ai" && !a.model).length;
   return (
     <>
@@ -166,8 +244,12 @@ export default function AiAgents() {
             </div>
           </div>
         )}
+        <QuotaBanners quota={data.quota || []} target={(provider) => moveTargets(provider, suggest).label} onMove={(provider) => void moveOff(provider)} busy={busy} />
         {error && <p className="f-team-error" role="alert">{error}</p>}
         {notice && <p className="f-team-ok" role="status">{notice}</p>}
+        {offerRerun && failed && failed.length > 0 && (
+          <div className="f-actions"><button type="button" className="f-button small" disabled={busy} onClick={() => void rerunAll()}>Rerun failed agents ({failed.length})</button></div>
+        )}
         {data.ledgerError && <p className="f-team-error" role="alert">{data.ledgerError}</p>}
       </section>
       <section className="f-panel" aria-label="Project progress">
@@ -181,7 +263,7 @@ export default function AiAgents() {
         {chosen ? (
           <>
             <p className="f-small">Orange marks on the map are the steps where a producer has to press something. Blue is the AI working. Green is done. Greyed steps have not started.</p>
-            <RunTracker p={chosen} />
+            <RunTracker p={chosen} failed={failed} onRerun={(slot) => void openRerun(slot)} busy={busy} />
           </>
         ) : projects.length ? (
           <>
@@ -198,7 +280,7 @@ export default function AiAgents() {
           </>
         ) : <p className="f-small">No projects yet.</p>}
       </section>
-      <SystemMap focus={chosen ? focusMarks(chosen) : undefined} agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} />
+      <SystemMap focus={chosen ? focusMarks(chosen) : undefined} agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} failed={failed} onRerun={(slot) => void openRerun(slot)} onRerunAll={() => void rerunAll()} busy={busy} />
       <FlowHealth flow={data.flow} />
       {groups.map((g) => (
         <section className="f-panel" key={g.id}>
@@ -289,6 +371,13 @@ export default function AiAgents() {
       {skillFor && (() => {
         const ag = data.agents.find((x) => x.id === skillFor);
         return ag ? <SkillDialog agentId={ag.id} agentName={ag.name} purpose={ag.purpose} onClose={closeSkill} /> : null;
+      })()}
+      {rerunFor && chosen && (() => {
+        const ag = data.agents.find((x) => x.id === rerunFor.slot);
+        return (
+          <RerunDialog projectId={chosen.id} agent={rerunFor} name={ag?.name} current={ag?.model?.model ? { provider: String(ag.model.provider), model: ag.model.model } : undefined} admin routing={routing} suggest={suggest}
+            onClose={() => { setRerunFor(null); void load(); }} onDone={() => void load()} />
+        );
       })()}
       {picking && routing && (() => {
         const ag = data.agents.find((x) => x.id === picking);

@@ -344,3 +344,18 @@ Independent review identified pending-planner scoping bypass, stale format confi
 | FAC-STU-030 | IMPLEMENTED locally; not deployed or seen live | Optional `variant`, `views3s`, `thruplays`, `purchases` in performance.ts and PerformancePanel; `readback`, `readbackTemplateCsv`. Legacy rows unchanged (tested). No advertising platform is connected. |
 | FAC-STU-031 | IMPLEMENTED locally; not deployed or seen live | `startNextCycle` (studio-production-run.ts), route action `nextCycle`, `setStudioWinner`. API test. |
 | FAC-STU-032 | IMPLEMENTED locally; not deployed or seen live | `StudioRerunError` and `run` on rerun output (studio-rerun.ts), runs stored by `runStudioRerun` (service.ts) for text, image and still reruns; `resetProject` refused on studio projects (engine.ts). API and domain tests. |
+
+## CHG-0100: Agent rerun (20 November 2026)
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-RRN-001 | IMPLEMENTED locally; not deployed or seen live | `classifyFailure`, `failureStatus`, `FAILURE_INFO` (failure-class.ts); quota rule first in error-help.ts. factory-agent-rerun.test.ts covers the exact Gemini quota text, OpenAI insufficient_quota, 402, Anthropic credit, rate limits, auth, model, timeout, 5xx, invalid output and other. |
+| FAC-RRN-002 | IMPLEMENTED locally; not deployed or seen live | `failedAgents` (failed-agents.ts, client-safe), `GET .../agents/failed`, `failed` in `GET admin/ai-agents?projectId=`; Portal computes it from the producer's project view. Unit test: latest-run semantics, stale input and excluded agents ignored, supersession, guards, order. |
+| FAC-RRN-003 | IMPLEMENTED locally; not deployed or seen live | `rerunAgent` (agent-rerun.ts), route in service.ts, `runReviewStep` and `producerAgentBusy` (producer-agent.ts). factory-agent-rerun-api.test.ts: research, scoping, insights, planner, studio draft and image reruns; customer, confirm, unknown, not failed, exclusion, running, consent and studio stage refusals; audit entries. |
+| FAC-RRN-004 | IMPLEMENTED locally; not deployed or seen live | `setSlotRoute`, `saveRouting` note (ai-routing.ts). API test: producer refused (403), web-search, model ID and missing-key rules refused with no call, admin switch recorded in routing history and the audit. |
+| FAC-RRN-005 | IMPLEMENTED locally; not deployed or seen live | `kickProducerAgent` after a successful rerun (service.ts); syncTaskPlan already lets a newer completed run supersede a failed one (verified, no change needed). API test: task done after rerun and an automatic producer pass that reaches the next review step. |
+| FAC-RRN-006 | IMPLEMENTED locally; not deployed or seen live | `rerunFailedAgents` (agent-rerun.ts), `RERUN_ORDER`. API test: scoping then insights, stops at the insights failure and reports it. |
+| FAC-RRN-007 | IMPLEMENTED locally; not deployed or seen live | SystemMap.tsx (`failed`, `onRerun`, `onRerunAll`), RerunDialog.tsx, AiAgents.tsx. Server renders in factory-agent-rerun-ui.test.tsx; not checked in a browser. |
+| FAC-RRN-008 | IMPLEMENTED locally; not deployed or seen live | `providerQuota` (failed-agents.ts), `quota` in agentsOverview, `moveProviderSlots` and `admin/ai-routing` action `move`, `QuotaBanners`. API and render tests; not checked in a browser. |
+| FAC-RRN-009 | IMPLEMENTED locally; not deployed or seen live | RunTracker.tsx (row Rerun and Your turn banner), TaskPlan.tsx, `FailedAgentsBar` on studio stage pages (Portal.tsx). Server renders; not checked in a browser. |
+| FAC-RRN-010 | IMPLEMENTED locally; not deployed or seen live | `pieceId` and `rerunRequestId` on ResearchRun (model.ts), set in studio-preproduction.ts and studio-production-run.ts. API test reruns a failed first draft and a failed test frame. |

@@ -10,43 +10,12 @@ import {
   type ProviderSelection,
   type ProviderStage,
 } from "./providers";
+import { IMAGE_SLOT, PROVIDERS, SLOTS, type SlotId } from "./ai-slots";
+export { IMAGE_SLOT, PROVIDERS, SLOTS, researchSlot, synthesisSlot, type SlotId } from "./ai-slots";
 type Env = Record<string, string | undefined>;
-// Owner-controlled routing: which provider and exact model handles each job. Secrets stay in
-// deployment settings, so a route can only use a provider whose key is already configured there.
-export const PROVIDERS: { id: Provider; label: string; research: boolean }[] = [
-  { id: "openai", label: "OpenAI", research: true },
-  { id: "gemini", label: "Google Gemini", research: true },
-  { id: "anthropic", label: "Anthropic Claude", research: false },
-  { id: "deepseek", label: "DeepSeek", research: false },
-];
-export const SLOTS = [
-  { id: "synthesis:planner", stage: "synthesis", label: "Planning: research plan", hint: "Interprets the full authorised brief and proposes relevant researchers, questions and medium hypotheses." },
-  { id: "synthesis:medium", stage: "synthesis", label: "Planning: evidence-backed medium selection", hint: "Recommends format-channel pairs from reviewed evidence; never substitutes the customer request." },
-  { id: "scope:business", stage: "synthesis", label: "Scoping: classify the business", hint: "Reads the brief and decides what each research agent should ask and skip." },
-  { id: "research:brand", stage: "research", label: "Research: business and brand", hint: "Product, offer and facts the business can stand behind." },
-  { id: "research:customer", stage: "research", label: "Research: customer insight", hint: "Customer language, motivations, objections and reviews." },
-  { id: "research:competitor", stage: "research", label: "Research: competitor intelligence", hint: "Competitor positioning and public customer reactions." },
-  { id: "research:creative", stage: "research", label: "Research: creative conventions", hint: "Creative and channel conventions in the category." },
-  ...(["adjacent", "trends", "video", "channel", "offer", "measurement"] as const).map(segment => ({ id: `research:${segment}` as const, stage: "research" as const, label: `Research: ${segment}`, hint: segment === "channel" ? "Dated channel audience behaviour and medium suitability." : segment === "offer" ? "Product, proposition, proof and purchase friction." : segment === "measurement" ? "KPIs, attribution limits and experiments." : segment === "video" ? "Video craft discovery; Gemini supports explicit public YouTube analysis." : "Adjacent businesses and current channel-specific evidence." })),
-  { id: "synthesis:insights", stage: "synthesis", label: "Drafting: insights", hint: "Turns reviewed sources into draft insights." },
-  { id: "synthesis:strategy", stage: "synthesis", label: "Drafting: campaign direction", hint: "Drafts message, reasoning and creative direction." },
-  { id: "synthesis:content", stage: "synthesis", label: "Drafting: copy pack", hint: "Writes channel copy from the approved direction and its evidence." },
-  { id: "synthesis:formats", stage: "synthesis", label: "Drafting: ad format suggestions", hint: "Suggests which ad formats fit the channels, objective and insights, with reasons. A producer decides." },
-  { id: "synthesis:audiences", stage: "synthesis", label: "Drafting: strapline, segments and demographics", hint: "Suggests strapline options and audience segments with demographics from the accepted insights and customer research. A producer decides." },
-  { id: "synthesis:ideas", stage: "synthesis", label: "Drafting: ad ideas", hint: "Proposes ad ideas from the direction, chosen formats and audience segments. A producer keeps or drops each." },
-  { id: "review:scope", stage: "synthesis", label: "Producer: scope review", hint: "Checks the classification and each researcher's questions against the brief. Sees nothing else." },
-  { id: "review:sources", stage: "synthesis", label: "Producer: source review", hint: "Accepts or rejects each source. Sees only the sources, the business and its questions." },
-  { id: "review:insights", stage: "synthesis", label: "Producer: insight review", hint: "Accepts or rejects each draft insight against its own evidence. Sees no direction." },
-  { id: "review:direction", stage: "synthesis", label: "Producer: direction review", hint: "Decides whether the direction is ready for the account owner. Sees no raw sources." },
-  { id: "studio:preproduction", stage: "synthesis", label: "Studio: pre-production writer", hint: "Writes the mood board, continuity profile, scenes, script, narratives, hooks, shot list and voice notes from the approved direction only." },
-  { id: "studio:image", stage: "synthesis", label: "Studio: image generation", hint: "Draws studio test frames, keyframes and Scene Pack stills. OpenAI Images only; without a route it uses PORT67_IMAGE_MODEL or gpt-image-1." },
-] as const satisfies readonly { id: string; stage: ProviderStage; label: string; hint: string }[];
-export type SlotId = (typeof SLOTS)[number]["id"];
-export const researchSlot = (segment: string) => `research:${segment}` as SlotId;
-export const synthesisSlot = (stage: string) => (stage === "insights" ? "synthesis:insights" : stage === "content" ? "synthesis:content" : stage === "formats" ? "synthesis:formats" : stage === "ideas" ? "synthesis:ideas" : stage === "audiences" ? "synthesis:audiences" : "synthesis:strategy") as SlotId;
+// Owner-controlled routing: which provider and exact model handles each job. Secrets stay in deployment settings, so a route can only
+// use a provider whose key is already configured there. The job and provider lists live in ai-slots.ts (client-safe) since CHG-0100.
 const MODEL = /^[a-zA-Z0-9._:/-]{1,180}$/;
-/** The studio image slot (CHG-0098) is OpenAI Images only and never inherits the drafting default (a text model cannot draw). */
-export const IMAGE_SLOT = "studio:image";
 export const DEFAULT_IMAGE_MODEL = "gpt-image-1";
 const PRICE_KEY = /^(openai|anthropic|deepseek|gemini):[a-zA-Z0-9._:/-]{1,180}$/;
 const MAX_PRICES = 40;
@@ -115,7 +84,8 @@ function changes(prev: AiRoutingConfig, next: { defaults: AiRoutingConfig["defau
   if (before !== JSON.stringify(next.pricing)) out.push("prices updated");
   return out.length ? out.join("; ").slice(0, 600) : "saved without changes";
 }
-export async function saveRouting(repo: Repository, raw: unknown, actor: string, env: Env = process.env) {
+/** `note` (CHG-0100) says why, for example "rerun of research:brand on project X"; it is appended to the history line. */
+export async function saveRouting(repo: Repository, raw: unknown, actor: string, env: Env = process.env, note?: string) {
   const next = validateRoutingInput(raw, env);
   await repo.mutate(AI_ROUTING_NAMESPACE, (db) => {
     const prev = db.aiRouting || {};
@@ -124,9 +94,46 @@ export async function saveRouting(repo: Repository, raw: unknown, actor: string,
       ...next,
       updatedAt: at,
       updatedBy: actor,
-      history: [...(prev.history || []), { at, actor, summary: changes(prev, next) }].slice(-MAX_HISTORY),
+      history: [...(prev.history || []), { at, actor, summary: (changes(prev, next) + (note ? "; " + note : "")).slice(0, 600) }].slice(-MAX_HISTORY),
     };
   });
+}
+/** The saved table as a full replacement input, so one job can be changed without touching the others. */
+const asInput = (config: AiRoutingConfig, slots: Record<string, AiRoute>) => ({ defaults: { research: config.defaults?.research ?? null, synthesis: config.defaults?.synthesis ?? null }, slots, pricing: config.pricing || {} });
+/**
+ * Point one job at another provider and model (CHG-0100, used by Switch and rerun). Validated with exactly the rules of the admin
+ * AI models page (research jobs need a web-search provider, the provider's key must be set, the image job is OpenAI only) and
+ * recorded in the routing history with the reason.
+ */
+export async function setSlotRoute(repo: Repository, slot: SlotId, route: unknown, actor: string, note: string, env: Env = process.env) {
+  const config = await loadRouting(repo);
+  await saveRouting(repo, asInput(config, { ...(config.slots || {}), [slot]: route as AiRoute }), actor, env, note);
+}
+export type MoveTargets = { research?: AiRoute | null; synthesis?: AiRoute | null };
+/**
+ * Move every job that currently resolves to `from` onto another provider (CHG-0100, the "no quota left" banner). Research jobs take
+ * `targets.research` (OpenAI or Gemini only), every other job `targets.synthesis`. The image job is OpenAI only, so it is never moved.
+ * Jobs that cannot move are listed with the reason. One validated save, recorded in the routing history.
+ */
+export async function moveProviderSlots(repo: Repository, from: unknown, targets: MoveTargets, actor: string, env: Env = process.env) {
+  if (!isProvider(from)) throw new Error("Choose the provider to move away from");
+  const config = await loadRouting(repo);
+  const slots: Record<string, AiRoute> = { ...(config.slots || {}) };
+  const moved: SlotId[] = [];
+  const skipped: { slot: SlotId; why: string }[] = [];
+  for (const slot of SLOTS) {
+    let current: Provider | undefined;
+    try { current = (await resolveSelection(repo, slot.id, env)).provider; } catch { current = undefined; }
+    if (current !== from) continue;
+    if (slot.id === IMAGE_SLOT) { skipped.push({ slot: slot.id, why: "Image generation is OpenAI only; add credit to OpenAI or upload images by hand" }); continue; }
+    const target = slot.stage === "research" ? targets.research : targets.synthesis;
+    if (!target) { skipped.push({ slot: slot.id, why: slot.stage === "research" ? "No other web-search provider (OpenAI or Gemini) was chosen" : "No other provider was chosen" }); continue; }
+    if (target.provider === from) throw new Error("Choose a different provider to move to");
+    slots[slot.id] = { provider: target.provider, model: target.model };
+    moved.push(slot.id);
+  }
+  if (moved.length) await saveRouting(repo, asInput(config, slots), actor, env, `moved ${moved.length} job${moved.length === 1 ? "" : "s"} off ${info(from).label} (no quota left)`);
+  return { moved, skipped };
 }
 export type ResolvedSelection = ProviderSelection & { source: "slot" | "default" | "env" | "inherited" };
 /**

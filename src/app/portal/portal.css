@@ -1965,3 +1965,12 @@ button.f-offer-card:hover:not(:disabled){border-color:#e97651}
 .f-readback{width:100%;border-collapse:collapse;font-size:12px}
 .f-readback th,.f-readback td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef0ec;white-space:nowrap}
 .f-field.f-inline{max-width:220px}
+/* Agent rerun (CHG-0100) */
+.sm-rerun{cursor:pointer}
+.sm-rerun:hover rect,.sm-rerun:focus rect{fill:#991b1b}
+.sm-rerun:focus{outline:none}
+.f-rerun-raw{white-space:pre-wrap;word-break:break-word;max-height:160px;overflow:auto;font-size:12px;margin:6px 0 0}
+.f-rerun-switch{border:1px solid rgba(148,163,184,.35);border-radius:10px;padding:8px 12px;margin:8px 0;display:grid;gap:8px}
+.f-failed-agents ul{margin:6px 0 0;padding-left:18px}
+.f-failed-agents li{margin:4px 0}
+.f-quota-banner{border-color:#f87171}

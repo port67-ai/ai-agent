@@ -393,6 +393,21 @@ async function perform(repo: Repository, op: Principal, projectId: string, step:
 }
 export { GATE_LABEL };
 
+/** True while a producer agent pass is working on this project in this server process (CHG-0100: a rerun waits for it). */
+export const producerAgentBusy = (workspaceId: string, projectId: string) => running.has(workspaceId + "/" + projectId);
+const REVIEW_STEP: Record<ReviewGate, StepId> = { scope: "reviewScope", sources: "reviewSources", insights: "reviewInsights", direction: "reviewDirection" };
+/**
+ * Run one producer reviewer now, exactly as the orchestrator's step would (CHG-0100, the agent rerun): the reviewer judges, and its
+ * verdict is applied and recorded through the same audited commands. Producers and admins only.
+ */
+export async function runReviewStep(repo: Repository, a: Principal, projectId: string, gate: ReviewGate): Promise<string> {
+  if (a.demo) throw new Error("The producer agent does not run in the synthetic demo");
+  operator(a);
+  const op: Principal = { ...a, role: "operator", subject: PRODUCER_AGENT, admin: false };
+  const aiReady = await stageReady(repo, "synthesis").catch(() => false);
+  return perform(repo, op, projectId, REVIEW_STEP[gate], aiReady);
+}
+
 /**
  * Called by research start when PORT67_PRODUCER_AGENT=true: the scope producer checks the classification before any researcher
  * uses it, once per scope version. Never throws and never blocks research.

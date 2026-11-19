@@ -238,6 +238,10 @@ export type ResearchRun = {
   error?: string;
   /** When a research call ran but returned nothing citable: the start of what the model wrote, for the producer only. Never used as evidence. */
   note?: string;
+  /** Studio runs (CHG-0100): the piece a test frame, keyframe, still or piece rerun was for, so a failure can be rerun piece by piece. */
+  pieceId?: string;
+  /** Studio runs (CHG-0100): set when the run fulfilled a recorded rerun request. */
+  rerunRequestId?: string;
 };
 /** Video advert track (PRD 25.5). Phase 1 is planning only: treatment, shot list, Continuity Profile, deterministic prompts. No vendor is called. */
 export type AdvertRef = { kind: "character" | "location" | "prop"; label: string };

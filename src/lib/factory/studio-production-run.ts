@@ -62,7 +62,7 @@ export async function generateStudioStill(repo: Repository, a: Principal, projec
     const piece = requireStill(s, pieceId);
     const prompt = buildStillPrompt(s, piece);
     const refs = stillReferences(s, piece);
-    const run = newRun("studio.image", selection, digest(prompt + [refs.frame?.id, ...refs.packshots.map((x) => x.id)].join(",")));
+    const run = newRun("studio.image", selection, digest(prompt + [refs.frame?.id, ...refs.packshots.map((x) => x.id)].join(",")), { pieceId: piece.id });
     reserve(p, run);
     return { project: structuredClone(p), run, prompt, refs, piece: structuredClone(piece) };
   });
@@ -110,7 +110,7 @@ async function rerunStill(ctx: StudioRerunContext) {
   const selection = await resolveSelection(repo, IMAGE_SLOT);
   const provider = imageProviderFor(selection);
   const prompt = buildStillPrompt(s, piece, { comments: piece.comments, instruction: request.instruction });
-  const run: ResearchRun = { ...newRun("studio.image", selection, digest(prompt)), id: randomUUID() };
+  const run: ResearchRun = { ...newRun("studio.image", selection, digest(prompt), { pieceId: piece.id, rerunRequestId: request.id }), id: randomUUID() };
   try {
     const references = await referenceFiles(p, stillReferences(s, piece));
     const image = await meteredImage(repo, ctx.principal, p, run.id, provider, { prompt, size: stillRatio(piece).size, ...(references.length ? { references } : {}) });
