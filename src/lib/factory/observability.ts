@@ -5,6 +5,7 @@ import type { Repository } from "./repository";
 import type { Project } from "./model";
 import { scopeHash } from "./engine";
 import { agentOfRun, providerQuota } from "./failed-agents";
+import { activeHold } from "./task-plan";
 
 // Observability for the whole agent system: where data flows (calls, tokens, cost, latency per edge),
 // where it is stored (counts per Firestore record), and where it is blocked or not flowing at all.
@@ -149,8 +150,8 @@ export function pipelineStats(projects: Project[]): PipelineStats {
       reviews: sum((p) => (p.reviews || []).length),
       byAi: sum((p) => (p.reviews || []).filter((r) => r.by === "ai").length),
       byRules: sum((p) => (p.reviews || []).filter((r) => r.by === "rules").length),
-      holds: count((p) => !!p.producerAgent?.hold),
-      holdDetails: projects.filter((p) => p.producerAgent?.hold).slice(0, 5).map((p) => ({ project: p.brief.business, where: ({ scope: "Scope review", sources: "Source review", insights: "Insight review", direction: "Direction review" } as Record<string, string>)[p.producerAgent!.hold!.gate] || p.producerAgent!.hold!.gate, notes: p.producerAgent!.hold!.notes.slice(0, 400) })),
+      holds: count((p) => !!activeHold(p)),
+      holdDetails: projects.filter((p) => activeHold(p)).slice(0, 5).map((p) => { const h = activeHold(p)!; return { project: p.brief.business, where: ({ scope: "Scope review", sources: "Source review", insights: "Insight review", direction: "Direction review" } as Record<string, string>)[h.gate] || h.gate, notes: h.notes.slice(0, 400) }; }),
       pending: count((p) => !!p.producerAgent?.pending),
       /** True when the AI producer gives the customer's direction approval (Render switch on and the admin switch set to AI). */
       approvesDirection: producerApprovalsOn(),

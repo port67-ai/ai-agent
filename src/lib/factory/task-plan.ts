@@ -213,6 +213,19 @@ export function isThinResearchHold(hold: { gate: string; notes: string } | undef
   return !!hold && hold.gate === "sources" && hold.notes.startsWith("Fewer than");
 }
 
+/**
+ * The producer agent's hold, but only while what it names is still open (CHG-0101). A hold that a person has since dealt with,
+ * or a thin-research hold, stays in the agent log and audit trail but is no longer shown or counted on the AI agents map.
+ */
+export function activeHold(p: Project) {
+  const hold = p.producerAgent?.hold;
+  if (!hold || isThinResearchHold(hold)) return undefined;
+  if (hold.gate === "sources") return p.sources.some(s => s.status === "unreviewed") ? hold : undefined;
+  if (hold.gate === "insights") return p.insights.some(i => i.status === "draft") ? hold : undefined;
+  if (hold.gate === "direction") return p.strategies.at(-1)?.status === "draft" ? hold : undefined;
+  return hold;
+}
+
 export function nextReadyTask(p: Project): ProjectTask | undefined {
   syncTaskPlan(p);
   return p.taskPlan?.tasks.find(t => t.status === "ready");

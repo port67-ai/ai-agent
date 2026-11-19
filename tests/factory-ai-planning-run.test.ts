@@ -57,7 +57,9 @@ async function main() {
     assert.equal(p.mediumSelection!.proposal!.recommendations[0].format, "video_short");
     const expected = { expectedMediumVersion: p.mediumSelection!.version, expectedEvidenceHash: digest(mediumEvidenceKey(p)) };
     assert.throws(() => transition(p, { type: "selectFormats", formats: ["static"], rationale: "Stale choice", ...expected, expectedMediumVersion: 0 }, op), /changed|refresh/i);
-    assert.throws(() => transition(p, { type: "selectFormats", formats: ["static"], ...expected }, op), /reason|rationale/i);
+    // CHG-0101: the reason is optional; a blank box records the chosen formats automatically.
+    const blankReason = transition(structuredClone(p), { type: "selectFormats", formats: ["static"], ...expected }, op);
+    assert.match(blankReason.mediumDecision!.rationale, /static/, "a blank reason is recorded automatically");
     const videoChoice = transition(p, { type: "selectFormats", formats: ["video_short"], rationale: "Use the evidence-backed video alternative", ...expected }, op);
     assert.ok(videoChoice.taskPlan!.research.includes("video"), "confirmed video creates a focused craft research dependency");
     assert.ok(taskResearchCurrent(videoChoice, videoChoice.runs.find(r => r.id === "brand")!), "medium changes preserve compatible completed brand research");
