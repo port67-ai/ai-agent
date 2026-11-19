@@ -866,7 +866,10 @@ export function transition(
     if (p.researchPlanning?.enabled) {
       if (p.runs.some(r => r.status === "running")) throw new Error("Wait for running tasks before confirming media");
       if (c.expectedMediumVersion !== (p.mediumSelection?.version || 0) || c.expectedEvidenceHash !== digest(mediumEvidenceKey(p))) throw new Error("Medium recommendation or evidence changed; refresh before confirming formats");
-      const rationale = text(c.rationale, "medium decision rationale", 1000, true);
+      // The reason is optional (CHG-0101): a blank box records which formats were chosen and whether they followed the AI suggestion.
+      const chosen = validFormats(c.formats);
+      const suggestedIds = new Set([...(p.formats?.suggested || []).map(s => s.id), ...(mediumCurrent(p) ? p.mediumSelection!.proposal!.recommendations.map(r => r.format) : [])]);
+      const rationale = text(c.rationale, "medium decision rationale", 1000) || (chosen.every(f => suggestedIds.has(f)) ? `Accepted the suggested formats: ${chosen.join(", ")}` : `Chose ${chosen.join(", ")} without a written reason`);
       requirePlannedTask(p, "mediumSelection");
       if (!mediumCurrent(p)) p.mediumSelection = { status: "manual", evidenceKey: mediumEvidenceKey(p), version: (p.mediumSelection?.version || 0) + 1, history: p.mediumSelection?.history || [], error: "Producer deliberately proceeded without a current AI recommendation" };
       p.mediumDecision = { at: now(), by: a.subject, rationale, ...(mediumCurrent(p) ? { recommendationVersion: p.mediumSelection!.version } : {}), formats: validFormats(c.formats), requestedFormats: [...(p.brief.requestedFormats || [])] };

@@ -65,10 +65,11 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
               {why.get(x.id) ? <em> Why: {why.get(x.id)}.</em> : null}
             </label>
           ))}
-          {p.researchPlanning && <Field label="Why these formats for this audience and channel?"><textarea value={rationale} onChange={e => setRationale(e.target.value)} maxLength={1000} required placeholder="Explain evidence, requested-output differences, budget or why you are proceeding without an AI recommendation" /></Field>}
-          <button className={"f-button" + (formatsSaved ? " done" : "")} disabled={busy || p.runs.some(r => r.status === "running") || (!!p.researchPlanning && !insightsReady) || !picked.length || formatsSaved || (!!p.researchPlanning && !rationale.trim())} onClick={() => void command({ type: "selectFormats", formats: picked, rationale, ...(p.researchPlanning ? { expectedMediumVersion: p.mediumSelection?.version || 0, expectedEvidenceHash: p.mediumContextHash } : {}) }, "Formats chosen. The direction is written for them.")}>
+          {p.researchPlanning && <Field label="Why these formats for this audience and channel? (optional)"><textarea value={rationale} onChange={e => setRationale(e.target.value)} maxLength={1000} placeholder="Explain evidence, requested-output differences, budget or why you are proceeding without an AI recommendation" /></Field>}
+          <button className={"f-button" + (formatsSaved ? " done" : "")} disabled={busy || p.runs.some(r => r.status === "running") || (!!p.researchPlanning && !insightsReady) || !picked.length || formatsSaved} onClick={() => void command({ type: "selectFormats", formats: picked, rationale, ...(p.researchPlanning ? { expectedMediumVersion: p.mediumSelection?.version || 0, expectedEvidenceHash: p.mediumContextHash } : {}) }, "Formats chosen. The direction is written for them.")}>
             {formatsSaved ? "Formats confirmed" : "Confirm formats"} <Check size={14} />
           </button>
+          {!formatsSaved && (() => { const why = p.runs.some(r => r.status === "running") ? "An agent is still running; this unlocks when it finishes." : !!p.researchPlanning && !insightsReady ? "Accept at least one insight in the insight review first." : !picked.length ? "Tick at least one format." : ""; return why ? <p className="f-small" role="status">{why}</p> : null; })()}
         </>
       ) : (
         <p className="f-small">{f?.selected?.length ? FORMATS.filter((x) => f.selected.includes(x.id)).map((x) => x.name).join(", ") : "Your producer is choosing the best ad formats for your channels."}</p>
