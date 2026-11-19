@@ -22,3 +22,11 @@ export function validChannels(value: unknown): string[] {
   if ([...set].some((id) => !channelById(id))) throw new Error("Unknown channel");
   return CHANNELS.filter((c) => set.has(c.id)).map((c) => c.id);
 }
+
+const squash = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+/** Maps whatever the model wrote for a channel (the id, the display name, any case or punctuation) back to one of the allowed ids. */
+export const resolveChannelId = (value: unknown, allowed: string[]): string | undefined => {
+  const v = squash(value);
+  if (!v) return undefined;
+  return allowed.find((id) => squash(id) === v) || allowed.find((id) => squash(channelById(id)?.name) === v);
+};
