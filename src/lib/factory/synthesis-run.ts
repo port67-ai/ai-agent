@@ -19,6 +19,7 @@ import {
   type InsightDraft,
   type DirectionDraft,
 } from "./synthesis";
+import { maxProjectRuns } from "./run-cap";
 export async function runSynthesis(
   repo: Repository,
   a: Principal,
@@ -42,14 +43,7 @@ export async function runSynthesis(
       );
     if (
       current.runs.filter((r) => r.stage !== "scope" && r.stage !== "review").length >=
-      Math.max(
-        1,
-        Math.min(
-          50,
-          Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "12", 10) ||
-            12,
-        ),
-      )
+      maxProjectRuns()
     )
       throw new Error("Provider invocation cap reached for this project");
     const capability = capabilityRegistry.find(

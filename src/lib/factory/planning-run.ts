@@ -7,6 +7,7 @@ import { generateResearchPlanning, prepareResearchPlanning, type ResearchProposa
 import { generateMediumSelection, prepareMediumSelection, type MediumProposal } from "./medium-selection";
 import { planningCurrent, planningInputKey, mediumCurrent, mediumEvidenceKey } from "./planning-context";
 import { planProject, requirePlannedTask } from "./task-plan";
+import { maxProjectRuns } from "./run-cap";
 
 type Kind = "planning" | "medium";
 type Options = { force?: boolean; feedback?: string };
@@ -31,7 +32,7 @@ async function runJob(repo: Repository, a: Principal, projectId: string, kind: K
     if (p.runs.some(r => r.status === "running")) throw new Error("An agent task is already running");
     // Failed runs (including ones refused before any model call, such as a full cost ledger) do not use up the allowance; only runs that ran or are running count. The provider invocation cap below still bounds total attempts.
     if (p.runs.filter(r => r.stage === kind && r.status !== "failed").length >= 6) throw new Error("Planning invocation limit reached");
-    if (p.runs.filter(r => r.stage !== "scope" && r.stage !== "review").length >= Math.max(1, Math.min(50, Number.parseInt(process.env.PORT67_MAX_RESEARCH_RUNS || "20", 10) || 20))) throw new Error("Provider invocation cap reached for this project");
+    if (p.runs.filter(r => r.stage !== "scope" && r.stage !== "review").length >= maxProjectRuns()) throw new Error("Provider invocation cap reached for this project");
     const contextKey = kind === "planning" ? prepareResearchPlanning(p, options.feedback).inputKey : prepareMediumSelection(p).evidenceKey;
     const run: ResearchRun = { id: id(), stage: kind, capabilityId: kind === "planning" ? "planning.research" : "planning.medium", capabilityVersion: "1.0.0", at: new Date().toISOString(), status: "running", provider: selection.provider, model: selection.model, inputHash: context.inputHash, contextHash: digest(JSON.stringify(p.brief)), contextSnapshot: structuredClone(p.brief), planningContextKey: contextKey, taskInputKey: p.taskPlan?.researchKey, leaseExpiresAt: new Date(Date.now() + 120000).toISOString(), usageStatus: "unknown" };
     const previousPlanning = structuredClone(p.researchPlanning), previousMedium = structuredClone(p.mediumSelection);
