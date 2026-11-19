@@ -4,6 +4,7 @@ import { useRef, useState, type ComponentType, type MouseEvent } from "react";
 import { edgeTip, usd, type Tip } from "./edge-tip";
 import type { Focus } from "@/lib/factory/focus-map";
 import type { agentsOverview } from "@/lib/factory/ai-agents";
+import type { FailedAgent } from "@/lib/factory/failed-agents";
 
 type Overview = Awaited<ReturnType<typeof agentsOverview>>;
 type Agent = Overview["agents"][number];
@@ -29,8 +30,8 @@ const AGENT_ICON: Record<string, Icon> = {
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const secs = (ms?: number) => (ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
-type NodeProps = { mark?: { text: string; tone: "you" | "ai" | "done" }; dim?: boolean; onSkill?: () => void; x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
-function Node({ mark, dim, x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint, onSkill }: NodeProps) {
+type NodeProps = { onRerun?: () => void; mark?: { text: string; tone: "you" | "ai" | "done" }; dim?: boolean; onSkill?: () => void; x: number; y: number; w?: number; h: number; color: string; icon: Icon; title: string; lines?: string[]; pill?: { text: string; color: string }; state?: "running" | "blocked" | "failed" | "idle" | ""; badge?: string; dashed?: boolean; id?: string; onSelect?: () => void; onHover?: (e: MouseEvent<SVGGElement>) => void; onLeave?: () => void; hint?: string };
+function Node({ onRerun, mark, dim, x, y, w = NW, h, color, icon: I, title, lines = [], pill, state = "", badge, dashed, id, onSelect, onHover, onLeave, hint, onSkill }: NodeProps) {
   const stroke = state === "failed" ? COLOR.bad : state === "blocked" ? COLOR.gate : color;
   return (
     <g
@@ -76,6 +77,15 @@ function Node({ mark, dim, x, y, w = NW, h, color, icon: I, title, lines = [], p
           <text x={x + 48} y={y + 4} textAnchor="middle" className="sm-badgetext">{badge}</text>
         </g>
       )}
+      {onRerun && (
+        // CHG-0100: rerun this agent for the selected project. Sits on the bottom edge, clear of the connector lines.
+        <g className="sm-rerun" role="button" tabIndex={0} aria-label={`${title}: rerun for this project`} data-rerun={id}
+          onClick={(e) => { e.stopPropagation(); onRerun(); }}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onRerun(); } }}>
+          <rect x={x + w - 124} y={y + h - 9} width={60} height={18} rx={9} fill="#7f1d1d" stroke={COLOR.bad} />
+          <text x={x + w - 94} y={y + h + 4} textAnchor="middle" className="sm-pilltext" fill="#fecaca">Rerun</text>
+        </g>
+      )}
     </g>
   );
 }
@@ -98,8 +108,16 @@ function Link({ d, color, live = false, dim = false, hot = false, label, lx, ly,
   );
 }
 
-export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill }: { agents: Agent[]; flow: Flow; focus?: Focus; onSelectAgent?: (id: string) => void; onSkill?: (id: string) => void }) {
+/**
+ * `failed` (CHG-0100): the agents that failed for the selected project. When it is given, FAILED badges show that project's failures
+ * (not the whole system's), each failed agent gets a Rerun button, and "Rerun failed agents (n)" appears above the map.
+ */
+export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill, failed, onRerun, onRerunAll, busy }: { agents: Agent[]; flow: Flow; focus?: Focus; onSelectAgent?: (id: string) => void; onSkill?: (id: string) => void; failed?: FailedAgent[]; onRerun?: (slot: string) => void; onRerunAll?: () => void; busy?: boolean }) {
   const byId = new Map(agents.map((a) => [a.id, a]));
+  const failedFor = (id: string) => failed?.find((f) => f.slot === id);
+  /** Per selected project when one is chosen; otherwise the system-wide health of the agent's latest call. */
+  const isFailed = (id: string, global: boolean) => (failed ? !!failedFor(id) : global);
+  const rerunOf = (id: string) => (failed && onRerun && failedFor(id) ? () => onRerun(id) : undefined);
   const fo = (id: string) => (focus ? { mark: focus[id], dim: !focus[id] } : {});
   const wrap = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -121,7 +139,8 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
       };
     }
     const a = byId.get(id);
-    return a ? edgeTip(a.name, a.model?.model ? { provider: String(a.model.provider), model: a.model.model } : undefined, flow.edges.filter((e) => e.agent === id), flow.errors?.[id]) : null;
+    const own = failedFor(id);
+    return a ? edgeTip(a.name, a.model?.model ? { provider: String(a.model.provider), model: a.model.model } : undefined, flow.edges.filter((e) => e.agent === id), own ? { message: `This project: ${own.failure.title}. ${own.error}` } : flow.errors?.[id]) : null;
   };
   const P = flow.pipeline;
   const edgesFor = (id: string) => flow.edges.filter((e) => e.agent === id);
@@ -190,13 +209,13 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
     const es = edgesFor(id);
     const stat = a.stats!;
     const running = stat.inFlight > 0;
-    const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : stat.failed + stat.unknown > 0;
-    const state = running ? "running" : failed ? "failed" : !a.model ? "idle" : stat.calls === 0 ? "idle" : "";
+    const bad = isFailed(id, stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : stat.failed + stat.unknown > 0);
+    const state = running ? "running" : bad ? "failed" : !a.model ? "idle" : stat.calls === 0 ? "idle" : "";
     return (
       <Node key={id} {...fo(id)} id={id} x={pos.x} y={pos.y} h={AH} color={COLOR.agent} icon={AGENT_ICON[id] || Sparkles} title={a.name.replace(" researcher", "")}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "No model chosen yet", color: COLOR.gate }}
         lines={factLines(stat, es, !!a.model)}
-        state={state as NodeProps["state"]} badge={running ? "RUNNING" : failed ? "FAILED" : undefined}
+        state={state as NodeProps["state"]} badge={running ? "RUNNING" : bad ? "FAILED" : undefined} onRerun={rerunOf(id)}
         onSkill={onSkill ? () => onSkill(id) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(id) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(id, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
     );
@@ -236,12 +255,12 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
     if (!a) return null;
     const stat = a.stats!;
     const running = stat.inFlight > 0;
-    const failed = stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : false;
+    const bad = isFailed(rid, stat.lastStatus ? stat.lastStatus === "failed" || stat.lastStatus === "unknown" : false);
     return (
       <Node {...fo(rid)} id={rid} x={x} y={y} w={w} h={h} color={COLOR.producer} icon={AGENT_ICON[rid] || Sparkles} title={REVIEW_TITLE[rid]}
         pill={a.model ? { text: `${a.model.provider} · ${a.model.model}`, color: provColor(a.model.provider) } : { text: "Free checks only", color: COLOR.gate }}
         lines={factLines(stat, edgesFor(rid), !!a.model)}
-        state={running ? "running" : failed ? "failed" : waiting > 0 ? "blocked" : ""} badge={running ? "RUNNING" : failed ? "FAILED" : waiting > 0 ? `${waiting} WAITING` : undefined}
+        state={running ? "running" : bad ? "failed" : waiting > 0 ? "blocked" : ""} badge={running ? "RUNNING" : bad ? "FAILED" : waiting > 0 ? `${waiting} WAITING` : undefined} onRerun={rerunOf(rid)}
         onSkill={onSkill ? () => onSkill(rid) : undefined} onSelect={onSelectAgent ? () => onSelectAgent(rid) : undefined} hint={a.model ? "change model" : "choose a model"}
         onHover={(e) => showAt(rid, e.clientX, e.clientY)} onLeave={() => setHover(null)} />
     );
@@ -268,8 +287,11 @@ export default function SystemMap({ agents, flow, focus, onSelectAgent, onSkill 
       <div className="f-section-heading">
         <div>
           <h2>How data flows through Port67</h2>
-          <p className="f-small">Every line between a form, agent, store or model is a real call or write. Hover a line to see its calls, tokens and cost; click an agent to choose its model. Line colour is the provider; moving dashes mean a call is running now; faint dashes mean nothing has flowed yet; amber means a person is blocking the next step.</p>
+          <p className="f-small">Every line between a form, agent, store or model is a real call or write. Hover a line to see its calls, tokens and cost; click an agent to choose its model. Line colour is the provider; moving dashes mean a call is running now; faint dashes mean nothing has flowed yet; amber means a person is blocking the next step.{failed ? " FAILED marks show this project's failed agents; press Rerun on one to run it again." : ""}</p>
         </div>
+        {failed && onRerunAll && failed.length > 0 && (
+          <button type="button" className="f-button" data-rerun-all disabled={busy || !failed.some((f) => f.canRerun)} title={failed.some((f) => f.canRerun) ? "Reruns each failed agent in order, stopping at the first new failure" : failed[0].why} onClick={onRerunAll}>Rerun failed agents ({failed.length})</button>
+        )}
       </div>
       <div className="sm-wrap" ref={wrap} onMouseLeave={() => setHover(null)}>
       <div className="f-flow-scroll">

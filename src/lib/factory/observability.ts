@@ -4,6 +4,7 @@ import { accountDirectory } from "./accounts";
 import type { Repository } from "./repository";
 import type { Project } from "./model";
 import { scopeHash } from "./engine";
+import { agentOfRun, providerQuota } from "./failed-agents";
 
 // Observability for the whole agent system: where data flows (calls, tokens, cost, latency per edge),
 // where it is stored (counts per Firestore record), and where it is blocked or not flowing at all.
@@ -208,7 +209,6 @@ export function findBlockers(p: PipelineStats, edges: EdgeStat[], aiAgents: { id
   return out;
 }
 export type AgentError = { at: string; message: string; provider: string; model: string };
-const agentOfRun = (r: Project["runs"][number]) => r.stage === "studio" ? (r.capabilityId === "studio.image" ? "studio:image" : "studio:preproduction") : r.stage === "planning" ? "synthesis:planner" : r.stage === "medium" ? "synthesis:medium" : r.stage === "scope" ? "scope:business" : r.stage === "review" ? "review:" + String(r.capabilityId || "").replace("review.", "") : ((r.stage || "research") === "research" ? (r.segment ? "research:" + r.segment : "") : r.stage ? "synthesis:" + (r.stage === "insights" ? "insights" : r.stage === "strategy" ? "strategy" : r.stage === "formats" ? "formats" : r.stage === "ideas" ? "ideas" : r.stage === "audiences" ? "audiences" : "content") : "");
 /** The most recent failure message per agent, read from run records. */
 export function lastErrors(projects: Project[]): Record<string, AgentError> {
   const out: Record<string, AgentError> = {};
@@ -226,6 +226,6 @@ export async function flowObservability(repo: Repository, rows: ApiCall[], aiAge
   const pipeline = pipelineStats(projects);
   const edges = edgeStats(rows, now);
   const errors = lastErrors(projects);
-  return { pipeline, edges, errors, scopes: scopeRows(projects), models: modelStats(rows, now), blockers: findBlockers(pipeline, edges, aiAgents, errors), projectsError: error };
+  return { pipeline, edges, errors, scopes: scopeRows(projects), models: modelStats(rows, now), blockers: findBlockers(pipeline, edges, aiAgents, errors), projectsError: error, quota: providerQuota(projects) };
 }
 export type FlowObservability = Awaited<ReturnType<typeof flowObservability>>;

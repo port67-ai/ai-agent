@@ -22,7 +22,9 @@ import { agentsOverview } from "./ai-agents";
 import { copySetApproved } from "./copy-set";
 import { renderVideo, SCENE_SECONDS } from "./video";
 import { getVideo, putVideo, videoKey } from "./video-store";
-import { keyConfigured, resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
+import { keyConfigured, moveProviderSlots, resolveSelection, researchSlot, routingOverview, saveRouting, stageReady, suggestPublicPrices, suggestSetup } from "./ai-routing";
+import { rerunAgent, rerunFailedAgents, type RerunDeps } from "./agent-rerun";
+import { failedAgents } from "./failed-agents";
 import { runSynthesis } from "./synthesis-run";
 import { planNext, producerAgentAuto, registerResearchRunner, evidenceWarnings, reviewScopeBeforeResearch, runProducerAgent, STEP_LABEL } from "./producer-agent";
 import { synthesisReady } from "./synthesis";
@@ -671,6 +673,12 @@ export async function handleFactory(
     }
     if (route === "admin/ai-agents") {
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
+      // With a project chosen on the page (CHG-0100): the agents whose latest run for that project failed, and whether each can be rerun.
+      const chosen = new URL(request.url).searchParams.get("projectId");
+      if (chosen) {
+        const project = find((await repository.read(a.workspaceId)).projects, chosen, a);
+        return json({ ...(await agentsOverview(repository)), failed: failedAgents(project, { authorised: hasProviderConsent(project) }) });
+      }
       return json(await agentsOverview(repository));
     }
     if (route === "admin/approval-mode") {
@@ -698,6 +706,8 @@ export async function handleFactory(
       if(data.action==="save") { await saveRouting(repository,data.settings,a.subject); return json(await routingOverview(repository)); }
       if(data.action==="suggest") return json(await suggestSetup());
       if(data.action==="public-prices") return json(await suggestPublicPrices(Array.isArray(data.models)?data.models:[]));
+      // CHG-0100: move every job off a provider that has no quota left, in one validated, recorded save.
+      if(data.action==="move") { const result = await moveProviderSlots(repository,data.from,{ research:(data.research as never)||null, synthesis:(data.synthesis as never)||null },a.subject); return json({ ...result, ...(await routingOverview(repository)) }); }
       return json({error:"Unknown AI models action"},400);
     }
     if(route === "accounts") {
@@ -870,6 +880,21 @@ export async function handleFactory(
         const view = projectView(p, a);
         const doc = studioDeliveryDocument(view, path[4], a.role === "operator");
         return new Response(doc.body, { headers: { "content-type": doc.type, "content-disposition": `attachment; filename="${doc.name}"`, "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
+      }
+      // Agent rerun (CHG-0100): which agents failed for this project, rerun one (optionally after an admin switches its model), or
+      // rerun every failed agent in dependency order. On success the producer agent carries the project on as after any run.
+      if (path[2] === "agents" && path[3] === "failed" && path.length === 4 && request.method === "GET") {
+        operator(a);
+        return json({ failed: failedAgents(p, { authorised: hasProviderConsent(p) }) });
+      }
+      if (path[2] === "agents" && (path[3] === "rerun" || path[3] === "rerun-failed") && path.length === 4 && request.method === "POST") {
+        operator(a);
+        const deps: RerunDeps = { runResearch: (op, id, segment) => runResearchSegment(op, id, segment), runStudioRerun };
+        const outcome = path[3] === "rerun" ? { result: await rerunAgent(repo(a), a, projectId, data, deps) } : await rerunFailedAgents(repo(a), a, projectId, data, deps);
+        const anyOk = "result" in outcome ? outcome.result.ok : outcome.results.some((r) => r.ok);
+        if (anyOk) kickProducerAgent(a, projectId, "agent rerun");
+        const fresh = find((await repo(a).read(a.workspaceId)).projects, projectId, a);
+        return json({ ...outcome, project: projectView(fresh, a), failed: failedAgents(fresh, { authorised: hasProviderConsent(fresh) }) });
       }
       if (path[2] === "performance-history" && request.method === "POST") {
         operator(a);

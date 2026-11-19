@@ -5,6 +5,8 @@ import type { Pricing } from "@/lib/factory/costs";
 export type Routing = {
   config: AiRoutingConfig;
   providers: { id: AiRoute["provider"]; label: string; research: boolean; keyConfigured: boolean; keyName: string }[];
+  /** What each job resolves to now (provider and model, or the problem). */
+  effective?: { slot: string; provider?: string; model?: string; error?: string }[];
 };
 export type Suggest = { models: Record<string, string[]>; best: Record<string, string | undefined>; suggested: { research: AiRoute | null; synthesis: AiRoute | null }; notes: string[] };
 export type Price = { input: string; output: string; cached: string; tool: string };

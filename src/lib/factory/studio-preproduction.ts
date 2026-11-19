@@ -414,9 +414,9 @@ function requirePreproductionOpen(p: Project): StudioState {
   if (currentStudioStage(s) !== "preproduction") throw new Error("Pre-production is not the open stage: approve research and strategy (gate 2) first, or reopen Pre-production");
   return s;
 }
-export const newRun = (capability: "studio.preproduction" | "studio.image", selection: { provider: string; model: string }, inputHash: string): ResearchRun => {
+export const newRun = (capability: "studio.preproduction" | "studio.image", selection: { provider: string; model: string }, inputHash: string, piece?: { pieceId: string; rerunRequestId?: string }): ResearchRun => {
   const cap = capabilityRegistry.find((c) => c.id === capability)!;
-  return { id: id(), stage: "studio", capabilityId: cap.id, capabilityVersion: cap.version, at: new Date().toISOString(), status: "running", provider: selection.provider, model: selection.model, leaseExpiresAt: new Date(Date.now() + (capability === "studio.image" ? 240000 : 180000)).toISOString(), inputHash, usageStatus: "unknown" };
+  return { id: id(), stage: "studio", capabilityId: cap.id, capabilityVersion: cap.version, at: new Date().toISOString(), status: "running", provider: selection.provider, model: selection.model, leaseExpiresAt: new Date(Date.now() + (capability === "studio.image" ? 240000 : 180000)).toISOString(), inputHash, usageStatus: "unknown", ...(piece ? { pieceId: piece.pieceId, ...(piece.rerunRequestId ? { rerunRequestId: piece.rerunRequestId } : {}) } : {}) };
 };
 export function reserve(p: Project, run: ResearchRun) {
   if (p.runs.some((r) => r.status === "running")) throw new Error("A provider task is already running; wait or recover its expired lease");
@@ -515,7 +515,7 @@ export async function generateStudioImage(repo: Repository, a: Principal, projec
     if (!isImageKind(piece.kind) || piece.stage !== "preproduction") throw new Error("Choose a test frame or keyframe");
     requirePieceEditable(s, piece);
     const prompt = buildImagePrompt(s, piece);
-    const run = newRun("studio.image", selection, digest(prompt));
+    const run = newRun("studio.image", selection, digest(prompt), { pieceId: piece.id });
     reserve(p, run);
     return { project: structuredClone(p), run, prompt, kind: piece.kind, title: piece.title };
   });
@@ -572,7 +572,7 @@ async function rerunText(ctx: StudioRerunContext) {
   const corpus = flat([pctx.corpus, current, ...dependencies.map((d) => d.text)].join("\n"));
   const input = { ...pctx.payload, piece: { kind: piece.kind, label: PIECE_KIND_LABELS[piece.kind] || piece.kind, title: piece.title, currentText: current }, dependsOn: dependencies, rerunBrief: request.brief };
   const instructions = `You redraw one Port67 studio pre-production piece (${PIECE_KIND_LABELS[piece.kind] || piece.kind}) for the ${offerInfo(s.offer)?.label || "studio"} offer. ${RULES} Address every open comment in rerunBrief and the producer's instruction, keep what nobody objected to, keep it consistent with the pieces in dependsOn, and keep the same plain-text layout as currentText (one "Label: value" per line where it has them). Return only the new text of the piece.`;
-  const run: ResearchRun = { ...newRun("studio.preproduction", selection, digest(JSON.stringify(input))), id: randomUUID() };
+  const run: ResearchRun = { ...newRun("studio.preproduction", selection, digest(JSON.stringify(input)), { pieceId: piece.id, rerunRequestId: request.id }), id: randomUUID() };
   let result: Generated<string>;
   try {
     result = await meteredModelCall(repo, ctx.principal, p, run, () => callWriter(selection, instructions, input, objectOf({ text: string }), "port67_studio_piece", (raw) => {
@@ -598,7 +598,7 @@ async function rerunImage(ctx: StudioRerunContext) {
   const selection = await resolveSelection(repo, IMAGE_SLOT);
   const provider = imageProviderFor(selection);
   const prompt = buildImagePrompt(p.studio!, piece, { comments: piece.comments, instruction: request.instruction });
-  const run: ResearchRun = { ...newRun("studio.image", selection, digest(prompt)), id: randomUUID() };
+  const run: ResearchRun = { ...newRun("studio.image", selection, digest(prompt), { pieceId: piece.id, rerunRequestId: request.id }), id: randomUUID() };
   try {
     const image = await meteredImage(repo, ctx.principal, p, run.id, provider, { prompt, size: imageSizeFor(piece.kind) });
     const ref = await storeGeneratedImage(p, image, ctx.principal.subject, `${piece.title}.png`, provider.model);

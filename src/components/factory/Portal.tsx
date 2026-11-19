@@ -1,6 +1,6 @@
 "use client";
 import PerformancePanel from "./PerformancePanel";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -64,6 +64,16 @@ import { deliverables, variantKey } from "@/lib/factory/studio-gtm";
 import { preproductionPieces } from "@/lib/factory/studio-gates";
 import type { StudioUploadSlot } from "@/lib/factory/studio";
 import { roleLabel, userInitials, userLabel } from "@/lib/factory/user-display";
+import RerunDialog, { FailedAgentsBar } from "./RerunDialog";
+import { failedAgents, type FailedAgent } from "@/lib/factory/failed-agents";
+import { post as adminApi, type Routing, type Suggest } from "./agent-client";
+/** Which failed agents belong on a studio stage page (CHG-0100). */
+function failedForStage(failed: FailedAgent[], stage: string): FailedAgent[] {
+  if (stage === "strategy") return failed.filter((f) => f.slot.startsWith("research:") || f.slot.startsWith("review:") || ["scope:business", "synthesis:insights", "synthesis:strategy", "synthesis:audiences", "synthesis:ideas"].includes(f.slot));
+  if (stage === "preproduction") return failed.filter((f) => f.slot === "studio:preproduction" || (f.slot === "studio:image" && (!f.pieces?.length || f.pieces.some((x) => x.kind !== "still"))));
+  if (stage === "production") return failed.filter((f) => f.slot === "studio:image" && !!f.pieces?.some((x) => x.kind === "still"));
+  return [];
+}
 type Config = {
   demoEnabled: boolean;
   liveReady: boolean;
@@ -144,6 +154,24 @@ export default function Portal() {
   const [signedOut, setSignedOut] = useState(false);
   const p = projects.find((x) => x.id === selected) || projects[0];
   const operator = principal?.role === "operator";
+  // Agent rerun (CHG-0100): the failed agents of the shown project, computed from the producer's project view.
+  const failed = useMemo(() => (operator && p ? failedAgents(p) : []), [operator, p]);
+  const ownerAdmin = !!principal?.admin && principal.identity === "firebase" && !principal.demo;
+  const [rerunEntry, setRerunEntry] = useState<FailedAgent | null>(null);
+  const [rerunRouting, setRerunRouting] = useState<Routing | null>(null);
+  const [rerunSuggest, setRerunSuggest] = useState<Suggest | null>(null);
+  async function openRerun(slot: string) {
+    const entry = failed.find((x) => x.slot === slot);
+    if (!entry) return;
+    setError("");
+    setNotice("");
+    // Only an owner admin can switch models, so only an admin's dialog loads the routing table and model suggestions.
+    if (ownerAdmin) {
+      try { setRerunRouting(await adminApi<Routing>("ai-routing")); } catch { /* the dialog still offers a plain rerun */ }
+      if (!rerunSuggest) try { setRerunSuggest(await adminApi<Suggest>("ai-routing", { action: "suggest" })); } catch { /* typing a model still works */ }
+    }
+    setRerunEntry(entry);
+  }
   const [briefEditing, setBriefEditing] = useState(false);
   const [briefAccount, setBriefAccount] = useState("");
   const [origin, setOrigin] = useState(false);
@@ -645,6 +673,7 @@ export default function Portal() {
           ) : (
             <>
               {p.studio && tab === "studio-intake" && <StudioIntake key={p.id} p={p} operator={operator} busy={busy} command={command} onUpload={(slot, file) => uploadStudio(slot, file)} />}
+              {operator && p.studio && tabStage(tab) && tabStage(tab) !== "intake" && <FailedAgentsBar failed={failedForStage(failed, String(tabStage(tab)))} onRerun={(slot) => void openRerun(slot)} busy={busy} />}
               {p.studio && tabStage(tab) && tabStage(tab) !== "intake" && (
                 <StudioStagePage
                   p={p}
@@ -703,6 +732,12 @@ export default function Portal() {
               )}
               {p.studio && tab === "studio-settings" && <StudioSettings p={p} operator={operator} busy={busy} command={command} />}
               {tab === "diagnostics" && principal.admin && <DiagnosticsPanel p={p} />}
+              {operator && rerunEntry && (
+                <RerunDialog projectId={p.id} agent={rerunEntry} admin={ownerAdmin} routing={rerunRouting} suggest={rerunSuggest}
+                  current={(() => { const e = rerunRouting?.effective?.find((x) => x.slot === rerunEntry.slot); return e?.provider && e.model ? { provider: e.provider, model: e.model } : undefined; })()}
+                  onClose={() => { setRerunEntry(null); void refresh().catch(() => undefined); }}
+                  onDone={() => void refresh().catch(() => undefined)} />
+              )}
               {tab === "overview" && (
                 <>
                   {operator && !p.taskPlan && <TaskPlanPanel p={p} operator={operator} busy={busy} command={command} />}
@@ -720,6 +755,8 @@ export default function Portal() {
                   {operator && (
                     <RunTracker
                       admin={!!principal.admin}
+                      failed={failed}
+                      onRerun={(slot) => void openRerun(slot)}
                       command={command}
                       onPlanning={(kind, retry, feedback) => void run(() => api("projects/" + p.id + "/planning", { kind, retry, feedback }), "AI proposal validated. Review the plan and recommendations before continuing.")}
                       onRunReady={p.taskPlan && !principal.demo ? (() => void run(() => api("projects/" + p.id + "/producer-agent", {}), "Ready tasks processed; see the plan for progress or the next decision.")) : undefined}

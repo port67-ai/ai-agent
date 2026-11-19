@@ -2,6 +2,7 @@ import { autoApproveProducer } from "./auto-approve";
 import { exportApiCalls, type ApiCall } from "./costs";
 import { capabilityRegistry, productionCapabilities } from "./registry";
 import { SLOTS, routingOverview } from "./ai-routing";
+import { providerLabel } from "./ai-slots";
 import type { Repository } from "./repository";
 import { flowObservability } from "./observability";
 
@@ -87,8 +88,11 @@ export async function agentsOverview(repo: Repository, env: Record<string, strin
     .slice(0, 12)
     .map((r) => ({ id: r.id, agent: r.agent || null, stage: r.stage, provider: r.provider, model: r.model, status: r.status === "reserved" && Date.parse(r.createdAt) + IN_FLIGHT_MS <= now ? "unknown" : r.status, at: r.createdAt, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, estimatedMicroUsd: r.reconciliation ? r.reconciliation.actualMicroUsd : r.estimatedMicroUsd }));
   const flow = await flowObservability(repo, rows, ai.map((a) => ({ id: a.id, name: a.name, hasModel: !!a.model })), now);
+  // Providers that look out of quota (CHG-0100): the jobs that still resolve to each, for the "no quota left" banner.
+  const quota = flow.quota.map((q) => ({ ...q, label: providerLabel(q.provider), agents: ai.filter((a) => a.model?.provider === q.provider).map((a) => a.id) }));
   return {
     flow,
+    quota,
     agents: [...ai, ...templates],
     recent,
     totals: { calls: rows.length, inFlight: ai.reduce((n, a) => n + a.stats.inFlight, 0), estimatedMicroUsd: ai.reduce((n, a) => n + a.stats.estimatedMicroUsd, 0), unattributed: rows.filter((r) => !r.agent).length },
