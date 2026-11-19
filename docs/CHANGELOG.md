@@ -500,6 +500,11 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Requirements: FAC-EVD-001, FAC-EVD-002 (behaviour refined). PRD impact: none.
 - Tests: `tests/factory-evidence.test.ts` (no re-run after a person accepted the sources).
 
+## CHG-0092 - 2026-11-19 - AI plans accept a channel's display name
+- What/why: Retry AI plan failed with "Unknown launch channel". The planner was given the chosen channels as ids (for example x_threads) but a model may answer with the display name ("X & Threads"), and the validator accepted only the id, so a correct plan was thrown away. The planner and medium-selection validators now map the id, the display name, any case or punctuation back to the allowed id, and the model is also constrained to the chosen ids in its output schema. A channel that was not chosen is still refused.
+- Requirements: FAC-PRV-002 (new). PRD impact: added.
+- Tests: new channel name resolution test; suite passing.
+
 ## CHG-0091 - 2026-11-18 - Full cost ledger archives itself; failed button presses scroll to their message
 - What/why: Retry AI research plan appeared to do nothing. The diagnostics showed every attempt failed in 0.6 s with "Admin ledger capacity reached; export and archive ledger before further API calls": the active cost ledger holds at most 150 calls and was full, so no paid call could be reserved. The earlier 503 text was an older failure. A full batch is now archived automatically before the next paid call (history and spend totals are kept; PORT67_LEDGER_AUTO_ARCHIVE=off restores the manual button). The portal also scrolls to the error banner when a button press fails, so the message is not hidden above the fold.
 - Requirements: FAC-COST-001 (new). PRD impact: added.
