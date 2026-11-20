@@ -30,7 +30,7 @@ export function runTracker(p: Project): TrackStep[] {
       const state = states[t.status];
       const thin = t.id === "reviewSources" && t.status === "done" ? thinResearchSegments(copy) : [];
       const detail = t.status === "ready" ? "Ready: press Run ready tasks" : thin.length ? `Warning: fewer than ${MIN_ACCEPTED_PER_SEGMENT} accepted sources for ${thin.join(", ")} (thin research; work continues)` : t.detail || t.reason;
-      const anchor = t.id === "formats" ? "formats-anchor" : t.id === "approveDirection" ? "approval-anchor" : undefined;
+      const anchor = t.id === "formats" ? "formats-anchor" : t.id === "approveDirection" || t.id === "reviewDirection" ? "approval-anchor" : undefined;
       return { id: t.id, taskId: t.id, label: t.title, state, detail, tab, kind, anchor, who: state === "running" ? "AI" : state === "paused" || state === "waiting_approval" || state === "ready" ? "Producer" : undefined, ...(ai && ["ready", "blocked"].includes(t.status) ? { ai } : {}), ...(act ? { act } : {}) };
     });
     return numberSteps(rows);

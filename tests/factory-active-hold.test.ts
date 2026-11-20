@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { activeHold } from "../src/lib/factory/task-plan";
+import { activeHold, syncTaskPlan } from "../src/lib/factory/task-plan";
 import type { Project } from "../src/lib/factory/model";
 
 // CHG-0101: the AI agents map shows a producer agent hold only while what it names is still open.
@@ -22,4 +22,14 @@ assert.ok(activeHold(base(direction, { strategies: [{ status: "draft" }] as neve
 assert.equal(activeHold(base(direction, { strategies: [{ status: "approved" }] as never })), undefined);
 
 assert.equal(activeHold(base(undefined)), undefined);
+
+// CHG-0102: a held direction stops blocking "Review campaign direction" once the producer shares it.
+{
+  const p = { taskPlan: { tasks: [{ id: "reviewDirection", dependsOn: [], status: "pending", title: "Review campaign direction", reason: "" }], researchKey: "k", research: [] }, runs: [], sources: [], insights: [], tasks: [], assets: [], reviews: [], strategies: [{ status: "draft", hash: "d1" }], producerAgent: { hold: { gate: "direction", subject: "d1", notes: "Audience is still not research-based" } } } as unknown as Project;
+  syncTaskPlan(p);
+  assert.equal(p.taskPlan!.tasks[0].status, "blocked", "a draft direction under a reviewer hold waits for the producer");
+  (p.strategies[0] as { status: string }).status = "shared";
+  syncTaskPlan(p);
+  assert.equal(p.taskPlan!.tasks[0].status, "done", "sharing the held direction settles the hold without a reset");
+}
 console.log("Active hold: settled and thin-research holds leave the map but stay in the log passed");

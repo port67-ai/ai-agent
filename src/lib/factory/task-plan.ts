@@ -187,8 +187,11 @@ export function syncTaskPlan(p: Project) {
     else if (t.id === "shareAssets") done = !!assets.length && assets.every(a => a.status !== "draft");
     else if (t.id === "assetApproval") done = !!assets.length && assets.every(a => a.status === "approved");
     else if (t.id.startsWith("manual:")) done = !!t.completion;
-    const hold = p.producerAgent?.hold;
-    if (hold && !isThinResearchHold(hold) && ({ sources: "reviewSources", insights: "reviewInsights", direction: "reviewDirection", scope: "scope" }[hold.gate] === t.id)) {
+    // A direction hold stops blocking once the producer shares or replaces the held draft (CHG-0102). Source, insight and scope
+    // holds keep their existing rule: they block until the producer agent's next pass clears them.
+    const stored = p.producerAgent?.hold;
+    const hold = stored?.gate === "direction" ? activeHold(p) : stored && !isThinResearchHold(stored) ? stored : undefined;
+    if (hold && ({ sources: "reviewSources", insights: "reviewInsights", direction: "reviewDirection", scope: "scope" }[hold.gate] === t.id)) {
       t.status = "blocked"; t.detail = hold.notes; continue;
     }
     const pending = p.producerAgent?.pending?.gate;
