@@ -38,7 +38,10 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
   const next = nextAction(allSteps);
   const nextFailed = next.who === "Producer" ? failedAt(next.id, allSteps.find((x) => x.id === next.id)?.state || "pending") : undefined;
   const doneCount = allSteps.filter((s) => s.state === "done").length;
-  const heldDirection = p.producerAgent?.hold?.gate === "direction" && p.strategies.at(-1)?.status === "draft";
+  const heldGate = p.producerAgent?.hold?.gate;
+  const heldStrategy = p.strategies.at(-1);
+  const heldDirection = heldGate === "direction" && heldStrategy?.status === "draft" && (!p.producerAgent?.hold?.subject || p.producerAgent.hold.subject === heldStrategy.hash);
+  const heldEvidence = heldGate === "sources" || heldGate === "insights";
   const nextIndex = allSteps.findIndex((s) => s.id === next.id);
   const afterNext = nextIndex >= 0 ? allSteps.slice(nextIndex + 1).find((s) => s.state !== "done") : undefined;
   const stageSummaries = FLOW_STAGES.map((name) => {
@@ -102,13 +105,15 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
             </>
           )}
           {!heldDirection && next.who === "Producer" && go && next.tab && !nextFailed && (
-            <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go(next.tab!, allSteps.find((s) => s.id === next.id)?.anchor)}>Open this stage</button>
+            <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go(next.tab!, allSteps.find((s) => s.id === next.id)?.anchor)}>{heldEvidence ? "Review manually and continue" : "Open this stage"}</button>
           )}
         </div>
         {heldDirection && <p className="f-small f-override-note"><strong>Override is explicit, not silent.</strong> The reviewer note stays recorded. Proceeding shares this version into the normal approval gate; customer approval and later QA are not bypassed.</p>}
+        {heldGate === "sources" && <p className="f-small f-override-note"><strong>Thin or mixed research does not have to stop the project.</strong> Review the remaining sources and accept or reject what is usable. Once every source has a human decision, the workflow continues with any thin-evidence warning still visible.</p>}
+        {heldGate === "insights" && <p className="f-small f-override-note"><strong>A low review score is a judgement point, not a dead end.</strong> Review the remaining insight drafts and accept only the interpretations you are comfortable using. Once every draft has a human decision, the workflow can continue with the caveat recorded.</p>}
       </div>
       {(p.producerAgent?.hold || p.researchNote) && (
-        <p className="f-small" role="status">{p.producerAgent?.hold ? `Held for a person: ${p.producerAgent.hold.notes}` : p.researchNote}</p>
+        <p className="f-small" role="status">{p.producerAgent?.hold ? `Producer decision needed (${p.producerAgent.hold.gate}): ${p.producerAgent.hold.notes}` : p.researchNote}</p>
       )}
       {onProducer && (
         <p className="f-small" style={{ margin: "0 0 8px" }}>
