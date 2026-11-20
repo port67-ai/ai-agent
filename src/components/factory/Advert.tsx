@@ -1,9 +1,73 @@
 "use client";
 import { useState } from "react";
 import { Check, Clapperboard, Download } from "lucide-react";
-import type { AdvertShot, Continuity } from "@/lib/factory/model";
-import { advertIssues, compileShot, estimate, MAX_SHOT_SEC, TIERS, type Tier } from "@/lib/factory/advert";
+import type { AdvertPlan, AdvertShot, Continuity, Project } from "@/lib/factory/model";
 import { Tag, Empty, Field, Actions } from "./shared";
+
+// Browser-only advert view helpers. Keep in sync with the server validation rules in advert.ts.
+// Do not import advert.ts here: its SHA-256 hash uses Node crypto, unavailable in client bundles.
+const MAX_SHOT_SEC = 10;
+const MAX_ADVERT_SEC = 60;
+const MAX_SHOTS = 8;
+const TIERS = { draft: { label: "Draft", height: 480 }, final: { label: "Final", height: 1080 } } as const;
+type Tier = keyof typeof TIERS;
+const RULESET = "generic-v1";
+const REF_ORDER = ["character", "location", "prop"] as const;
+const MAX_REFS = 9;
+
+const figures = (t: string) => t.match(/\d+(?:[.,]\d+)?%|\d+[.,]\d+|\b\d{2,}\b/g) || [];
+/** Rules every plan must meet before it is shared. Returns plain-English problems; empty means fine. */
+function advertIssues(p: Project, plan: AdvertPlan): string[] {
+  const out: string[] = [];
+  const s = p.strategies.find((x) => x.hash === plan.strategyHash);
+  if (!s || s.status !== "approved") return ["The approved direction changed; plan the advert again."];
+  const km = s.keyMessages || [];
+  const allowed = km.map((m) => m.message + " " + m.proof).join(" ") + " " + s.cta;
+  if (!plan.shots.length || plan.shots.length > MAX_SHOTS) out.push(`An advert needs 1 to ${MAX_SHOTS} shots.`);
+  let total = 0;
+  for (const x of plan.shots) {
+    total += x.seconds;
+    if (!(x.seconds >= 1 && x.seconds <= MAX_SHOT_SEC)) out.push(`Shot ${x.n} must be 1 to ${MAX_SHOT_SEC} seconds.`);
+    if (!km[x.keyMessage]) out.push(`Shot ${x.n} is not linked to a key message.`);
+    if (!x.sourceIds.length) out.push(`Shot ${x.n} cites no evidence.`);
+    for (const f of figures(x.dialogue + " " + x.onScreen)) if (!allowed.includes(f)) out.push(`Shot ${x.n} uses the figure ${f}, which is not in the approved key messages.`);
+    if (x.refs.length > MAX_REFS) out.push(`Shot ${x.n} has more than ${MAX_REFS} references.`);
+  }
+  if (total > MAX_ADVERT_SEC) out.push(`The advert is ${total}s; the limit is ${MAX_ADVERT_SEC}s.`);
+  return out;
+}
+
+function estimate(plan: AdvertPlan, tier: Tier, usdPerSecond?: number) {
+  const seconds = plan.shots.reduce((n, x) => n + x.seconds, 0);
+  return { seconds, tier, height: TIERS[tier].height, usd: usdPerSecond && usdPerSecond > 0 ? Math.round(seconds * usdPerSecond * 100) / 100 : null };
+}
+
+/** The deterministic shot prompt. Reference tags are numbered in a fixed order (characters, locations, props, then label). */
+function compileShot(plan: AdvertPlan, shot: AdvertShot, tier: Tier = "draft") {
+  if (!plan.continuity.approved) throw new Error("A producer must approve the Continuity Profile before prompts are compiled");
+  if (shot.seconds > MAX_SHOT_SEC || shot.seconds < 1) throw new Error(`Shot ${shot.n} must be 1 to ${MAX_SHOT_SEC} seconds`);
+  const c = plan.continuity;
+  const refs = [...shot.refs].sort((a, b) => REF_ORDER.indexOf(a.kind) - REF_ORDER.indexOf(b.kind) || a.label.localeCompare(b.label));
+  if (refs.length > MAX_REFS) throw new Error(`Shot ${shot.n} has more than ${MAX_REFS} references`);
+  const tags = refs.map((r, i) => ({ tag: `@Ref${i + 1}`, ...r }));
+  const lighting = shot.overrides?.lighting || c.lighting;
+  const lens = shot.overrides?.lens || c.lens;
+  const lines = [
+    ...tags.map((t) => `${t.tag} = ${t.kind}: ${t.label}`),
+    `Scene: ${shot.scene}`,
+    `Action: ${shot.action}${tags.length ? ` Feature ${tags.map((t) => t.tag).join(", ")}.` : ""}`,
+    ...(shot.dialogue ? [`Spoken line: "${shot.dialogue}"`] : []),
+    ...(shot.onScreen ? [`On-screen text: "${shot.onScreen}"`] : []),
+    ...(plan.treatment.creativeDirection ? [`Approved creative treatment: ${plan.treatment.creativeDirection}`, "The approved continuity and per-shot overrides below govern lighting, lens and format where the treatment differs."] : []),
+    `Camera: ${c.cameraBody}, ${lens}`,
+    `Lighting: ${lighting}`,
+    `Palette: ${c.palette.join(", ")}`,
+    `Grade: ${c.grade}`,
+    `Format: ${c.aspect}, ${shot.seconds}s, ${TIERS[tier].height}p ${tier} tier`,
+    "No logos, brand marks or real people unless supplied as references.",
+  ];
+  return { shotId: shot.id, ruleset: RULESET, tier, seconds: shot.seconds, refs: tags, prompt: lines.join("\n") };
+}
 
 const csv = (v: string[]) => v.join(", ");
 const parseRefs = (t: string): AdvertShot["refs"] =>
