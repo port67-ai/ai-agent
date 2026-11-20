@@ -204,6 +204,17 @@ export default function Direction({
             )
           ) : s.status === "changes_requested" ? (
             <strong>Changes were requested. Create a new version and share it again.</strong>
+          ) : operator && p.producerAgent?.hold?.gate === "direction" ? (
+            <div>
+              <strong>Your decision: the AI reviewer sent this direction back once and now leaves it to you.</strong>
+              <p className="f-small">Reviewer notes: {p.producerAgent.hold.notes}</p>
+              <p className="f-small">Choose one: share it as it is, create a new version that addresses the notes, or redraft it with AI.</p>
+              <div className="f-actions">
+                <button className="f-button" disabled={busy} onClick={() => void command({ type: "shareStrategy" }, "Direction shared. The next step is its approval.")}>Share as it is <ArrowUpRight size={16} /></button>
+                <button className="f-button secondary" disabled={busy} onClick={() => setEditing(true)}>Create new version</button>
+                <button className="f-button secondary" disabled={busy || !aiReady} onClick={() => void onGenerate()}>Redraft with AI</button>
+              </div>
+            </div>
           ) : (
             <strong>Draft. Not shared with the customer yet.</strong>
           )}
