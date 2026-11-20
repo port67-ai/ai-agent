@@ -215,12 +215,19 @@ export default function AiAgents() {
       agents: data.agents.filter((a) => a.model?.provider === id).length,
     };
   });
+  const stageUsage = (ids: string[]) => {
+    const selected = data.agents.filter((a) => ids.some((id) => id.endsWith(":") ? a.id.startsWith(id) : a.id === id));
+    const cost = selected.reduce((n, a) => n + (a.stats?.estimatedMicroUsd || 0), 0);
+    const calls = selected.reduce((n, a) => n + (a.stats?.calls || 0), 0);
+    const missingPrice = selected.some((a) => a.stats?.calls && a.model && !a.model.priced);
+    return `${calls} calls · ${missingPrice ? "partial cost " : ""}${usd(cost)}`;
+  };
   const workflowSummary = [
-    { no: "1", name: "Plan & scope", detail: `${pipeline.scopes?.classified || 0} classified · ${pipeline.waiting.producerStart || 0} waiting to start`, providers: providersFor(["synthesis:planner", "scope:business", "review:scope"]) },
-    { no: "2", name: "Research", detail: `${pipeline.sources.total} sources · ${pipeline.sources.unreviewed} awaiting review`, providers: providersFor(["research:", "review:sources"]) },
-    { no: "3", name: "Insights", detail: `${pipeline.insights.reviewed} accepted · ${pipeline.insights.draft} awaiting review`, providers: providersFor(["synthesis:insights", "review:insights"]) },
-    { no: "4", name: "Direction", detail: `${pipeline.directions.shared} shared · ${pipeline.directions.approved} approved`, providers: providersFor(["synthesis:medium", "synthesis:formats", "synthesis:audiences", "synthesis:strategy", "review:direction"]) },
-    { no: "5", name: "Production", detail: `${pipeline.assetsApproved} approved assets · ${pipeline.copyPacks} copy packs`, providers: providersFor(["synthesis:content", "studio:preproduction", "studio:image", "production.video"]) },
+    { no: "1", name: "Plan & scope", detail: `${pipeline.scopes?.classified || 0} classified · ${pipeline.waiting.producerStart || 0} waiting to start`, providers: providersFor(["synthesis:planner", "scope:business", "review:scope"]), usage: stageUsage(["synthesis:planner", "scope:business", "review:scope"]) },
+    { no: "2", name: "Research", detail: `${pipeline.sources.total} sources · ${pipeline.sources.unreviewed} awaiting review`, providers: providersFor(["research:", "review:sources"]), usage: stageUsage(["research:", "review:sources"]) },
+    { no: "3", name: "Insights", detail: `${pipeline.insights.reviewed} accepted · ${pipeline.insights.draft} awaiting review`, providers: providersFor(["synthesis:insights", "review:insights"]), usage: stageUsage(["synthesis:insights", "review:insights"]) },
+    { no: "4", name: "Direction", detail: `${pipeline.directions.shared} shared · ${pipeline.directions.approved} approved`, providers: providersFor(["synthesis:medium", "synthesis:formats", "synthesis:audiences", "synthesis:strategy", "review:direction"]), usage: stageUsage(["synthesis:medium", "synthesis:formats", "synthesis:audiences", "synthesis:strategy", "review:direction"]) },
+    { no: "5", name: "Production", detail: `${pipeline.assetsApproved} approved assets · ${pipeline.copyPacks} copy packs`, providers: providersFor(["synthesis:content", "studio:preproduction", "studio:image", "production.video"]), usage: stageUsage(["synthesis:content", "studio:preproduction", "studio:image", "production.video"]) },
   ];
   return (
     <>
@@ -309,7 +316,7 @@ export default function AiAgents() {
         <div className="f-section-heading">
           <div>
             <h2>AI workflow at a glance</h2>
-            <p className="f-small">Workspace totals are summarised here; the selected project controls are above. Each stage shows the LLM providers currently assigned. Open the detailed map only for agent-to-model wiring, storage paths or troubleshooting.</p>
+            <p className="f-small">Workspace totals are summarised here; the selected project controls are above. Each stage shows its assigned LLM providers, recorded calls and estimated costs. Open the detailed map only for agent-to-model wiring, storage paths or troubleshooting.</p>
           </div>
           <strong className="f-ai-total">{data.totals.calls} calls · {usd(data.totals.estimatedMicroUsd)}</strong>
         </div>
@@ -320,6 +327,7 @@ export default function AiAgents() {
               <strong>{stage.name}</strong>
               <small>{stage.detail}</small>
               <em>{stage.providers.length ? stage.providers.join(" · ") : "No LLM assigned"}</em>
+              <small>{stage.usage} estimated for this stage</small>
             </div>
           ))}
         </div>
