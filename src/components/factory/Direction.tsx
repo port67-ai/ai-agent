@@ -328,6 +328,16 @@ export default function Direction({
                 Share direction <ArrowUpRight size={16} />
               </button>
             )}
+            {s.status === "draft" && (!s.evidenceIds.length || !s.insightIds.length) && p.producerAgent?.hold?.gate !== "direction" && (
+              <details className="f-deliverable-more">
+                <summary>Continue despite missing research or insights</summary>
+                <p className="f-small">This route records a producer exception, not a positive evidence score. Explain the gap, keep unsupported claims out of the direction and document limitations. Customer approval and QA remain required.</p>
+                <Field label="Producer override reason (at least 20 characters)">
+                  <textarea rows={3} maxLength={1200} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />
+                </Field>
+                <button className="f-button secondary" disabled={busy || overrideReason.trim().length < 20 || !s.uncertainties?.trim()} onClick={() => void command({ type: "shareStrategy", overrideReason }, "Direction shared with documented evidence override.")}>Proceed to approval with caveat</button>
+              </details>
+            )}
             <button
               className="f-button secondary"
               onClick={() => setEditing(true)}
