@@ -14,6 +14,7 @@ export default function Direction({
   const s = p.strategies.at(-1);
   const [editing, setEditing] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [overrideReason, setOverrideReason] = useState("");
   if (!s || editing)
     return operator ? (
       <section className="f-panel f-direction-form">
@@ -209,12 +210,15 @@ export default function Direction({
               <strong>Review result: producer decision required — this is not a hard stop.</strong>
               <p className="f-small">Reviewer notes: {p.producerAgent.hold.notes}</p>
               <p className="f-small">Choose one path: fix the draft yourself, rerun the AI direction skill, or deliberately proceed with this version and its caveat.</p>
+              <Field label="Why is it acceptable to proceed with limited evidence? (required, recorded in audit)">
+                <textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} rows={3} maxLength={1200} placeholder="Explain the missing evidence, decision rationale and how claims will be limited." />
+              </Field>
               <div className="f-actions">
-                <button className="f-button" disabled={busy} onClick={() => void command({ type: "shareStrategy" }, "Direction shared. The next step is its approval.")}>Proceed with caveat to approval <ArrowUpRight size={16} /></button>
+                <button className="f-button" disabled={busy || overrideReason.trim().length < 20 || !s.uncertainties?.trim()} onClick={() => void command({ type: "shareStrategy", overrideReason }, "Producer override recorded. Direction shared for approval with evidence caveat.")}>Proceed with caveat to approval <ArrowUpRight size={16} /></button>
                 <button className="f-button secondary" disabled={busy} onClick={() => setEditing(true)}>Edit and create new version</button>
                 <button className="f-button secondary" disabled={busy || !aiReady} onClick={() => void onGenerate()}>Redraft with AI skill</button>
               </div>
-              <p className="f-small"><strong>What “proceed” means:</strong> this exact draft is shared into the existing approval gate. The reviewer note stays recorded and is not converted into a pass; later approval and QA still apply.</p>
+              <p className="f-small"><strong>What “proceed” means:</strong> the reason and evidence limitations are recorded, and this exact draft enters the normal approval gate. The review score does not become a pass. Customer approval and later QA still apply. Add a low-evidence caveat under Unknowns and limitations before proceeding.</p>
             </div>
           ) : (
             <strong>Draft. Not shared with the customer yet.</strong>
