@@ -17,6 +17,16 @@ type Tab = "research" | "direction" | "assets" | "advert";
 type Props = { onPlanning?: (kind: "research" | "medium", retry: boolean, feedback?: string) => unknown; settings?: ReactNode; onRunReady?: () => void; command?: (c: Record<string, unknown>, message: string) => unknown; p: Project; go?: (tab: Tab, anchor?: string) => void; aiReady?: boolean; busy?: boolean; onAi?: (stage: AiStage) => void; onAct?: (act: StepAct) => void; onProducer?: () => void; canApproveForCustomer?: boolean; accountBytes?: number; onTrim?: () => void; admin?: boolean;
   /** CHG-0100: the agents that failed for this project; a blocked agent row shows the failure in plain English and a Rerun button. */
   failed?: FailedAgent[]; onRerun?: (slot: string) => void };
+
+const FLOW_STAGES = ["Plan & scope", "Research", "Insights", "Direction", "Production & approval"] as const;
+type FlowStage = typeof FLOW_STAGES[number];
+function stageOf(id: string): FlowStage {
+  if (id === "planResearch" || id === "scope") return "Plan & scope";
+  if (id.startsWith("research:") || id === "reviewSources" || id === "sources") return "Research";
+  if (id === "draftInsights" || id === "reviewInsights" || id === "insights" || id === "insights-draft") return "Insights";
+  if (["mediumSelection", "formats", "formats-suggest", "audiences", "audiences-suggest", "draftDirection", "reviewDirection", "approveDirection", "direction", "direction-approval"].includes(id)) return "Direction";
+  return "Production & approval";
+}
 /** The overview's single sheet: every deliverable top to bottom, AI agent steps and human review steps, each with the button or link that does it. */
 export default function RunTracker({ onPlanning, settings, onRunReady, command, onProducer, p, go, aiReady, busy, onAi, onAct, canApproveForCustomer, accountBytes, onTrim, admin, failed, onRerun }: Props) {
   const steps = runTracker(p);
@@ -28,6 +38,16 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
   const next = nextAction(allSteps);
   const nextFailed = next.who === "Producer" ? failedAt(next.id, allSteps.find((x) => x.id === next.id)?.state || "pending") : undefined;
   const doneCount = allSteps.filter((s) => s.state === "done").length;
+  const heldDirection = p.producerAgent?.hold?.gate === "direction" && p.strategies.at(-1)?.status === "draft";
+  const nextIndex = allSteps.findIndex((s) => s.id === next.id);
+  const afterNext = nextIndex >= 0 ? allSteps.slice(nextIndex + 1).find((s) => s.state !== "done") : undefined;
+  const stageSummaries = FLOW_STAGES.map((name) => {
+    const rows = allSteps.filter((s) => stageOf(s.id) === name);
+    const done = rows.length > 0 && rows.every((s) => s.state === "done");
+    const active = rows.find((s) => ["paused", "waiting_approval", "ready", "running"].includes(s.state));
+    const target = active || rows.find((s) => s.state !== "done") || rows[0];
+    return { name, done, active: !!active, target };
+  });
   return (
     <section className="f-panel f-deliverables" aria-label={p.taskPlan ? "Project task plan" : "Campaign deliverables"}>
       <div className="f-section-heading">
@@ -37,29 +57,66 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
         </div>
         {onRunReady && readyCount > 0 && <button type="button" className="f-button" disabled={busy || p.runs.some((r) => r.status === "running")} onClick={onRunReady}>Run ready tasks ({readyCount})</button>}
       </div>
+      <nav className="f-stage-nav" aria-label="Project stages">
+        {stageSummaries.map((stage, i) => {
+          const target = stage.target;
+          const clickable = !!go && !!target?.tab;
+          return (
+            <button type="button" key={stage.name} className={"f-stage-nav-item" + (stage.done ? " done" : stage.active ? " active" : "")} disabled={!clickable} onClick={() => clickable && go!(target!.tab!, target!.anchor)}>
+              <span>{i + 1}</span>
+              <strong>{stage.name}</strong>
+              <small>{stage.done ? "Done" : stage.active ? "Current" : "Later"}</small>
+            </button>
+          );
+        })}
+      </nav>
       <div className="f-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><span style={{ width: pct + "%" }} /></div>
       <p className="f-small" style={{ margin: "0 0 6px" }}><span className="f-kind agent">AI agent</span> tasks are done by an agent. <span className="f-kind review">Review</span> tasks need a person. Press the button on a row to jump straight to it; you come back here when it is done.</p>
-      <p className="f-small" data-testid="next-action" style={{ margin: "4px 0 10px", padding: "8px 10px", borderRadius: 8, border: `1px solid ${next.who === "Producer" ? "#f97316" : "#475569"}` }}>
-        <strong>{next.who === "Producer" ? "Your turn" : next.who === "AI" ? "AI is working" : "Nothing needs pressing"}</strong>
-        {next.who === "Producer" ? `: ${next.label}. ` : ". "}
-        {nextFailed ? (
-          <>
-            {nextFailed.label} failed: {nextFailed.failure.title}. {nextFailed.failure.recommendation}{" "}
-            {onRerun && <button type="button" className="f-button small" data-rerun-next={nextFailed.slot} disabled={busy || !nextFailed.canRerun} title={nextFailed.why || nextFailed.error} onClick={() => onRerun(nextFailed.slot)}>Rerun {nextFailed.label}</button>}
-            {!nextFailed.canRerun && nextFailed.why && <> {nextFailed.why}</>}
-          </>
-        ) : next.text}
-      </p>
+      <div className={"f-next-card" + (next.who === "Producer" ? " action" : "")}>
+        <div className="f-next-card-head">
+          <div>
+            <div className="f-eyebrow">Current stage · {stageOf(next.id)}</div>
+            <p className="f-small" data-testid="next-action">
+              <strong>{next.who === "Producer" ? "Your turn" : next.who === "AI" ? "AI is working" : "Nothing needs pressing"}</strong>
+              {next.who === "Producer" ? `: ${next.label}. ` : ". "}
+              {nextFailed ? (
+                <>
+                  {nextFailed.label} failed: {nextFailed.failure.title}. {nextFailed.failure.recommendation}{" "}
+                  {onRerun && <button type="button" className="f-button small" data-rerun-next={nextFailed.slot} disabled={busy || !nextFailed.canRerun} title={nextFailed.why || nextFailed.error} onClick={() => onRerun(nextFailed.slot)}>Rerun {nextFailed.label}</button>}
+                  {!nextFailed.canRerun && nextFailed.why && <> {nextFailed.why}</>}
+                </>
+              ) : next.text}
+            </p>
+            {afterNext && <p className="f-small f-next-after"><strong>After this:</strong> {afterNext.label} · {stageOf(afterNext.id)}</p>}
+          </div>
+        </div>
+        <div className="f-next-actions">
+          {heldDirection && command && (
+            <>
+              {go && <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go("direction", "approval-anchor")}>Open direction</button>}
+              {aiReady && onAi && <button type="button" className="f-button secondary small" disabled={busy} onClick={() => onAi("strategy")}>Redraft with AI skill</button>}
+              <button type="button" className="f-button small" disabled={busy} onClick={() => {
+                const ok = typeof window === "undefined" || window.confirm("Proceed with this exact direction despite the reviewer notes? This records a producer decision and moves the version to the existing approval gate; it does not turn the reviewer result into a pass.");
+                if (ok) void command({ type: "shareStrategy" }, "Producer override recorded. Direction shared with caveat; approval is the next gate.");
+              }}>Proceed with caveat</button>
+            </>
+          )}
+          {!heldDirection && next.who === "Producer" && go && next.tab && !nextFailed && (
+            <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go(next.tab!, allSteps.find((s) => s.id === next.id)?.anchor)}>Open this stage</button>
+          )}
+        </div>
+        {heldDirection && <p className="f-small f-override-note"><strong>Override is explicit, not silent.</strong> The reviewer note stays recorded. Proceeding shares this version into the normal approval gate; customer approval and later QA are not bypassed.</p>}
+      </div>
       {(p.producerAgent?.hold || p.researchNote) && (
         <p className="f-small" role="status">{p.producerAgent?.hold ? `Held for a person: ${p.producerAgent.hold.notes}` : p.researchNote}</p>
       )}
       {onProducer && (
         <p className="f-small" style={{ margin: "0 0 8px" }}>
-          <button type="button" className="f-button secondary small" disabled={busy} onClick={onProducer}>Re-run automatic checks</button>{" "}
-          The checks run by themselves after research and after each approval. Use this only if a step looks stuck or an AI call failed.
+          <button type="button" className="f-button secondary small" disabled={busy} onClick={onProducer}>Re-run producer review</button>{" "}
+          Run the current checks again against the latest evidence. If this reviewer uses a model, the re-check can be a metered AI call and may return the same result.
         </p>
       )}
-      <ol className="f-deliverable-list">
+      <details className="f-task-details"><summary>All tasks and dependencies ({steps.length})</summary><ol className="f-deliverable-list">
         {steps.map((s, i) => {
           const Icon = ICON[s.state];
           const needs = s.state === "paused" || s.state === "waiting_approval";
@@ -127,7 +184,7 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
             </li>
           );
         })}
-      </ol>
+      </ol></details>
       {settings}
       {p.storage && (
         <p className="f-small" style={{ marginTop: 10 }} data-testid="storage-gauge">
