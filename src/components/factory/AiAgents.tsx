@@ -82,6 +82,8 @@ export default function AiAgents() {
   const [rerunFor, setRerunFor] = useState<FailedAgent | null>(null);
   const [loadedFor, setLoadedFor] = useState("");
   const [offerRerun, setOfferRerun] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  useEffect(() => { if (data?.failed?.length) setMapOpen(true); }, [data?.failed?.length]);
   const load = useCallback(async () => {
     try {
       const [agents, route, mode] = await Promise.all([post<Overview>("ai-agents" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")), post<Routing>("ai-routing"), post<NonNullable<typeof approval>>("approval-mode")]);
@@ -199,7 +201,7 @@ export default function AiAgents() {
   const unset = data.agents.filter((a) => a.kind === "ai" && !a.model).length;
   const pipeline = data.flow.pipeline;
   const providerLabels: Record<string, string> = { openai: "OpenAI", gemini: "Google Gemini", anthropic: "Anthropic", deepseek: "DeepSeek" };
-  const providersFor = (ids: string[]) => Array.from(new Set(data.agents.filter((a) => ids.some((id) => id.endsWith(":") ? a.id.startsWith(id) : a.id === id)).map((a) => a.model?.provider).filter((x): x is string => !!x))).map((id) => providerLabels[id] || id);
+  const providersFor = (ids: string[]) => Array.from(new Set(data.agents.filter((a) => ids.some((id) => id.endsWith(":") ? a.id.startsWith(id) : a.id === id)).flatMap((a) => a.model ? [a.model.provider] : []))).map((id) => providerLabels[id] || id);
   const providerCosts = [
     ["openai", "OpenAI"],
     ["gemini", "Google Gemini"],
@@ -347,7 +349,7 @@ export default function AiAgents() {
           ))}
         </div>
       </section>
-      <details className="f-map-details" defaultOpen={!!failed?.length}>
+      <details className="f-map-details" open={mapOpen} onToggle={(event) => setMapOpen(event.currentTarget.open)}>
         <summary className="f-panel">
           <div>
             <strong>Detailed AI / LLM map</strong>
