@@ -729,7 +729,7 @@ export function transition(
             insight.status !== "rejected" &&
             insight.sourceIds.every((source) => s.evidenceIds.includes(source)),
         ))
-    )
+    ))
       throw new Error(
         "Share a direction only after linking reviewed evidence and an interpreted insight. Or use the explicit producer override with a reason and visible evidence caveat.",
       );
