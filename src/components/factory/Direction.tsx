@@ -206,14 +206,15 @@ export default function Direction({
             <strong>Changes were requested. Create a new version and share it again.</strong>
           ) : operator && p.producerAgent?.hold?.gate === "direction" ? (
             <div>
-              <strong>Your decision: the AI reviewer sent this direction back once and now leaves it to you.</strong>
+              <strong>Review result: producer decision required — this is not a hard stop.</strong>
               <p className="f-small">Reviewer notes: {p.producerAgent.hold.notes}</p>
-              <p className="f-small">Choose one: share it as it is, create a new version that addresses the notes, or redraft it with AI.</p>
+              <p className="f-small">Choose one path: fix the draft yourself, rerun the AI direction skill, or deliberately proceed with this version and its caveat.</p>
               <div className="f-actions">
-                <button className="f-button" disabled={busy} onClick={() => void command({ type: "shareStrategy" }, "Direction shared. The next step is its approval.")}>Share as it is <ArrowUpRight size={16} /></button>
-                <button className="f-button secondary" disabled={busy} onClick={() => setEditing(true)}>Create new version</button>
-                <button className="f-button secondary" disabled={busy || !aiReady} onClick={() => void onGenerate()}>Redraft with AI</button>
+                <button className="f-button" disabled={busy} onClick={() => void command({ type: "shareStrategy" }, "Direction shared. The next step is its approval.")}>Proceed with caveat to approval <ArrowUpRight size={16} /></button>
+                <button className="f-button secondary" disabled={busy} onClick={() => setEditing(true)}>Edit and create new version</button>
+                <button className="f-button secondary" disabled={busy || !aiReady} onClick={() => void onGenerate()}>Redraft with AI skill</button>
               </div>
+              <p className="f-small"><strong>What “proceed” means:</strong> this exact draft is shared into the existing approval gate. The reviewer note stays recorded and is not converted into a pass; later approval and QA still apply.</p>
             </div>
           ) : (
             <strong>Draft. Not shared with the customer yet.</strong>
