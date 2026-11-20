@@ -75,8 +75,8 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
         <p className="f-small">{f?.selected?.length ? FORMATS.filter((x) => f.selected.includes(x.id)).map((x) => x.name).join(", ") : "Your producer is choosing the best ad formats for your channels."}</p>
       )}
       </>)}
-      <h3 id="audiences-anchor">Strapline, audience segments and demographics</h3>
-      <p className="f-small">The strapline is the one message every ad carries, in every format and for every audience. Audience segments, with their demographics, change the angle, hook and tone, never the strapline.</p>
+      <h3 id="audiences-anchor">Strapline and evidence-backed audience segments</h3>
+      <p className="f-small">The strapline is the one message every ad carries. Segment by evidenced need, behaviour, occasion or job-to-be-done. Demographics are optional: only include age, location or similar claims when accepted research supports them; otherwise leave that field blank.</p>
       {operator && aiReady && (
         <button className="f-button" disabled={busy || !insightsReady} onClick={onAiAudiences}>
           Suggest strapline and audiences with AI <Sparkles size={14} />
@@ -101,10 +101,10 @@ export default function CampaignPlan({ p, operator, busy, command, aiReady, onAi
         </div>
       )}
       <Field label="Strapline"><input value={strap} onChange={(e) => setStrap(e.target.value)} maxLength={120} /></Field>
-      <Field label="Audience segments, one per line: name | demographics | who they are | angle that will land (up to six)">
+      <Field label="Audience segments, one per line: name | optional evidence-backed demographics | evidenced need/behaviour/occasion | angle that will land (up to six)">
         <textarea value={segs} onChange={(e) => setSegs(e.target.value)} rows={4} />
       </Field>
-      <button className={"f-button" + (audSaved ? " done" : "")} disabled={busy || audSaved} onClick={() => void command({ type: "setAudiences", strapline: strap, segments: fromLines(segs) }, "Strapline, segments and demographics saved.")}>
+      <button className={"f-button" + (audSaved ? " done" : "")} disabled={busy || audSaved} onClick={() => void command({ type: "setAudiences", strapline: strap, segments: fromLines(segs) }, "Strapline and evidence-backed audience segments saved.")}>
         {audSaved ? "Saved" : "Save strapline, segments and demographics"} <Check size={14} />
       </button>
     </section>
