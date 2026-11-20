@@ -709,8 +709,12 @@ export function transition(
     const s = latest(p);
     if (s.status !== "draft")
       throw new Error("Only draft directions can be shared");
+    const overrideReason = text(c.overrideReason, "producer override reason", 1200);
+    if (overrideReason && overrideReason.length < 20)
+      throw new Error("Explain the evidence gap and why proceeding is acceptable (at least 20 characters)");
     if (
-      !s.evidenceIds.length ||
+      !overrideReason &&
+      (!s.evidenceIds.length ||
       !s.insightIds.length ||
       !s.evidenceIds.every((e) =>
         p.sources.some(
@@ -724,14 +728,18 @@ export function transition(
             insight.status !== "draft" &&
             insight.status !== "rejected" &&
             insight.sourceIds.every((source) => s.evidenceIds.includes(source)),
-        ),
-      )
+        ))
     )
       throw new Error(
-        "Share a direction only after linking reviewed evidence and an interpreted insight",
+        "Share a direction only after linking reviewed evidence and an interpreted insight. Or use the explicit producer override with a reason and visible evidence caveat.",
       );
     if (!s.rationale || !s.design)
       throw new Error("Reasoning and design are required");
+    if (overrideReason) {
+      if (!s.uncertainties?.trim())
+        throw new Error("Document the low-evidence limitations in the direction before overriding");
+      p.audit.push({ id: id(), at: now(), actor: a.subject, role: a.role, action: "direction_evidence_override", detail: `Direction v${s.version} (${s.hash.slice(0, 16)}): ${overrideReason}. Evidence links: ${s.evidenceIds.length}; insight links: ${s.insightIds.length}. Reviewer verdict not changed; customer approval still required.` });
+    }
     s.status = "shared";
   } else if (type === "approveStrategy" || type === "requestStrategyChanges") {
     const s = latest(p);
