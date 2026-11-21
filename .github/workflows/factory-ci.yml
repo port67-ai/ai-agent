@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          # On recovery pushes, verify the exact known-live commit rather than PR merge code.
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'recovery/verified-baseline-2026-11-21' && 'bebcdecc1af47b2b2a68f037263eca7faf9fbe42' || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '24.22.1'
