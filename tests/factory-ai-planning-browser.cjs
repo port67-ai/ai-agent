@@ -90,7 +90,7 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     await page.getByRole("button", { name: "Overview", exact: true }).click();
     // Returning to Overview remounts the collapsed plan settings; the current plan uses the replan label.
     await page.locator("#plan-settings > summary").click();
-    await page.getByRole("button", { name: "Replan with reviewed evidence · paid", exact: true }).click();
+    await page.getByRole("button", { name: /^(?:Plan research with AI|Replan with reviewed evidence|Retry AI research plan) · paid$/ }).click();
     await page.getByRole("button", { name: "Performance learning", exact: true }).click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "work/screenshots/performance-mobile.png", fullPage: true });
