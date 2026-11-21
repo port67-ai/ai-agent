@@ -1,3 +1,5 @@
+> **Authoritative status at reset (2026-11-21):** Code is restored to the exact source tree of `bebcdec`, the last verified Render-live commit. The table below is historical and may include locally implemented but undeployed features. No feature introduced after `bebcdec` is part of this reset candidate. Full CI/browser verification is pending. See `docs/RECOVERY_RESET_2026-11-21.md`.
+
 # Latest change — CHG-0084 specialists and performance feedback
 
 16 November 2026; branch feat/research-performance-feedback, base fd0b183 (PR #58). Local implementation/acceptance passed on 16 November 2026; this entry is not deployment evidence. FAC-PLN-007, FAC-FBK-001, FAC-FBK-002 and FAC-FBK-003 implemented with full local regression, browser, lint, typecheck and production build acceptance; GitHub CI/deployment pending. Existing seven-role execution is preserved. No live provider quality, direct advertising connector or measured causal lift is claimed.
