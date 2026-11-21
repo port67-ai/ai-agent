@@ -1,3 +1,5 @@
+> **Baseline reset (2026-11-21):** The authoritative implementation baseline is Render-live commit `bebcdecc1af47b2b2a68f037263eca7faf9fbe42` (`bebcdec`). Changes made after that commit are excluded from this reset candidate, regardless of older notes below. Do not interpret statements marked locally implemented or not deployed as deployed features. The historical Render build/start passed; full isolated CI and browser acceptance remain unverified. See `docs/RECOVERY_RESET_2026-11-21.md` on this branch.
+
 # Latest handover — CHG-0084 specialists and performance feedback
 
 Owner authorised autonomous build while asleep, continuing the main deployment workflow. Branch feat/research-performance-feedback, base fd0b183. New segments: channel (audience/channel behaviour), offer (product/proposition/proof/friction), measurement (KPIs/attribution/experiments), each independently selectable with approved methods and existing provider routes/metering. Old stored seven-role plans are supported; new AI plans decide all ten roles.
