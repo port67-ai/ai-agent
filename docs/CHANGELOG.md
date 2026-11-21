@@ -1,3 +1,10 @@
+## Recovery reset — 2026-11-21 — Restore last Render-live baseline
+
+- Restore the complete source tree to `bebcdecc1af47b2b2a68f037263eca7faf9fbe42` (`bebcdec`) in an isolated reset branch. Nine post-baseline modified files have been reverted to their exact baseline contents.
+- All post-`bebcdec` commits remain in Git history for later selective recovery; they are not included in the candidate code.
+- Render's prior build/start for `bebcdec` was successful. Full CI and browser acceptance of this reset candidate are **not yet verified**.
+- This change is a rollback, not a claim that later improvements are complete. See `docs/RECOVERY_RESET_2026-11-21.md`.
+
 # Central change log
 
 Single ongoing ledger. Historical imported PRD section 26 is a baseline record only. Commit association: `git log -- docs/CHANGELOG.md`.

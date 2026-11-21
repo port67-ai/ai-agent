@@ -49,6 +49,8 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
       await route.fulfill({ json: data });
     });
     await page.goto((process.env.PORT67_TEST_ORIGIN || "http://localhost:3000") + "/portal");
+    // Planning settings are collapsed by default in the baseline UI; reveal them before asserting their contents.
+    await page.locator("#plan-settings > summary").click();
     await page.getByRole("heading", { name: "AI research planning", exact: true }).waitFor();
     await page.getByText("Provisional medium hypotheses", { exact: true }).click();
     await page.getByText("Selective catalogue expansion proposals", { exact: true }).click();
@@ -69,7 +71,7 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     await page.screenshot({ path: "work/screenshots/ai-medium-mobile.png", fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.getByRole("button", { name: "Overview", exact: true }).click();
-    await page.getByRole("button", { name: "Open performance learning", exact: true }).click();
+    await page.getByRole("button", { name: "Performance learning", exact: true }).click();
     const feedback = page.getByRole("region", { name: "Campaign performance feedback" });
     await feedback.getByText("Record campaign results", { exact: true }).click();
     const entry = feedback.locator("details").nth(0);
@@ -86,8 +88,10 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     await record.locator("p").filter({ hasText: "· accepted ·" }).waitFor();
     assert.equal(p.performance[0].status, "accepted");
     await page.getByRole("button", { name: "Overview", exact: true }).click();
-    await page.getByRole("button", { name: "Plan research with AI · paid", exact: true }).click();
-    await page.getByRole("button", { name: "Open performance learning", exact: true }).click();
+    // Returning to Overview remounts the collapsed plan settings; the current plan uses the replan label.
+    await page.locator("#plan-settings > summary").click();
+    await page.getByRole("button", { name: /^(?:Plan research with AI|Replan with reviewed evidence|Retry AI research plan) · paid$/ }).click();
+    await page.getByRole("button", { name: "Performance learning", exact: true }).click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "work/screenshots/performance-mobile.png", fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1080 });

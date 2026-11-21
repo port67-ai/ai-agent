@@ -14,7 +14,6 @@ export default function Direction({
   const s = p.strategies.at(-1);
   const [editing, setEditing] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [overrideReason, setOverrideReason] = useState("");
   if (!s || editing)
     return operator ? (
       <section className="f-panel f-direction-form">
@@ -207,18 +206,14 @@ export default function Direction({
             <strong>Changes were requested. Create a new version and share it again.</strong>
           ) : operator && p.producerAgent?.hold?.gate === "direction" ? (
             <div>
-              <strong>Review result: producer decision required — this is not a hard stop.</strong>
+              <strong>Your decision: the AI reviewer sent this direction back once and now leaves it to you.</strong>
               <p className="f-small">Reviewer notes: {p.producerAgent.hold.notes}</p>
-              <p className="f-small">Choose one path: fix the draft yourself, rerun the AI direction skill, or deliberately proceed with this version and its caveat.</p>
-              <Field label="Why is it acceptable to proceed with limited evidence? (required, recorded in audit)">
-                <textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} rows={3} maxLength={1200} placeholder="Explain the missing evidence, decision rationale and how claims will be limited." />
-              </Field>
+              <p className="f-small">Choose one: share it as it is, create a new version that addresses the notes, or redraft it with AI.</p>
               <div className="f-actions">
-                <button className="f-button" disabled={busy || overrideReason.trim().length < 20 || !s.uncertainties?.trim()} onClick={() => void command({ type: "shareStrategy", overrideReason }, "Producer override recorded. Direction shared for approval with evidence caveat.")}>Proceed with caveat to approval <ArrowUpRight size={16} /></button>
-                <button className="f-button secondary" disabled={busy} onClick={() => setEditing(true)}>Edit and create new version</button>
-                <button className="f-button secondary" disabled={busy || !aiReady} onClick={() => void onGenerate()}>Redraft with AI skill</button>
+                <button className="f-button" disabled={busy} onClick={() => void command({ type: "shareStrategy" }, "Direction shared. The next step is its approval.")}>Share as it is <ArrowUpRight size={16} /></button>
+                <button className="f-button secondary" disabled={busy} onClick={() => setEditing(true)}>Create new version</button>
+                <button className="f-button secondary" disabled={busy || !aiReady} onClick={() => void onGenerate()}>Redraft with AI</button>
               </div>
-              <p className="f-small"><strong>What “proceed” means:</strong> the reason and evidence limitations are recorded, and this exact draft enters the normal approval gate. The review score does not become a pass. Customer approval and later QA still apply. Add a low-evidence caveat under Unknowns and limitations before proceeding.</p>
             </div>
           ) : (
             <strong>Draft. Not shared with the customer yet.</strong>
@@ -327,16 +322,6 @@ export default function Direction({
               >
                 Share direction <ArrowUpRight size={16} />
               </button>
-            )}
-            {s.status === "draft" && (!s.evidenceIds.length || !s.insightIds.length) && p.producerAgent?.hold?.gate !== "direction" && (
-              <details className="f-deliverable-more">
-                <summary>Continue despite missing research or insights</summary>
-                <p className="f-small">This route records a producer exception, not a positive evidence score. Explain the gap, keep unsupported claims out of the direction and document limitations. Customer approval and QA remain required.</p>
-                <Field label="Producer override reason (at least 20 characters)">
-                  <textarea rows={3} maxLength={1200} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />
-                </Field>
-                <button className="f-button secondary" disabled={busy || overrideReason.trim().length < 20 || !s.uncertainties?.trim()} onClick={() => void command({ type: "shareStrategy", overrideReason }, "Direction shared with documented evidence override.")}>Proceed to approval with caveat</button>
-              </details>
             )}
             <button
               className="f-button secondary"

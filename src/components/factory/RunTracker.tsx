@@ -38,10 +38,7 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
   const next = nextAction(allSteps);
   const nextFailed = next.who === "Producer" ? failedAt(next.id, allSteps.find((x) => x.id === next.id)?.state || "pending") : undefined;
   const doneCount = allSteps.filter((s) => s.state === "done").length;
-  const heldGate = p.producerAgent?.hold?.gate;
-  const heldStrategy = p.strategies.at(-1);
-  const heldDirection = heldGate === "direction" && heldStrategy?.status === "draft" && (!p.producerAgent?.hold?.subject || p.producerAgent.hold.subject === heldStrategy.hash);
-  const heldEvidence = heldGate === "sources" || heldGate === "insights";
+  const heldDirection = p.producerAgent?.hold?.gate === "direction" && p.strategies.at(-1)?.status === "draft";
   const nextIndex = allSteps.findIndex((s) => s.id === next.id);
   const afterNext = nextIndex >= 0 ? allSteps.slice(nextIndex + 1).find((s) => s.state !== "done") : undefined;
   const stageSummaries = FLOW_STAGES.map((name) => {
@@ -68,13 +65,13 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
             <button type="button" key={stage.name} className={"f-stage-nav-item" + (stage.done ? " done" : stage.active ? " active" : "")} disabled={!clickable} onClick={() => clickable && go!(target!.tab!, target!.anchor)}>
               <span>{i + 1}</span>
               <strong>{stage.name}</strong>
-              <small>{stage.done ? "Done" : stage.active ? "Needs attention" : "Explore"}</small>
+              <small>{stage.done ? "Done" : stage.active ? "Current" : "Later"}</small>
             </button>
           );
         })}
       </nav>
       <div className="f-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><span style={{ width: pct + "%" }} /></div>
-      <p className="f-small" style={{ margin: "0 0 6px" }}><span className="f-kind agent">AI agent</span> tasks are done by an agent. <span className="f-kind review">Review</span> tasks need a person. Select any stage above to see its work, including future stages. Opening a stage does not approve or skip its gates. Use the task rows for the exact next action.</p>
+      <p className="f-small" style={{ margin: "0 0 6px" }}><span className="f-kind agent">AI agent</span> tasks are done by an agent. <span className="f-kind review">Review</span> tasks need a person. Press the button on a row to jump straight to it; you come back here when it is done.</p>
       <div className={"f-next-card" + (next.who === "Producer" ? " action" : "")}>
         <div className="f-next-card-head">
           <div>
@@ -99,22 +96,19 @@ export default function RunTracker({ onPlanning, settings, onRunReady, command, 
               {go && <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go("direction", "approval-anchor")}>Open direction</button>}
               {aiReady && onAi && <button type="button" className="f-button secondary small" disabled={busy} onClick={() => onAi("strategy")}>Redraft with AI skill</button>}
               <button type="button" className="f-button small" disabled={busy} onClick={() => {
-                const reason = typeof window !== "undefined" ? window.prompt("Explain why you are proceeding despite the evidence gap or low review score. Your reason is retained in the project audit trail. Customer approval and later QA still apply:") : null;
-                if (reason?.trim() && reason.trim().length >= 20) void command({ type: "shareStrategy", overrideReason: reason.trim() }, "Producer override recorded. Direction shared with caveat; approval is the next gate.");
-                else if (reason !== null && typeof window !== "undefined") window.alert("Give a reason of at least 20 characters, or open Direction to edit the caveat first.");
+                const ok = typeof window === "undefined" || window.confirm("Proceed with this exact direction despite the reviewer notes? This records a producer decision and moves the version to the existing approval gate; it does not turn the reviewer result into a pass.");
+                if (ok) void command({ type: "shareStrategy" }, "Producer override recorded. Direction shared with caveat; approval is the next gate.");
               }}>Proceed with caveat</button>
             </>
           )}
           {!heldDirection && next.who === "Producer" && go && next.tab && !nextFailed && (
-            <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go(next.tab!, allSteps.find((s) => s.id === next.id)?.anchor)}>{heldEvidence ? "Review manually and continue" : "Open this stage"}</button>
+            <button type="button" className="f-button secondary small" disabled={busy} onClick={() => go(next.tab!, allSteps.find((s) => s.id === next.id)?.anchor)}>Open this stage</button>
           )}
         </div>
-        {heldDirection && <p className="f-small f-override-note"><strong>Override is explicit, not silent.</strong> Record a reason (at least 20 characters) and ensure the direction includes its low-evidence limitation. The reviewer note stays recorded. This shares the version into the normal approval gate; customer approval and later QA are not bypassed.</p>}
-        {heldGate === "sources" && <p className="f-small f-override-note"><strong>Thin or mixed research does not have to stop the project.</strong> Review the remaining sources and accept or reject what is usable. Once every source has a human decision, the workflow continues with any thin-evidence warning still visible.</p>}
-        {heldGate === "insights" && <p className="f-small f-override-note"><strong>A low review score is a judgement point, not a dead end.</strong> Review the remaining insight drafts and accept only the interpretations you are comfortable using. Once every draft has a human decision, the workflow can continue with the caveat recorded.</p>}
+        {heldDirection && <p className="f-small f-override-note"><strong>Override is explicit, not silent.</strong> The reviewer note stays recorded. Proceeding shares this version into the normal approval gate; customer approval and later QA are not bypassed.</p>}
       </div>
       {(p.producerAgent?.hold || p.researchNote) && (
-        <p className="f-small" role="status">{p.producerAgent?.hold ? `Producer decision needed (${p.producerAgent.hold.gate}): ${p.producerAgent.hold.notes}` : p.researchNote}</p>
+        <p className="f-small" role="status">{p.producerAgent?.hold ? `Held for a person: ${p.producerAgent.hold.notes}` : p.researchNote}</p>
       )}
       {onProducer && (
         <p className="f-small" style={{ margin: "0 0 8px" }}>
