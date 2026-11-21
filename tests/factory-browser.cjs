@@ -25,6 +25,7 @@ require("node:fs").mkdirSync("work/screenshots", { recursive: true });
     .getByRole("heading", { name: "Good work starts with understanding." })
     .waitFor();
   await page.getByRole("button", { name: "Research room", exact: true }).click();
+  await page.locator(".f-agent").first().waitFor();
   assert.equal(await page.locator(".f-agent").count(), 7, "all seven researchers are visible");
   for (const label of ["Adjacent businesses", "Social trends", "Video language"]) {
     await page.getByRole("button", { name: new RegExp("^" + label) }).click();
