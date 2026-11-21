@@ -71,7 +71,7 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     await page.screenshot({ path: "work/screenshots/ai-medium-mobile.png", fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.getByRole("button", { name: "Overview", exact: true }).click();
-    await page.getByRole("button", { name: "Open performance learning", exact: true }).click();
+    await page.getByRole("button", { name: "Performance learning", exact: true }).click();
     const feedback = page.getByRole("region", { name: "Campaign performance feedback" });
     await feedback.getByText("Record campaign results", { exact: true }).click();
     const entry = feedback.locator("details").nth(0);
@@ -89,7 +89,7 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     assert.equal(p.performance[0].status, "accepted");
     await page.getByRole("button", { name: "Overview", exact: true }).click();
     await page.getByRole("button", { name: "Plan research with AI · paid", exact: true }).click();
-    await page.getByRole("button", { name: "Open performance learning", exact: true }).click();
+    await page.getByRole("button", { name: "Performance learning", exact: true }).click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "work/screenshots/performance-mobile.png", fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1080 });
