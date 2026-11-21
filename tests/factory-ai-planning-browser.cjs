@@ -49,6 +49,8 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
       await route.fulfill({ json: data });
     });
     await page.goto((process.env.PORT67_TEST_ORIGIN || "http://localhost:3000") + "/portal");
+    // Planning settings are collapsed by default in the baseline UI; reveal them before asserting their contents.
+    await page.locator("#plan-settings > summary").click();
     await page.getByRole("heading", { name: "AI research planning", exact: true }).waitFor();
     await page.getByText("Provisional medium hypotheses", { exact: true }).click();
     await page.getByText("Selective catalogue expansion proposals", { exact: true }).click();
