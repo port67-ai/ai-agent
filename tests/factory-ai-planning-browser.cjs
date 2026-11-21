@@ -88,7 +88,9 @@ const { prepareMediumSelection, validateMediumSelection } = require("../src/lib/
     await record.locator("p").filter({ hasText: "· accepted ·" }).waitFor();
     assert.equal(p.performance[0].status, "accepted");
     await page.getByRole("button", { name: "Overview", exact: true }).click();
-    await page.getByRole("button", { name: "Plan research with AI · paid", exact: true }).click();
+    // Returning to Overview remounts the collapsed plan settings; the current plan uses the replan label.
+    await page.locator("#plan-settings > summary").click();
+    await page.getByRole("button", { name: "Replan with reviewed evidence · paid", exact: true }).click();
     await page.getByRole("button", { name: "Performance learning", exact: true }).click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "work/screenshots/performance-mobile.png", fullPage: true });
