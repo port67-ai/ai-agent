@@ -82,8 +82,6 @@ export default function AiAgents() {
   const [rerunFor, setRerunFor] = useState<FailedAgent | null>(null);
   const [loadedFor, setLoadedFor] = useState("");
   const [offerRerun, setOfferRerun] = useState(false);
-  const [mapOpen, setMapOpen] = useState(false);
-  useEffect(() => { if (data?.failed?.length) setMapOpen(true); }, [data?.failed?.length]);
   const load = useCallback(async () => {
     try {
       const [agents, route, mode] = await Promise.all([post<Overview>("ai-agents" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")), post<Routing>("ai-routing"), post<NonNullable<typeof approval>>("approval-mode")]);
@@ -199,38 +197,6 @@ export default function AiAgents() {
   const chosen = projects.find((x) => x.id === projectId);
   const failed = chosen && loadedFor === projectId ? data.failed || [] : undefined;
   const unset = data.agents.filter((a) => a.kind === "ai" && !a.model).length;
-  const pipeline = data.flow.pipeline;
-  const providerLabels: Record<string, string> = { openai: "OpenAI", gemini: "Google Gemini", anthropic: "Anthropic", deepseek: "DeepSeek" };
-  const providersFor = (ids: string[]) => Array.from(new Set(data.agents.filter((a) => ids.some((id) => id.endsWith(":") ? a.id.startsWith(id) : a.id === id)).flatMap((a) => a.model ? [a.model.provider] : []))).map((id) => providerLabels[id] || id);
-  const providerCosts = [
-    ["openai", "OpenAI"],
-    ["gemini", "Google Gemini"],
-    ["anthropic", "Anthropic"],
-    ["deepseek", "DeepSeek"],
-  ].map(([id, label]) => {
-    const models = data.flow.models.filter((m) => m.provider === id);
-    return {
-      id,
-      label,
-      calls: models.reduce((n, m) => n + m.calls, 0),
-      microUsd: models.reduce((n, m) => n + m.microUsd, 0),
-      agents: data.agents.filter((a) => a.model?.provider === id).length,
-    };
-  });
-  const stageUsage = (ids: string[]) => {
-    const selected = data.agents.filter((a) => ids.some((id) => id.endsWith(":") ? a.id.startsWith(id) : a.id === id));
-    const cost = selected.reduce((n, a) => n + (a.stats?.estimatedMicroUsd || 0), 0);
-    const calls = selected.reduce((n, a) => n + (a.stats?.calls || 0), 0);
-    const missingPrice = selected.some((a) => a.stats?.calls && a.model && !a.model.priced);
-    return `${calls} calls · ${missingPrice ? "partial cost " : ""}${usd(cost)}`;
-  };
-  const workflowSummary = [
-    { no: "1", name: "Plan & scope", detail: `${pipeline.scopes?.classified || 0} classified · ${pipeline.waiting.producerStart || 0} waiting to start`, providers: providersFor(["synthesis:planner", "scope:business", "review:scope"]), usage: stageUsage(["synthesis:planner", "scope:business", "review:scope"]) },
-    { no: "2", name: "Research", detail: `${pipeline.sources.total} sources · ${pipeline.sources.unreviewed} awaiting review`, providers: providersFor(["research:", "review:sources"]), usage: stageUsage(["research:", "review:sources"]) },
-    { no: "3", name: "Insights", detail: `${pipeline.insights.reviewed} accepted · ${pipeline.insights.draft} awaiting review`, providers: providersFor(["synthesis:insights", "review:insights"]), usage: stageUsage(["synthesis:insights", "review:insights"]) },
-    { no: "4", name: "Direction", detail: `${pipeline.directions.shared} shared · ${pipeline.directions.approved} approved`, providers: providersFor(["synthesis:medium", "synthesis:formats", "synthesis:audiences", "synthesis:strategy", "review:direction"]), usage: stageUsage(["synthesis:medium", "synthesis:formats", "synthesis:audiences", "synthesis:strategy", "review:direction"]) },
-    { no: "5", name: "Production", detail: `${pipeline.assetsApproved} approved assets · ${pipeline.copyPacks} copy packs`, providers: providersFor(["synthesis:content", "studio:preproduction", "studio:image", "production.video"]), usage: stageUsage(["synthesis:content", "studio:preproduction", "studio:image", "production.video"]) },
-  ];
   return (
     <>
       <section className="f-panel">
@@ -314,59 +280,10 @@ export default function AiAgents() {
           </>
         ) : <p className="f-small">No projects yet.</p>}
       </section>
-      <section className="f-panel f-ai-ops-summary" aria-label="AI workflow and cost summary">
-        <div className="f-section-heading">
-          <div>
-            <h2>AI workflow at a glance</h2>
-            <p className="f-small">Workspace totals are summarised here; the selected project controls are above. Each stage shows its assigned LLM providers, recorded calls and estimated costs. Open the detailed map only for agent-to-model wiring, storage paths or troubleshooting.</p>
-          </div>
-          <strong className="f-ai-total">{data.totals.calls} calls · {usd(data.totals.estimatedMicroUsd)}</strong>
-        </div>
-        <div className="f-ai-stage-grid">
-          {workflowSummary.map((stage) => (
-            <div className="f-ai-stage-card" key={stage.no}>
-              <span>{stage.no}</span>
-              <strong>{stage.name}</strong>
-              <small>{stage.detail}</small>
-              <em>{stage.providers.length ? stage.providers.join(" · ") : "No LLM assigned"}</em>
-              <small>{stage.usage} estimated for this stage</small>
-            </div>
-          ))}
-        </div>
-        <div className="f-ai-cost-heading">
-          <div>
-            <h3>LLM connections and estimated cost</h3>
-            <p className="f-small">Recorded usage only. Costs are cumulative estimates from configured model prices; “0 calls” means the provider is connected to agents but has not been used.</p>
-          </div>
-        </div>
-        <div className="f-provider-cost-grid">
-          {providerCosts.map((provider) => (
-            <div className="f-provider-cost" key={provider.id}>
-              <strong>{provider.label}</strong>
-              <span>{provider.agents} agent{provider.agents === 1 ? "" : "s"}</span>
-              <b>{provider.calls} call{provider.calls === 1 ? "" : "s"} · {usd(provider.microUsd)}</b>
-            </div>
-          ))}
-        </div>
-      </section>
-      <details className="f-map-details" open={mapOpen} onToggle={(event) => setMapOpen(event.currentTarget.open)}>
-        <summary className="f-panel">
-          <div>
-            <strong>Detailed AI / LLM map</strong>
-            <span>Agents ↔ providers ↔ Firestore ↔ approvals. Expand for model routing, per-edge cost and reruns.</span>
-          </div>
-          <b>{failed?.length ? `${failed.length} failed agent${failed.length === 1 ? "" : "s"}` : "Open map"}</b>
-        </summary>
-        <SystemMap focus={chosen ? focusMarks(chosen) : undefined} agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} failed={failed} onRerun={(slot) => void openRerun(slot)} onRerunAll={() => void rerunAll()} busy={busy} />
-      </details>
+      <SystemMap focus={chosen ? focusMarks(chosen) : undefined} agents={data.agents} flow={data.flow} onSelectAgent={(id) => void openPicker(id)} onSkill={setSkillFor} failed={failed} onRerun={(slot) => void openRerun(slot)} onRerunAll={() => void rerunAll()} busy={busy} />
       <FlowHealth flow={data.flow} />
-      <details className="f-panel f-agent-catalogue">
-        <summary>
-          <div><strong>Agent catalogue and model settings</strong><span>Expand to inspect every agent, capability, model and skill.</span></div>
-          <b>{data.agents.length} agents</b>
-        </summary>
       {groups.map((g) => (
-        <section className="f-agent-group" key={g.id}>
+        <section className="f-panel" key={g.id}>
           <div className="f-section-heading">
             <div>
               <h2>{g.title}</h2>
@@ -427,7 +344,6 @@ export default function AiAgents() {
           </div>
         </section>
       ))}
-      </details>
       <section className="f-panel">
         <div className="f-section-heading">
           <h2>Recent agent calls</h2>
