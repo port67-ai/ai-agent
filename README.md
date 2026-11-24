@@ -25,6 +25,10 @@ The contact form is unavailable until privacy/legal details and a real delivery 
 
 Render should continue using its existing linked `main` branch with `npm ci && npm run build` as the build command and `npm start -- --port $PORT` as the start command. This remodel does not create or modify a Render service.
 
+## Video workspace (producers and admins)
+
+Open `/workspace` to use the new producer and admin workspace: Overview and Projects (placeholders) and the Customer account page for business name, website, social links, brand purpose files and client red lines. Customers do not sign in there. The older `/portal` is unchanged. Design: [video workspace spec](docs/superpowers/specs/2026-11-25-video-workspace-design.md), [ADR-0004](docs/adr/ADR-0004-two-role-company-tenancy.md).
+
 ## Managed creative MVP
 
 Open `/portal` to explore **Research-led marketing content and creative production**. The isolated fictional-brand demo supports research -> insights -> direction/customer approval -> production drafts -> asset approval/download. See [MVP guide](docs/FACTORY_MVP.md) for a walkthrough, live configuration and explicit limits. Firebase/AI credentials are not required for the synthetic demo or manual workflow; cloud adapters are not yet live-verified.

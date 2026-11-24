@@ -477,7 +477,32 @@ export type AiRoutingConfig = {
   updatedBy?: string;
   history?: { at: string; actor: string; summary: string }[];
 };
+/**
+ * Video workspace (CHG-0103, FAC-VWS-004 to 007): a customer account is a producer-managed company record, and the company is the brand.
+ * No sign-in belongs to it. All records live in the system workspace `factory-customers`; files live in the private file store.
+ */
+export type SocialPlatform = "x" | "instagram" | "facebook" | "tiktok" | "youtube" | "linkedin" | "pinterest";
+export type RedLineCategory = "topic" | "competitor" | "person_or_brand" | "phrase" | "visual";
+export type RedLine = { id: string; category: RedLineCategory; text: string; reason?: string; addedBy: string; addedAt: string; updatedAt?: string };
+export type BrandPurposeFile = {
+  id: string; name: string; mime: string; bytes: number; storageKey: string; uploadedAt: string; uploadedBy: string;
+  /** The producer's confirmation that Port67 may hold and use the file. Required for every upload. */
+  rights: { confirmedBy: string; at: string };
+  /** Present only after a producer explicitly authorises models to read this file's content (FAC-VWS-006). */
+  modelAuthorisation?: { authorisedBy: string; at: string };
+};
+export type CustomerAudit = { id: string; at: string; actor: string; action: string; detail: string };
+export type CustomerAccount = {
+  id: string; name: string; website: string;
+  socials: Partial<Record<SocialPlatform, string>>;
+  redLines: RedLine[];
+  brandPurpose: BrandPurposeFile[];
+  createdAt: string; createdBy: string; updatedAt: string; updatedBy: string;
+  audit: CustomerAudit[];
+};
 export type Database = {
+  /** Video workspace customer accounts; used only in the system workspace `factory-customers`. */
+  customers?: CustomerAccount[];
   /** Studio Brand Kit for one customer account, kept in its own small record (factory-brandkit-<account>). */
   brandKit?: { kit: StudioBrief["brandKit"]; savedAt: string; savedBy: string; projectId: string };
   accounts?: Account[];
