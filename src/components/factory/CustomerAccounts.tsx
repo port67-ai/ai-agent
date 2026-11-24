@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import type { CustomerAccount } from "@/lib/factory/model";
+import { BrandIntel } from "./BrandIntel";
 import { CustomerEditor, type FindResult } from "./CustomerEditor";
 import { Empty, Field } from "./shared";
 import { api, uploadFile } from "./workspace-api";
@@ -98,6 +99,7 @@ export function CustomerAccounts() {
           </aside>
           <div>
             {current ? (
+              <>
               <CustomerEditor
                 key={current.id}
                 customer={current}
@@ -109,7 +111,10 @@ export function CustomerAccounts() {
                   const result = await uploadFile<{ customer: CustomerAccount }>(`customers/${current.id}/purpose`, file, { name: file.name, rights: "confirmed" });
                   replace(result.customer);
                 }, "File uploaded. It is private, and AI steps cannot read it until you allow that.")}
-              />
+              >
+                <BrandIntel key={"bi-" + current.id} customerId={current.id} name={current.name} />
+              </CustomerEditor>
+              </>
             ) : (
               <Empty title="No customer account yet">Create the first one on the left. You need a business name; the website, social links, brand purpose and red lines can follow.</Empty>
             )}

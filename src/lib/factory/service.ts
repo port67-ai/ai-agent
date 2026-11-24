@@ -84,6 +84,8 @@ import { generateStudioStill, startNextCycle } from "./studio-production-run";
 import { studioDeliveryDocument } from "./studio-delivery";
 import type { StudioAssetRef, StudioBrief } from "./model";
 import { handleCustomers, isCustomerRoute, isCustomerUpload } from "./customers-api";
+import { handleCommissions, isCommissionRoute } from "./commissions-api";
+import { handleBrandIntel, isBrandIntelRoute } from "./brand-intel-api";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -648,6 +650,9 @@ export async function handleFactory(
     if (!a) return json({ error: "Sign in to continue" }, 401);
     // Video workspace customer accounts (CHG-0103): producers and admins only, enforced inside the handler.
     if (isCustomerRoute(path)) return await handleCustomers(request, path, a, data);
+    // Video workspace commissions (CHG-0107): producers and admins only, enforced inside the handler.
+    if (isCommissionRoute(path)) return await handleCommissions(request, path, a, data);
+    if (isBrandIntelRoute(path)) return await handleBrandIntel(request, path, a, data);
     if (route === "admin/costs/series") {
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       const q=new URL(request.url).searchParams;

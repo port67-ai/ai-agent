@@ -39,8 +39,8 @@ async function main() {
   const overview = await agentsOverview(repo, env);
   const byId = Object.fromEntries(overview.agents.map((a) => [a.id, a]));
   assert.equal(overview.agents.filter((a) => a.group === 'planning').length, 2);
-  assert.equal(overview.agents.filter((a) => a.group === 'research').length, 10);
-  assert.equal(overview.agents.filter((a) => a.group === 'drafting').length, 6, 'insights, direction, copy pack, format, audiences and ideas agents');
+  assert.equal(overview.agents.filter((a) => a.group === 'research').length, 11, 'includes Brand Intelligence research');
+  assert.equal(overview.agents.filter((a) => a.group === 'drafting').length, 7, 'insights, direction, copy pack, format, audiences and ideas agents, plus the Brand Intelligence strategic assumption');
   assert.ok(overview.agents.some((a) => a.id === 'production.video' && a.kind === 'template'));
   const brand = byId['research:brand'];
   assert.deepEqual([brand.stats!.calls, brand.stats!.completed, brand.stats!.failed], [2, 1, 1]);

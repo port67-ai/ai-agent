@@ -40,3 +40,13 @@ Owner instruction: rebuild the creative workspace for producers and admins only,
 
 
 Implementation choices for CHG-0104 (agent-selected, inside PRODUCT-023): the new workspace is the route `/workspace` and the old `/portal` is untouched until the customer role is removed; customer accounts live in one system document `factory-customers` with limits of 200 accounts, 100 red lines, five brand purpose files and 100 history entries each; a second account with the same name (any letter case) is refused; Find from website reads only the saved website and saves nothing; brand purpose files other than images are always served as downloads.
+
+## PRODUCT-024: 25 November 2026: Commission project and Inspiration baseline
+Owner instruction: each commission belongs to a customer account and starts with an Inspiration baseline built from four primary inputs (numbered 1, 3, 4, 5) and their evidence, with three secondary checks shown greyed out. First step captures inputs and evidence and shows the baseline with no AI call. Brand expression uses Preserve and Can change lists plus the client example that went too far. See the spec and PRD section 31. Intent PROPOSED until sign-off; nothing implemented.
+
+Addendum to PRODUCT-024 (25 November 2026): sidebar label stays "Projects" and a project may start with only a name. Built as CHG-0107 with limits of 50 projects, 30 evidence items per input and 30 entries per list.
+
+## PRODUCT-025: 25 November 2026: Brand Intelligence foundation
+Owner instruction: run a Brand Intelligence agent from the customer account on a submit button and store its dossier as the foundation for later agents. Decisions: versioned re-runs, three searching calls plus one synthesis call, typed brand text only (and only if authorised), client red lines copied verbatim and never model written, failed runs never become the foundation.
+
+Addendum to PRODUCT-025 (25 November 2026): researched red lines are a separate section (7), labelled as inferred and not client-confirmed, and never merged into the client's verbatim red lines.

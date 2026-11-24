@@ -36,15 +36,31 @@ assert.match(html, /<textarea[^>]*name="knownFor"[^>]*>Sourdough and pies<\/text
 assert.match(html, /AI steps may read these two texts/);
 assert.match(html, /<button class="f-button"[^>]*>Save brand text<\/button>/);
 assert.match(editor({ ...customer, textAuthorisation: { authorisedBy: "p", at: "t" } }), /checked=""\/> AI steps may read these two texts/);
-// Brand purpose: private, downloadable only through the authorised route, authorisation shown per file, upload locked until rights are confirmed.
+// Brand purpose files sit in the same collapsible as the typed text: one Add button, one small chip per file that opens in a new tab.
 assert.match(html, /Files are kept private/);
-assert.match(html, new RegExp(`href="/api/factory/customers/${customer.id}/purpose/00000000-0000-0000-0000-000000000001"`));
-assert.match(html, /PDF, 2\.4 MB/);
-assert.equal((html.match(/AI steps may read this file/g) || []).length, 2);
-assert.equal((html.match(/type="checkbox"[^>]*checked=""/g) || []).length, 1, "only the authorised file is ticked");
-assert.match(html, /<input[^>]*type="file"[^>]*disabled=""/, "upload disabled until the rights box is ticked");
-assert.match(html, /accept="\.pdf,\.docx,\.txt,\.png,\.jpg,\.jpeg"/);
-assert.match(html, /I confirm Port67 has the right to hold and use this file/);
+assert.match(html, new RegExp(`<a href="/api/factory/customers/${customer.id}/purpose/00000000-0000-0000-0000-000000000001" target="_blank" rel="noopener noreferrer"`), "chip opens the file in a new tab");
+assert.match(html, /<span class="w-chip-type">PDF<\/span><span class="w-chip-name">purpose\.pdf<\/span>/, "type badge and file name");
+assert.match(html, /<span class="w-chip-type">PNG<\/span><span class="w-chip-name">mark\.png<\/span>/);
+assert.match(html, /title="purpose\.pdf, PDF, 2\.4 MB/);
+assert.equal((html.match(/AI may read/g) || []).length, 2);
+assert.equal((html.match(/class="w-chip-ai"[^>]*><input type="checkbox" checked=""/g) || []).length, 1, "only the authorised file is ticked");
+assert.match(html, /aria-label="Remove purpose\.pdf"/);
+assert.match(html, /<button type="button" class="f-button secondary small">(<svg[^>]*>.*?<\/svg>) Add<\/button>/, "a simple Add button");
+assert.match(html, /<input type="file" hidden=""[^>]*accept="\.pdf,\.docx,\.txt,\.png,\.jpg,\.jpeg"/);
+assert.ok(html.indexOf("Brand purpose (type or paste)") < html.indexOf('class="w-files"'), "files are inside the brand purpose box, after the text");
+assert.doesNotMatch(html, /Brand purpose files<\/h3>/, "no separate files box");
+// Social links, brand purpose and red lines are collapsible like History; each says what is inside.
+for (const id of ["cust-socials", "cust-text", "cust-redlines"]) assert.match(html, new RegExp(`<details class="f-panel w-collapse"><summary id="${id}">`), id);
+assert.match(html, /Social links <span class="f-small">\(1 of 7 set\)/);
+assert.match(html, /Brand purpose and reputation <span class="f-small">\(purpose, known for, 2 files\)/);
+assert.match(html, /Client red lines <span class="f-small">\(1\)/);
+assert.doesNotMatch(html, /<details class="f-panel w-collapse" open/, "closed once filled in");
+const blank = editor({ ...customer, socials: {}, redLines: [], purposeText: "", knownFor: "", brandPurpose: [] });
+assert.equal((blank.match(/<details class="f-panel w-collapse" open=""/g) || []).length, 3, "empty sections start open so a new account can be filled in");
+assert.match(blank, /No files yet/);
+// The dossier slot sits below the red lines and above History.
+const slotted = renderToStaticMarkup(<CustomerEditor customer={customer} busy={false} onSave={noop} onFind={() => {}} onUpload={noop}><div id="slot-here" /></CustomerEditor>);
+assert.ok(slotted.indexOf("cust-redlines") < slotted.indexOf("slot-here") && slotted.indexOf("slot-here") < slotted.indexOf("History ("));
 // Red lines: each entry separately with category and reason, plus an add form.
 assert.match(html, /<span class="f-tag">Competitor<\/span> <strong>Greggs<\/strong>/);
 assert.match(html, /Reason: Legal dispute/);
@@ -59,7 +75,7 @@ assert.match(editor({ ...customer, website: "" }), /<button[^>]*disabled=""[^>]*
 assert.match(editor({ ...customer, website: "" }), /Save the website above/);
 assert.doesNotMatch(editor(customer), /<button[^>]*disabled=""[^>]*><svg[^>]*>.*?<\/svg> Find from website/, "enabled with a website");
 const empty = editor({ ...customer, socials: {}, redLines: [], brandPurpose: [], audit: [] });
-assert.match(empty, /No brand purpose uploaded/);
+assert.match(empty, /No files yet/);
 assert.match(empty, /No red lines yet/);
 // Found links are shown for review, never applied silently; a different link than the saved one is called out.
 const found = editor(customer, { found: { pageUrl: "https://nashs.example.com/", found: { instagram: "https://instagram.com/other", tiktok: "https://tiktok.com/@nashs" }, existing: customer.socials } });

@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.34.2  
+**Version:** 1.37.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1637,3 +1637,27 @@ Owner direction, 25 November 2026 (CHG-0103), PRD 1.34.0. Design: `docs/superpow
 | FAC-VWS-008 | Producer approvals | Approvals previously held by the customer are performed by producers and recorded with the producer as actor. The existing gates and their blocking rules are unchanged. |
 | FAC-VWS-009 | Reset to a clean start | Existing customer accounts, projects and stored files are deleted only after the customer role is removed, a verified export of the local store and the Firestore project has been taken, and the owner confirms the deletion naming what is deleted. The deletion is audited. The owner cost ledger is kept unless the owner says otherwise. No build step deletes data. |
 | FAC-VWS-010 | Typed brand purpose and what the brand is known for | A customer account has two text boxes, "Brand purpose" and "What is the brand known for?", each up to 4000 characters, saved by a producer. They are private. Models may read them only after a producer ticks one authorisation for the pair; changing either text withdraws that authorisation until it is ticked again. Saving and authorising are audited. Customers and the demo are refused. |
+
+## 31. Commission project and Inspiration baseline
+
+Owner direction, 25 November 2026 (CHG-0106), PRD 1.35.0. Design: `docs/superpowers/specs/2026-11-25-commission-inspiration-baseline-design.md`. A commission is one piece of work for a customer account. Its first output is the Inspiration baseline: who the commission must reach, what it must achieve, what the audience should recognise (preserve), where there is room for a fresh idea, and the evidence behind that judgement. This step captures four primary inputs (numbered 1, 3, 4 and 5 as the owner listed them) with their evidence and shows the baseline assembled from them. It makes no AI call. Intent is PROPOSED until the owner signs off the spec; delivery has not started.
+
+| ID | Requirement | Acceptance criterion |
+|---|---|---|
+| FAC-VWS-011 | Commission record | A commission belongs to exactly one customer account, has a name, and is created, listed and opened by producers and admins only. It is stored per account (`factory-commissions-<customer id>`), at most 50 per account, every change audited (latest 100 entries). Customers and the demo are refused. The Projects entry in the workspace shows the list. |
+| FAC-VWS-012 | Four guided primary inputs | Input 1 Commission objective, Input 3 Product or service, Input 4 Current and intended audience and Input 5 Brand expression and boundaries each show their role and their questions as separate prompts of up to 2000 characters, saved by a producer. There is no Input 2. |
+| FAC-VWS-013 | Brand expression lists and guardrail | Input 5 holds a Preserve list, a Can change or out of character list (each entry with text and whether it recurs across years or belonged to a single campaign) and one field for the client's example that went too far. The customer account's red lines are shown beside them and not copied. |
+| FAC-VWS-014 | Evidence per input | Each input has an evidence list, at most 30 items, each with a source (public https link or note), where it was looked for, a short note and a required basis: announced by the client, client confirmed, or producer inference. Inputs 1 and 4 carry a confirmed-with-client tick. |
+| FAC-VWS-015 | Secondary checks locked | Company story and values, Competition and alternatives, and Parallels and creative inspiration appear greyed out with their question and where to look, and cannot be edited or opened. |
+| FAC-VWS-016 | Inspiration baseline view | A read-only page assembled from the inputs with no AI call: who to reach, what to achieve, what to preserve, room for a fresh idea, the guardrail, proof, evidence grouped by input with its basis, and a gaps list (input not started, no evidence, empty Preserve or Can change list, objective or audience not confirmed with the client). Each input shows Not started, In progress or Complete (every prompt answered and at least one evidence item). The baseline shows even when incomplete. |
+
+## 32. Brand Intelligence foundation
+
+Owner direction, 25 November 2026 (CHG-0108), PRD 1.36.0. A Brand Intelligence agent researches a customer account once its inputs are in and stores a Brand Foundation Dossier that later agents read as the brand reference. It is run by a submit button at the bottom of the customer account.
+
+| ID | Requirement | Acceptance criterion |
+|---|---|---|
+| FAC-VWS-017 | Submit and run | A producer or admin presses a submit button on the customer account. The run happens in the background, one at a time per account, shows progress, and records each model call on the admin cost ledger against the account. It does not start, and is not charged, when live research is not configured. |
+| FAC-VWS-018 | Dossier content | The dossier has sections 0 to 6 (strategic assumption, reality gap, offering and operational truth, audience and cultural footprint, visual and channel DNA, verbal identity, guardrails and seed cues) with bracketed source tags and the public sources found. Sections 1 to 7 come from four web-searching calls (section 7 is the researched red lines: cultural and aesthetic taboos, commercial and pricing boundaries, reputational and regulatory risks, the anti-persona, each tagged as stated by the brand or inference), section 0 from a final call with no search. The client's red lines are copied verbatim from the account and never written by the model. Typed brand text is read only when the producer has authorised it; uploaded files are not read in this version. |
+| FAC-VWS-019 | Stored foundation | Each run is saved as a version in Firebase (latest 4 kept plus the current one). The latest completed version is the current foundation. A failed or interrupted run is kept, shown as failed and never becomes current. Later agents read the current foundation through one function. |
+| FAC-VWS-020 | Customer account layout | Social links, Brand purpose and reputation, and Client red lines are collapsible like History, with a count in the title; a section starts open only while it is empty. Brand purpose files live inside the Brand purpose and reputation section: an Add button and one small chip per file (type icon, type, file name) that opens the file in a new tab (images and PDFs show in the tab, other types download). The Brand Intelligence dossier shows below the red lines: a verify-first callout, the researched red lines as four cards labelled as not client-confirmed, then sections 1 to 6 as collapsible cards with source tags as chips. |
