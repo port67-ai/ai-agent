@@ -377,3 +377,4 @@ CHG-0103 was documentation only (design spec, ADR-0004, PRODUCT-023, PRD section
 | FAC-VWS-007 | IMPLEMENTED locally; not deployed or seen live | `RedLine` entries with category, text and reason; add, edit and remove audited; 100 limit. Covered by factory-customers.test.ts, the API test, the UI test and the jsdom run. No later step reads red lines yet. |
 | FAC-VWS-008 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only. Gates record `onBehalfOfClient` today. |
 | FAC-VWS-009 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only. No data has been exported or deleted. |
+| FAC-VWS-010 | IMPLEMENTED locally; not deployed or seen live | `brandTextFields`, `authorisedBrandText` (customers.ts), `saveBrandText`, `setTextAuthorisation` (customers-commands.ts), route actions brand-text and brand-text-authorise, BrandText panel in CustomerEditor. Unit, API and render tests; no model reads the text yet. Not checked in a browser. |

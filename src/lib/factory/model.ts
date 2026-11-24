@@ -497,6 +497,10 @@ export type CustomerAccount = {
   socials: Partial<Record<SocialPlatform, string>>;
   redLines: RedLine[];
   brandPurpose: BrandPurposeFile[];
+  /** Typed brand purpose and what the brand is known for (CHG-0105, FAC-VWS-010). Read by models only after a producer authorises it. */
+  purposeText?: string;
+  knownFor?: string;
+  textAuthorisation?: { authorisedBy: string; at: string };
   createdAt: string; createdBy: string; updatedAt: string; updatedBy: string;
   audit: CustomerAudit[];
 };

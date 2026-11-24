@@ -8,6 +8,7 @@ export const MAX_CUSTOMERS = 200;
 export const MAX_RED_LINES = 100;
 export const MAX_PURPOSE_FILES = 5;
 export const MAX_AUDIT = 100;
+export const MAX_BRAND_TEXT = 4000;
 const MB = 1024 * 1024;
 /** One setting for the brand purpose file limit (owner decision, 25 November 2026). */
 export const PURPOSE_MAX_BYTES = 25 * MB;
@@ -87,6 +88,17 @@ export function customerFields(input: Record<string, unknown>, required: boolean
     ...(required || "website" in input ? { website: webUrl(input.website, "Website") } : {}),
   };
 }
+
+/** The two typed boxes. Only the fields sent are changed; each may be up to 4000 characters. */
+export function brandTextFields(input: Record<string, unknown>) {
+  const out: { purposeText?: string; knownFor?: string } = {};
+  if ("purposeText" in input) out.purposeText = str(input.purposeText, "Brand purpose", MAX_BRAND_TEXT);
+  if ("knownFor" in input) out.knownFor = str(input.knownFor, "What the brand is known for", MAX_BRAND_TEXT);
+  return out;
+}
+/** The only way later steps may obtain the typed texts for a model: nothing unless a producer has authorised them. */
+export const authorisedBrandText = (c: CustomerAccount): { purposeText: string; knownFor: string } | undefined =>
+  c.textAuthorisation ? { purposeText: c.purposeText || "", knownFor: c.knownFor || "" } : undefined;
 
 export function redLineFields(input: Record<string, unknown>, partial = false) {
   const out: { category?: RedLineCategory; text?: string; reason?: string } = {};

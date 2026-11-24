@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { BrandPurposeFile, CustomerAccount, Database, RedLine } from "./model";
-import { MAX_AUDIT, MAX_CUSTOMERS, MAX_PURPOSE_FILES, MAX_RED_LINES, applySocials, customerFields, redLineFields } from "./customers";
+import { MAX_AUDIT, MAX_CUSTOMERS, MAX_PURPOSE_FILES, MAX_RED_LINES, applySocials, brandTextFields, customerFields, redLineFields } from "./customers";
 
 // State changes for video workspace customer accounts (FAC-VWS-004 to FAC-VWS-007). Pure over a Database; the caller persists it.
 // Every change is attributed and audited. No command deletes a customer account: the reset is a separate, confirmed step (FAC-VWS-009).
@@ -54,6 +54,25 @@ export function saveSocials(db: Database, id: string, input: unknown, actor: str
   c.socials = next;
   record(c, actor, "social_links_saved", changed.join(", "));
   return c;
+}
+
+/** Save the typed brand purpose and what the brand is known for. Changed text needs authorising again before a model may read it. */
+export function saveBrandText(db: Database, id: string, input: Record<string, unknown>, actor: string): CustomerAccount {
+  const c = findCustomer(db, id);
+  const f = brandTextFields(input);
+  const changed = (["purposeText", "knownFor"] as const).filter((k) => f[k] !== undefined && f[k] !== (c[k] || ""));
+  if (!changed.length) return c;
+  for (const k of changed) c[k] = f[k];
+  record(c, actor, "brand_text_saved", changed.map((k) => (k === "purposeText" ? "brand purpose" : "known for")).join(", "));
+  if (c.textAuthorisation) { delete c.textAuthorisation; record(c, actor, "brand_text_authorisation_withdrawn", "the text changed"); }
+  return c;
+}
+export function setTextAuthorisation(db: Database, id: string, authorise: unknown, actor: string) {
+  if (typeof authorise !== "boolean") throw new Error("authorise must be true or false");
+  const c = findCustomer(db, id);
+  if (authorise) c.textAuthorisation = { authorisedBy: actor, at: now() };
+  else delete c.textAuthorisation;
+  record(c, actor, authorise ? "brand_text_authorised" : "brand_text_authorisation_withdrawn", "brand purpose and known for");
 }
 
 export function addRedLine(db: Database, id: string, input: Record<string, unknown>, actor: string): RedLine {

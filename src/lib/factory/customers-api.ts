@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { BrandPurposeFile, Principal } from "./model";
 import { repository } from "./repository";
 import { CUSTOMERS_WORKSPACE, PURPOSE_LABEL, PURPOSE_MAX_BYTES, PURPOSE_MIMES, sniffPurpose } from "./customers";
-import { CUSTOMER_ID, addRedLine, attachPurpose, createCustomer, customersOf, findCustomer, purposeFile, removePurpose, removeRedLine, saveSocials, setPurposeAuthorisation, updateCustomer, updateRedLine } from "./customers-commands";
+import { CUSTOMER_ID, addRedLine, attachPurpose, createCustomer, customersOf, findCustomer, purposeFile, removePurpose, removeRedLine, saveBrandText, saveSocials, setPurposeAuthorisation, setTextAuthorisation, updateCustomer, updateRedLine } from "./customers-commands";
 import { getPurposeFile, purposeKey, putPurposeFile } from "./customer-store";
 import { findSocialsOnWebsite } from "./site-links";
 
@@ -10,7 +10,7 @@ import { findSocialsOnWebsite } from "./site-links";
 //   GET  customers                          list
 //   POST customers                          create {name, website?}
 //   GET  customers/:id                      one record
-//   POST customers/:id                      {action: update | socials | find-socials | red-line-add | red-line-update | red-line-remove | purpose-authorise | purpose-remove, ...}
+//   POST customers/:id                      {action: update | socials | find-socials | brand-text | brand-text-authorise | red-line-add | red-line-update | red-line-remove | purpose-authorise | purpose-remove, ...}
 //   POST customers/:id/purpose?name&rights  raw file body (brand purpose upload)
 //   GET  customers/:id/purpose/:fileId      the file, through this authorised route only
 
@@ -66,6 +66,8 @@ export async function handleCustomers(request: Request, path: string[], a: Princ
     const customer = await repository.mutate(CUSTOMERS_WORKSPACE, (db) => {
       if (action === "update") return updateCustomer(db, id, data, actor);
       if (action === "socials") return saveSocials(db, id, data.socials, actor);
+      if (action === "brand-text") return saveBrandText(db, id, data, actor);
+      if (action === "brand-text-authorise") { setTextAuthorisation(db, id, data.authorise, actor); return findCustomer(db, id); }
       if (action === "red-line-add") { addRedLine(db, id, data, actor); return findCustomer(db, id); }
       if (action === "red-line-update") { updateRedLine(db, id, data.lineId, data, actor); return findCustomer(db, id); }
       if (action === "red-line-remove") { removeRedLine(db, id, data.lineId, actor); return findCustomer(db, id); }
