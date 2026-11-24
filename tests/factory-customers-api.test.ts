@@ -112,6 +112,17 @@ async function main() {
   assert.deepEqual(withLines.redLines.map((l: { text: string }) => l.text), ["cheap"]);
   assert.deepEqual(withLines.audit.slice(-3).map((a: { action: string }) => a.action), ["red_line_added", "red_line_changed", "red_line_removed"]);
 
+  // Typed brand purpose and what the brand is known for; models may read them only once authorised, and edits withdraw that.
+  let text = await record(await post(`customers/${id}`, { action: "brand-text", purposeText: "To make baking joyful", knownFor: "Sourdough" }));
+  assert.deepEqual([text.purposeText, text.knownFor, text.textAuthorisation], ["To make baking joyful", "Sourdough", undefined]);
+  assert.equal((await post(`customers/${id}`, { action: "brand-text", purposeText: "x".repeat(4001) })).status, 400);
+  text = await record(await post(`customers/${id}`, { action: "brand-text-authorise", authorise: true }));
+  assert.equal(text.textAuthorisation.authorisedBy, "port67-producer");
+  assert.equal((await post(`customers/${id}`, { action: "brand-text-authorise", authorise: "yes" })).status, 400);
+  text = await record(await post(`customers/${id}`, { action: "brand-text", knownFor: "Sourdough and pies" }));
+  assert.equal(text.textAuthorisation, undefined, "an edit withdraws the authorisation");
+  assert.equal(text.purposeText, "To make baking joyful");
+
   // Brand purpose: rights confirmed, real type checked, 25 MB limit, bytes kept out of the record.
   assert.equal((await upload(id, "name=purpose.pdf", pdf(2000))).status, 400, "rights confirmation required");
   const html = await upload(id, "rights=confirmed&name=purpose.pdf", Buffer.from("<html><script>alert(1)</script></html>"));
@@ -171,6 +182,7 @@ async function main() {
   assert.equal((await get("customers")).status, 403, "customer cannot list");
   assert.equal((await get(`customers/${id}`)).status, 403, "customer cannot read");
   assert.equal((await post("customers", { name: "Sneaky" })).status, 403, "customer cannot create");
+  assert.equal((await post(`customers/${id}`, { action: "brand-text", purposeText: "Hacked" })).status, 403, "customer cannot write brand text");
   assert.equal((await post(`customers/${id}`, { action: "update", name: "Hacked" })).status, 403, "customer cannot edit");
   assert.equal((await upload(id, "rights=confirmed&name=a.pdf", pdf(500))).status, 403, "customer cannot upload");
   assert.equal((await get(`customers/${id}/purpose/${fileId}`)).status, 403, "customer cannot download");

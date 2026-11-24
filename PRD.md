@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.34.1  
+**Version:** 1.34.2  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1636,3 +1636,4 @@ Owner direction, 25 November 2026 (CHG-0103), PRD 1.34.0. Design: `docs/superpow
 | FAC-VWS-007 | Client red lines | Red lines are a list of separate entries, each with a category (topic, competitor, person or brand, word or phrase, visual), text and an optional reason. Add, edit and remove are audited with who, when and what. Later steps can read each entry individually. At most 100 red lines per account, and the account keeps its latest 100 history entries. |
 | FAC-VWS-008 | Producer approvals | Approvals previously held by the customer are performed by producers and recorded with the producer as actor. The existing gates and their blocking rules are unchanged. |
 | FAC-VWS-009 | Reset to a clean start | Existing customer accounts, projects and stored files are deleted only after the customer role is removed, a verified export of the local store and the Firestore project has been taken, and the owner confirms the deletion naming what is deleted. The deletion is audited. The owner cost ledger is kept unless the owner says otherwise. No build step deletes data. |
+| FAC-VWS-010 | Typed brand purpose and what the brand is known for | A customer account has two text boxes, "Brand purpose" and "What is the brand known for?", each up to 4000 characters, saved by a producer. They are private. Models may read them only after a producer ticks one authorisation for the pair; changing either text withdraws that authorisation until it is ticked again. Saving and authorising are audited. Customers and the demo are refused. |

@@ -12,6 +12,7 @@ const customer: CustomerAccount = {
   id: "cust_" + "a".repeat(32), name: "Nash's Bakery", website: "https://nashs.example.com/",
   socials: { instagram: "https://instagram.com/nashs" },
   redLines: [{ id: "r1", category: "competitor", text: "Greggs", reason: "Legal dispute", addedBy: "p", addedAt: "2026-11-25T10:00:00Z" }],
+  purposeText: "Make baking joyful", knownFor: "Sourdough and pies",
   brandPurpose: [
     { id: "00000000-0000-0000-0000-000000000001", name: "purpose.pdf", mime: "application/pdf", bytes: 2_500_000, storageKey: "k", uploadedAt: "2026-11-25T10:00:00Z", uploadedBy: "p", rights: { confirmedBy: "p", at: "t" }, modelAuthorisation: { authorisedBy: "p", at: "t" } },
     { id: "00000000-0000-0000-0000-000000000002", name: "mark.png", mime: "image/png", bytes: 900, storageKey: "k", uploadedAt: "2026-11-25T10:00:00Z", uploadedBy: "p", rights: { confirmedBy: "p", at: "t" } },
@@ -27,6 +28,14 @@ for (const text of ["Business name", "Website", "Social links", "Find from websi
 for (const label of ["X", "Instagram", "Facebook", "TikTok", "YouTube", "LinkedIn", "Pinterest"]) assert.match(html, new RegExp(`<span>${label}</span>`), label + " field");
 assert.match(html, /value="https:\/\/instagram\.com\/nashs"/, "saved link shown");
 assert.match(html, /value="Nash&#x27;s Bakery"/, "business name shown");
+// Typed brand purpose and known-for boxes, with their own model permission, off by default.
+assert.match(html, /Brand purpose \(type or paste\)/);
+assert.match(html, /What is the brand known for\?/);
+assert.match(html, /<textarea[^>]*name="purposeText"[^>]*>Make baking joyful<\/textarea>/);
+assert.match(html, /<textarea[^>]*name="knownFor"[^>]*>Sourdough and pies<\/textarea>/);
+assert.match(html, /AI steps may read these two texts/);
+assert.match(html, /<button class="f-button"[^>]*>Save brand text<\/button>/);
+assert.match(editor({ ...customer, textAuthorisation: { authorisedBy: "p", at: "t" } }), /checked=""\/> AI steps may read these two texts/);
 // Brand purpose: private, downloadable only through the authorised route, authorisation shown per file, upload locked until rights are confirmed.
 assert.match(html, /Files are kept private/);
 assert.match(html, new RegExp(`href="/api/factory/customers/${customer.id}/purpose/00000000-0000-0000-0000-000000000001"`));

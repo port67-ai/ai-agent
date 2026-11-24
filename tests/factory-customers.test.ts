@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { BrandPurposeFile, Database } from "../src/lib/factory/model";
-import { MAX_AUDIT, MAX_CUSTOMERS, MAX_PURPOSE_FILES, MAX_RED_LINES, PURPOSE_MAX_BYTES, applySocials, authorisedPurposeFiles, findSocialLinks, redLineFields, sniffPurpose, socialUrl, webUrl } from "../src/lib/factory/customers";
-import { addRedLine, attachPurpose, createCustomer, customersOf, findCustomer, removePurpose, removeRedLine, saveSocials, setPurposeAuthorisation, updateCustomer, updateRedLine } from "../src/lib/factory/customers-commands";
+import { MAX_BRAND_TEXT, MAX_AUDIT, MAX_CUSTOMERS, MAX_PURPOSE_FILES, MAX_RED_LINES, PURPOSE_MAX_BYTES, applySocials, authorisedBrandText, authorisedPurposeFiles, findSocialLinks, redLineFields, sniffPurpose, socialUrl, webUrl } from "../src/lib/factory/customers";
+import { addRedLine, attachPurpose, createCustomer, customersOf, findCustomer, removePurpose, removeRedLine, saveBrandText, saveSocials, setPurposeAuthorisation, setTextAuthorisation, updateCustomer, updateRedLine } from "../src/lib/factory/customers-commands";
 
 // Customer account logic (CHG-0103, FAC-VWS-004 to FAC-VWS-007): validation, commands, file sniffing, website link reading.
 const throws = (fn: () => unknown, pattern: RegExp, why: string) => assert.throws(fn, pattern, why);
@@ -185,5 +185,33 @@ assert.equal(sniffPurpose(Uint8Array.from([0xff, 0xfe, 0xfd, 0x80])), undefined,
   assert.equal(findSocialLinks('<a href="https://facebook.com/ads">x</a><script>{"sameAs":"https://facebook.com/real"}</script>', base).facebook, "https://facebook.com/real");
   // Every result passes the same validation as a hand-typed link.
   for (const [k, v] of Object.entries(found)) assert.equal(socialUrl(k, v), v);
+}
+// ---- Typed brand purpose and "known for" (CHG-0105, FAC-VWS-010)
+{
+  const db = empty();
+  const c = createCustomer(db, { name: "Text Co" }, "p");
+  assert.equal(authorisedBrandText(c), undefined, "nothing for models by default");
+  saveBrandText(db, c.id, { purposeText: "  To make baking joyful  ", knownFor: "Sourdough" }, "p");
+  assert.deepEqual([c.purposeText, c.knownFor], ["To make baking joyful", "Sourdough"], "trimmed");
+  saveBrandText(db, c.id, { knownFor: "Sourdough and pies" }, "p");
+  assert.equal(c.purposeText, "To make baking joyful", "only the fields sent change");
+  assert.equal(authorisedBrandText(c), undefined, "saving does not authorise");
+  setTextAuthorisation(db, c.id, true, "p");
+  assert.deepEqual(authorisedBrandText(c), { purposeText: "To make baking joyful", knownFor: "Sourdough and pies" });
+  const n = c.audit.length;
+  saveBrandText(db, c.id, { purposeText: "To make baking joyful" }, "p");
+  assert.equal(c.audit.length, n, "no change, no entry");
+  assert.ok(authorisedBrandText(c), "unchanged text keeps its authorisation");
+  saveBrandText(db, c.id, { purposeText: "A new purpose" }, "p");
+  assert.equal(authorisedBrandText(c), undefined, "changed text must be authorised again");
+  assert.equal(c.audit.at(-1)!.action, "brand_text_authorisation_withdrawn");
+  setTextAuthorisation(db, c.id, true, "p");
+  setTextAuthorisation(db, c.id, false, "p");
+  assert.equal(c.textAuthorisation, undefined, "withdrawn");
+  throws(() => setTextAuthorisation(db, c.id, "yes", "p"), /true or false/, "strict boolean");
+  throws(() => saveBrandText(db, c.id, { purposeText: "x".repeat(MAX_BRAND_TEXT + 1) }, "p"), /up to 4000/, "length");
+  throws(() => saveBrandText(db, c.id, { knownFor: 5 }, "p"), /text/, "type");
+  saveBrandText(db, c.id, { knownFor: "" }, "p");
+  assert.equal(c.knownFor, "", "can be cleared");
 }
 console.log("customers: all assertions passed");

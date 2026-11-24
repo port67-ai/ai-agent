@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Download, FileText, Search, Trash2 } from "lucide-react";
 import type { CustomerAccount, SocialPlatform } from "@/lib/factory/model";
-import { PURPOSE_LABEL, PURPOSE_MIMES, RED_LINE_CATEGORIES, SOCIAL_PLATFORMS, purposeExtension } from "@/lib/factory/customers";
+import { MAX_BRAND_TEXT, PURPOSE_LABEL, PURPOSE_MIMES, RED_LINE_CATEGORIES, SOCIAL_PLATFORMS, purposeExtension } from "@/lib/factory/customers";
 import { Empty, Field } from "./shared";
 
 // Customer account editor for the video workspace (CHG-0103, FAC-VWS-004 to FAC-VWS-007). Presentational: the container owns the requests.
@@ -23,6 +23,7 @@ const AUDIT_LABEL: Record<string, string> = {
   customer_created: "Account created", name_changed: "Name changed", website_changed: "Website changed", social_links_saved: "Social links saved",
   red_line_added: "Red line added", red_line_changed: "Red line changed", red_line_removed: "Red line removed",
   purpose_uploaded: "Brand purpose file uploaded", purpose_removed: "Brand purpose file removed",
+  brand_text_saved: "Brand text saved", brand_text_authorised: "Models allowed to read the brand text", brand_text_authorisation_withdrawn: "Model access to the brand text withdrawn",
   purpose_model_authorised: "Models allowed to read a file", purpose_model_authorisation_withdrawn: "Model access to a file withdrawn",
 };
 const fileType = (mime: string) => (purposeExtension(mime) || "file").toUpperCase();
@@ -80,13 +81,30 @@ function Socials({ customer, busy, found, onSave, onFind }: Pick<EditorProps, "c
   );
 }
 
+function BrandText({ customer, busy, onSave }: Pick<EditorProps, "customer" | "busy" | "onSave">) {
+  return (
+    <section className="f-panel" aria-labelledby="cust-text">
+      <div className="f-section-heading"><h3 id="cust-text">Brand purpose and reputation</h3></div>
+      <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.currentTarget); void onSave("brand-text", { purposeText: d.get("purposeText"), knownFor: d.get("knownFor") }); }}>
+        <Field label="Brand purpose (type or paste)"><textarea name="purposeText" rows={6} maxLength={MAX_BRAND_TEXT} defaultValue={customer.purposeText || ""} /></Field>
+        <Field label="What is the brand known for?"><textarea name="knownFor" rows={6} maxLength={MAX_BRAND_TEXT} defaultValue={customer.knownFor || ""} /></Field>
+        <div><button className="f-button" disabled={busy}>Save brand text</button></div>
+      </form>
+      <label className="f-check-line">
+        <input type="checkbox" checked={!!customer.textAuthorisation} disabled={busy} onChange={(e) => void onSave("brand-text-authorise", { authorise: e.target.checked })} /> AI steps may read these two texts
+      </label>
+      <p className="f-small">Kept private. If you change the text, permission is withdrawn until you tick the box again.</p>
+    </section>
+  );
+}
+
 function Purpose({ customer, busy, onSave, onUpload }: Pick<EditorProps, "customer" | "busy" | "onSave" | "onUpload">) {
   const [rights, setRights] = useState(false);
   const [round, setRound] = useState(0);
   const full = customer.brandPurpose.length >= 5;
   return (
     <section className="f-panel" aria-labelledby="cust-purpose">
-      <div className="f-section-heading"><h3 id="cust-purpose">Brand purpose</h3></div>
+      <div className="f-section-heading"><h3 id="cust-purpose">Brand purpose files</h3></div>
       <p className="f-small">Files are kept private. An AI step can read a file only after you allow it here.</p>
       {customer.brandPurpose.length === 0 ? <Empty title="No brand purpose uploaded">Upload the client brand purpose, mission or guidelines.</Empty> : (
         <ul className="w-rows">
@@ -162,6 +180,7 @@ export function CustomerEditor(props: EditorProps) {
       <Details customer={customer} busy={props.busy} onSave={props.onSave} />
       {/* Remounted after each save so the fields always show what is stored. */}
       <Socials key={customer.id + customer.updatedAt} customer={customer} busy={props.busy} found={props.found} onSave={props.onSave} onFind={props.onFind} />
+      <BrandText key={customer.id + (customer.purposeText || "").length + (customer.knownFor || "").length} customer={customer} busy={props.busy} onSave={props.onSave} />
       <Purpose customer={customer} busy={props.busy} onSave={props.onSave} onUpload={props.onUpload} />
       <RedLines customer={customer} busy={props.busy} onSave={props.onSave} />
       <details className="f-panel">

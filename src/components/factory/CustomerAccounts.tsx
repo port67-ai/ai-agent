@@ -43,7 +43,7 @@ export function CustomerAccounts() {
 
   const NOTICES: Record<string, string> = {
     update: "Business details saved.", socials: "Social links saved.", "red-line-add": "Red line added.", "red-line-update": "Red line saved.", "red-line-remove": "Red line removed.",
-    "purpose-authorise": "Model access updated.", "purpose-remove": "File removed.",
+    "brand-text": "Brand text saved.", "brand-text-authorise": "Model access updated.", "purpose-authorise": "Model access updated.", "purpose-remove": "File removed.",
   };
   async function save(action: string, payload: Record<string, unknown>) {
     if (!current) return false;
