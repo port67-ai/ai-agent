@@ -4,7 +4,8 @@ import { accountErrorMessage, type AccountPhase } from "@/lib/factory/account-er
 import { getApps, initializeApp } from "firebase/app";
 import { createUserWithEmailAndPassword, getAuth, inMemoryPersistence, reload, sendEmailVerification, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
-export function AccountLogin({ onAuthenticated }: { onAuthenticated: (idToken: string) => Promise<void> }) {
+/** `allowSignup` is on by default; the producer-only video workspace turns it off because customers never sign in there. */
+export function AccountLogin({ onAuthenticated, allowSignup = true }: { onAuthenticated: (idToken: string) => Promise<void>; allowSignup?: boolean }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +57,7 @@ export function AccountLogin({ onAuthenticated }: { onAuthenticated: (idToken: s
   }
   return <section className="f-account-login">
     <h2 className="">{mode === "signin" ? "Sign in to your account" : "Create your account"}</h2>
-    <p className="f-small">Keep your research, builds and assets together under your own account.</p>
+    <p className="f-small">{allowSignup ? "Keep your research, builds and assets together under your own account." : "For Port67 producers and admins."}</p>
     <form className="f-account-form" onSubmit={(event) => { event.preventDefault(); void run("submit"); }}>
       <label className="block text-sm">Email<input className="" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} disabled={pending} /></label>
       <label className="block text-sm">Password<input className="" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} disabled={pending} /></label>
@@ -64,6 +65,6 @@ export function AccountLogin({ onAuthenticated }: { onAuthenticated: (idToken: s
     </form>
     {verification && <div className="mt-3 flex gap-3"><button disabled={pending} onClick={() => void run("refresh")}>Check verification</button><button disabled={pending} onClick={() => void run("resend")}>Resend email</button></div>}
     {message && <p className="mt-3 text-sm" role="status">{message}</p>}
-    <button className="f-text-button" disabled={pending} onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(""); }}>{mode === "signin" ? "Create an account" : "Already have an account? Sign in"}</button>
+    {allowSignup && <button className="f-text-button" disabled={pending} onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(""); }}>{mode === "signin" ? "Create an account" : "Already have an account? Sign in"}</button>}
   </section>;
 }

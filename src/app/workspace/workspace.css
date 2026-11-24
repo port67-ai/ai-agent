@@ -1,0 +1,20 @@
+/* Video workspace layout (CHG-0103). Colours and base styles come from portal.css (.f-shell, .f-panel, .f-button). */
+.w-page { padding: 32px 40px 64px; max-width: 1180px; }
+.w-page > .f-page-header { margin-bottom: 24px; }
+.w-stack { display: flex; flex-direction: column; gap: 20px; }
+.w-customers { display: grid; grid-template-columns: minmax(220px, 290px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.w-list { display: flex; flex-direction: column; gap: 6px; list-style: none; margin: 0 0 14px; padding: 0; }
+.w-list button { width: 100%; text-align: left; border: 1px solid var(--f-line); background: #fff; border-radius: 8px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.w-list button.active { border-color: var(--f-accent); background: #fff6f2; }
+.w-list small { color: var(--f-muted); font-size: 11px; overflow-wrap: anywhere; }
+.w-rows { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.w-rows li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; border: 1px solid #eef0ec; border-radius: 6px; padding: 10px 12px; }
+.w-rows li form { width: 100%; }
+.w-placeholder { border: 1px dashed var(--f-line); border-radius: 8px; padding: 32px; background: #fff; color: var(--f-muted); }
+.w-signin { max-width: 440px; margin: 12vh auto; padding: 0 20px; }
+.w-signin .f-login-card { padding: 28px; }
+.w-error { margin: 0 0 16px; }
+@media (max-width: 900px) {
+  .w-customers { grid-template-columns: 1fr; }
+  .w-page { padding: 24px 18px 48px; }
+}
