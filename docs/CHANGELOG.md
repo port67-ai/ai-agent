@@ -742,3 +742,38 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - What/why: two text boxes on the Customer account (up to 4000 characters each) beside the brand purpose file upload. Same privacy rule as the files: AI steps may read them only after a producer ticks one authorisation, and editing either text withdraws it. Audited.
 - Requirements: FAC-VWS-010 (new). PRD impact: 1.34.2, one new requirement in section 30.
 - Evidence (25 November 2026, scratch copy, TMPDIR=/tmp): `npx tsc --noEmit` clean; `npm run check:factory` clean; `npm test` and `npm run build` run (results below); the unit, API and UI suites cover save, trimming, partial updates, length limit, authorisation, withdrawal on edit and the customer 403. Not checked in a browser. Not committed or deployed.
+
+## CHG-0106: 2026-11-25: Commission project and Inspiration baseline, design and requirements
+- Author/harness: Claude. Owner request: create the Commission project, starting with the Inspiration baseline built from four primary inputs (objective, product, audience, brand expression) with three secondary checks greyed out.
+- What/why: documentation only. Design spec docs/superpowers/specs/2026-11-25-commission-inspiration-baseline-design.md, PRD section 31 and requirements FAC-VWS-011 to FAC-VWS-016, PRODUCT-024. Owner choices: capture inputs and evidence only with no AI call; guided prompts plus an evidence list; Preserve and Can change lists plus the example that went too far.
+- Requirements: FAC-VWS-011 to FAC-VWS-016 (new, PROPOSED, NOT STARTED).
+- PRD impact: version 1.35.0, new section 31.
+- Evidence: `python3 scripts/check_docs_governance.py --base origin/main` run after these edits. No code, tests or build.
+- Status: drafted locally, uncommitted, awaiting owner sign-off before any code.
+
+## CHG-0107: 2026-11-25: Commission project and Inspiration baseline, build
+- Author/harness: Claude. Owner said "go" on the CHG-0106 design.
+- What/why: Projects page in the video workspace. Pick a customer account, list and create projects (a name is enough), four guided inputs (1 objective, 3 product, 4 audience, 5 brand expression) with evidence per input (link or note, where looked, announced / client confirmed / my inference), Preserve and Can change or out of character lists, one example that went too far, "confirmed directly with the client" ticks on objective and audience, three greyed-out secondary checks, and a read-only Inspiration baseline with a gaps list. No AI call. Limits: 50 projects per account, 30 evidence items per input, 30 entries per list, 2000-character answers.
+- Requirements: FAC-VWS-011 to FAC-VWS-016 (implemented locally).
+- PRD impact: none beyond 1.35.0 section 31; limits as built are recorded in DATA_MODEL.md.
+- Evidence: in a clean Linux copy, `npx tsc --noEmit`, `npm run check:factory`, `npm test` (adds factory-commissions, factory-commissions-api, factory-commissions-ui suites) and `npm run build` all exit 0; `python3 scripts/check_docs_governance.py --base origin/main` run after these edits.
+- Limitations: no real browser check (none available in the build sandbox); Firestore path not run against an emulator; not committed or deployed. The old /portal and customer role are untouched.
+- Status: built locally, uncommitted, on feat/video-workspace-customer-account.
+
+## CHG-0108: 2026-11-25: Brand Intelligence agent and dossier
+- Author/harness: Claude. Owner request: run a Brand Intelligence agent from the customer account inputs on a submit button, store the dossier in Firebase as a foundation for later agents, using the owner's Brand Foundation Dossier prompt. Owner choices: versioned re-runs; three research calls plus a short synthesis; typed text only for now.
+- What: submit panel on the customer account (BrandIntel.tsx); routes `brand-intel/:customerId` (brand-intel-api.ts); runner, ledger metering and the `brandFoundation` reader (brand-intel-run.ts); prompts, parsing, citations (brand-intel.ts); two new AI jobs, research:brand-intel and synthesis:brand-intel, routable on the AI models page.
+- Requirements: FAC-VWS-017 to FAC-VWS-019 (implemented locally).
+- PRD impact: 1.36.0, new section 32.
+- Evidence: in a clean Linux copy `tsc`, `npm run check:factory`, `npm test` and `npm run build` pass; new suites factory-brand-intel and factory-brand-intel-ui use a stub provider. Two existing tests were updated for the new agents (agent counts; account-level agents have no project rerun place). Governance check run after these edits.
+- Limitations: never run against a real provider, so prompt quality, output length, run time and cost per dossier are unmeasured; needs PORT67_RESEARCH_ENABLED=true and provider keys in Render; uploaded files not read; no browser check; not committed or deployed.
+- Status: built locally, uncommitted.
+
+## CHG-0109: 2026-11-25: Researched red lines, dossier layout, collapsible account sections
+- Author/harness: Claude. Owner request: add a red lines research prompt to the Brand Intelligence agent, show the output below the red lines in a readable layout, make Social links, Brand purpose and reputation and Client red lines collapsible like History, and move brand purpose files into the brand purpose box with an Add button and small file chips that open on click.
+- What: new dossier section 7 from a fourth web-searching call (now 5 paid calls per run), four cards in the UI; RichText renderer for source tags and bullets; Collapsible panels; Files chips; PDFs now open inline in a tab (was download).
+- Requirements: FAC-VWS-018 (changed), FAC-VWS-020 (new).
+- PRD impact: 1.37.0.
+- Evidence: tsc, `npm run check:factory`, `npm test` and `npm run build` pass in a clean copy; customers-api, customers-ui, brand-intel and brand-intel-ui suites updated; governance check run after these edits.
+- Limitations: not run against a real provider or in a browser. The PDF inline view relies on Chrome showing a PDF under the header `default-src 'none'`; if it does not, the tab will download the file instead. The Add button asks for the rights confirmation with a browser confirm box rather than a ticked box.
+- Status: built locally, uncommitted.

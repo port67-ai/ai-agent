@@ -1,9 +1,20 @@
 "use client";
-import { useState } from "react";
-import { Download, FileText, Search, Trash2 } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { FileText, Image as ImageIcon, Plus, Search, Trash2 } from "lucide-react";
 import type { CustomerAccount, SocialPlatform } from "@/lib/factory/model";
 import { MAX_BRAND_TEXT, PURPOSE_LABEL, PURPOSE_MIMES, RED_LINE_CATEGORIES, SOCIAL_PLATFORMS, purposeExtension } from "@/lib/factory/customers";
 import { Empty, Field } from "./shared";
+
+/** A panel that opens and closes like History. It sits outside the keyed forms, so saving does not collapse it. Starts open only while it has nothing in it yet. */
+function Collapsible({ id, title, summary, startOpen, children }: { id: string; title: string; summary: string; startOpen: boolean; children: ReactNode }) {
+  const [open] = useState(startOpen);
+  return (
+    <details className="f-panel w-collapse" open={open}>
+      <summary id={id}>{title} <span className="f-small">{summary}</span></summary>
+      {children}
+    </details>
+  );
+}
 
 // Customer account editor for the video workspace (CHG-0103, FAC-VWS-004 to FAC-VWS-007). Presentational: the container owns the requests.
 export type FindResult = { pageUrl: string; found: Partial<Record<SocialPlatform, string>>; existing: Partial<Record<SocialPlatform, string>> };
@@ -15,6 +26,8 @@ export type EditorProps = {
   onSave: (action: string, payload: Record<string, unknown>) => Promise<boolean>;
   onFind: () => void;
   onUpload: (file: File) => Promise<boolean>;
+  /** Shown below the red lines and above History (the Brand Intelligence dossier). */
+  children?: ReactNode;
 };
 
 const stamp = (at: string) => at.slice(0, 16).replace("T", " ") + " UTC";
@@ -52,9 +65,9 @@ function Socials({ customer, busy, found, onSave, onFind }: Pick<EditorProps, "c
   const different = found ? SOCIAL_PLATFORMS.filter((p) => found.found[p.key] && value(p.key) && value(p.key) !== found.found[p.key]) : [];
   const nothing = found && !Object.keys(found.found).length;
   return (
-    <section className="f-panel" aria-labelledby="cust-socials">
+    <>
       <div className="f-section-heading">
-        <h3 id="cust-socials">Social links</h3>
+        <span className="f-small">The links the research agent will visit.</span>
         <button type="button" className="f-button secondary small" disabled={busy || !customer.website} onClick={onFind}><Search size={15} /> Find from website</button>
       </div>
       {!customer.website && <p className="f-small">Save the website above to look for its social links.</p>}
@@ -77,14 +90,13 @@ function Socials({ customer, busy, found, onSave, onFind }: Pick<EditorProps, "c
         ))}
         <div><button className="f-button" disabled={busy}>Save social links</button></div>
       </form>
-    </section>
+    </>
   );
 }
 
-function BrandText({ customer, busy, onSave }: Pick<EditorProps, "customer" | "busy" | "onSave">) {
+function BrandText({ customer, busy, onSave, onUpload }: Pick<EditorProps, "customer" | "busy" | "onSave" | "onUpload">) {
   return (
-    <section className="f-panel" aria-labelledby="cust-text">
-      <div className="f-section-heading"><h3 id="cust-text">Brand purpose and reputation</h3></div>
+    <>
       <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.currentTarget); void onSave("brand-text", { purposeText: d.get("purposeText"), knownFor: d.get("knownFor") }); }}>
         <Field label="Brand purpose (type or paste)"><textarea name="purposeText" rows={6} maxLength={MAX_BRAND_TEXT} defaultValue={customer.purposeText || ""} /></Field>
         <Field label="What is the brand known for?"><textarea name="knownFor" rows={6} maxLength={MAX_BRAND_TEXT} defaultValue={customer.knownFor || ""} /></Field>
@@ -94,44 +106,42 @@ function BrandText({ customer, busy, onSave }: Pick<EditorProps, "customer" | "b
         <input type="checkbox" checked={!!customer.textAuthorisation} disabled={busy} onChange={(e) => void onSave("brand-text-authorise", { authorise: e.target.checked })} /> AI steps may read these two texts
       </label>
       <p className="f-small">Kept private. If you change the text, permission is withdrawn until you tick the box again.</p>
-    </section>
+      <Files customer={customer} busy={busy} onSave={onSave} onUpload={onUpload} />
+    </>
   );
 }
 
-function Purpose({ customer, busy, onSave, onUpload }: Pick<EditorProps, "customer" | "busy" | "onSave" | "onUpload">) {
-  const [rights, setRights] = useState(false);
+/** Brand purpose files: an Add button and one small chip per file. A chip opens the file in a new tab. */
+function Files({ customer, busy, onSave, onUpload }: Pick<EditorProps, "customer" | "busy" | "onSave" | "onUpload">) {
+  const input = useRef<HTMLInputElement>(null);
   const [round, setRound] = useState(0);
   const full = customer.brandPurpose.length >= 5;
   return (
-    <section className="f-panel" aria-labelledby="cust-purpose">
-      <div className="f-section-heading"><h3 id="cust-purpose">Brand purpose files</h3></div>
-      <p className="f-small">Files are kept private. An AI step can read a file only after you allow it here.</p>
-      {customer.brandPurpose.length === 0 ? <Empty title="No brand purpose uploaded">Upload the client brand purpose, mission or guidelines.</Empty> : (
-        <ul className="w-rows">
-          {customer.brandPurpose.map((f) => (
-            <li key={f.id}>
-              <FileText size={16} aria-hidden="true" /> <strong>{f.name}</strong> <span className="f-small">{fileType(f.mime)}, {size(f.bytes)}, added {stamp(f.uploadedAt)}</span>{" "}
-              <a className="f-button secondary small" href={`/api/factory/customers/${customer.id}/purpose/${f.id}`}><Download size={14} /> Download</a>{" "}
-              <label className="f-check-line">
-                <input type="checkbox" checked={!!f.modelAuthorisation} disabled={busy} onChange={(e) => void onSave("purpose-authorise", { fileId: f.id, authorise: e.target.checked })} /> AI steps may read this file
-              </label>{" "}
-              <button type="button" className="f-button secondary small" disabled={busy} onClick={() => void onSave("purpose-remove", { fileId: f.id })}><Trash2 size={14} /> Remove</button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="f-rights-form">
-        <p className="f-small">{PURPOSE_LABEL}</p>
-        <label className="f-check-line"><input type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} /> I confirm Port67 has the right to hold and use this file</label>
-        <input key={round} type="file" accept={ACCEPT} disabled={busy || full || !rights} aria-label="Choose a brand purpose file" onChange={async (e) => {
+    <div className="w-files">
+      <div className="w-files-row">
+        <strong>Files</strong>
+        {customer.brandPurpose.map((f) => (
+          <span key={f.id} className="w-chip">
+            <a href={`/api/factory/customers/${customer.id}/purpose/${f.id}`} target="_blank" rel="noopener noreferrer" title={`${f.name}, ${fileType(f.mime)}, ${size(f.bytes)}, added ${stamp(f.uploadedAt)}. Opens in a new tab.`}>
+              {f.mime.startsWith("image/") ? <ImageIcon size={16} aria-hidden="true" /> : <FileText size={16} aria-hidden="true" />}
+              <span className="w-chip-type">{fileType(f.mime)}</span>
+              <span className="w-chip-name">{f.name}</span>
+            </a>
+            <label className="w-chip-ai" title="AI steps may read this file">
+              <input type="checkbox" checked={!!f.modelAuthorisation} disabled={busy} onChange={(e) => void onSave("purpose-authorise", { fileId: f.id, authorise: e.target.checked })} /> AI may read
+            </label>
+            <button type="button" className="w-chip-x" aria-label={`Remove ${f.name}`} disabled={busy} onClick={() => void onSave("purpose-remove", { fileId: f.id })}><Trash2 size={13} /></button>
+          </span>
+        ))}
+        <button type="button" className="f-button secondary small" disabled={busy || full} onClick={() => { if (window.confirm("I confirm Port67 has the right to hold and use this file.")) input.current?.click(); }}><Plus size={14} /> Add</button>
+        <input ref={input} key={round} type="file" hidden accept={ACCEPT} aria-label="Choose a brand purpose file" onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (!file) return;
-          if (await onUpload(file)) { setRights(false); setRound((n) => n + 1); }
-          else setRound((n) => n + 1);
+          if (file) await onUpload(file);
+          setRound((n) => n + 1);
         }} />
-        {full && <p className="f-small">Five files is the limit. Remove one to add another.</p>}
       </div>
-    </section>
+      <p className="f-small">{customer.brandPurpose.length === 0 ? "No files yet. " : ""}{PURPOSE_LABEL}. Files are kept private; an AI step can read one only after you allow it.{full ? " Five files is the limit; remove one to add another." : ""}</p>
+    </div>
   );
 }
 
@@ -140,8 +150,7 @@ function RedLines({ customer, busy, onSave }: Pick<EditorProps, "customer" | "bu
   const label = (key: string) => RED_LINE_CATEGORIES.find((c) => c.key === key)?.label || key;
   const categories = RED_LINE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>);
   return (
-    <section className="f-panel" aria-labelledby="cust-redlines">
-      <div className="f-section-heading"><h3 id="cust-redlines">Client red lines</h3></div>
+    <>
       <p className="f-small">Anything the client does not want referenced or associated with. Each one is kept separately so later steps can check against it.</p>
       {customer.redLines.length === 0 ? <Empty title="No red lines yet">Add topics, competitors, people, words or visuals to avoid.</Empty> : (
         <ul className="w-rows">
@@ -169,20 +178,30 @@ function RedLines({ customer, busy, onSave }: Pick<EditorProps, "customer" | "bu
         <Field label="Reason (optional)"><input name="reason" maxLength={500} /></Field>
         <div><button className="f-button" disabled={busy}>Add red line</button></div>
       </form>
-    </section>
+    </>
   );
 }
 
 export function CustomerEditor(props: EditorProps) {
   const { customer } = props;
+  const set = SOCIAL_PLATFORMS.filter((p) => customer.socials[p.key]).length;
+  const textBits = [customer.purposeText?.trim() ? "purpose" : "", customer.knownFor?.trim() ? "known for" : ""].filter(Boolean);
+  const fileCount = customer.brandPurpose.length;
+  const brandSummary = textBits.length || fileCount ? `(${[...textBits, fileCount ? `${fileCount} file${fileCount === 1 ? "" : "s"}` : ""].filter(Boolean).join(", ")})` : "(empty)";
   return (
     <div className="f-customer-editor">
       <Details customer={customer} busy={props.busy} onSave={props.onSave} />
-      {/* Remounted after each save so the fields always show what is stored. */}
-      <Socials key={customer.id + customer.updatedAt} customer={customer} busy={props.busy} found={props.found} onSave={props.onSave} onFind={props.onFind} />
-      <BrandText key={customer.id + (customer.purposeText || "").length + (customer.knownFor || "").length} customer={customer} busy={props.busy} onSave={props.onSave} />
-      <Purpose customer={customer} busy={props.busy} onSave={props.onSave} onUpload={props.onUpload} />
-      <RedLines customer={customer} busy={props.busy} onSave={props.onSave} />
+      {/* The key remounts the form after a save so the fields show what is stored; the collapsible around it is not keyed, so it stays open. */}
+      <Collapsible id="cust-socials" title="Social links" summary={`(${set} of ${SOCIAL_PLATFORMS.length} set)`} startOpen={set === 0}>
+        <Socials key={customer.id + customer.updatedAt} customer={customer} busy={props.busy} found={props.found} onSave={props.onSave} onFind={props.onFind} />
+      </Collapsible>
+      <Collapsible id="cust-text" title="Brand purpose and reputation" summary={brandSummary} startOpen={!textBits.length && !fileCount}>
+        <BrandText key={customer.id + (customer.purposeText || "").length + (customer.knownFor || "").length} customer={customer} busy={props.busy} onSave={props.onSave} onUpload={props.onUpload} />
+      </Collapsible>
+      <Collapsible id="cust-redlines" title="Client red lines" summary={`(${customer.redLines.length})`} startOpen={customer.redLines.length === 0}>
+        <RedLines customer={customer} busy={props.busy} onSave={props.onSave} />
+      </Collapsible>
+      {props.children}
       <details className="f-panel">
         <summary>History ({customer.audit.length})</summary>
         <ul className="f-history">

@@ -103,14 +103,16 @@ export async function handleCustomers(request: Request, path: string[], a: Princ
     if (!file.storageKey.startsWith(`customers/${id}/`)) throw new Error("Forbidden: file access");
     const bytes = await getPurposeFile(file.storageKey);
     const image = file.mime.startsWith("image/");
+    // Images and PDFs open in the browser tab when a producer clicks a file; other types download. All stay private, no-store and non-sniffable.
+    const inline = image || file.mime === "application/pdf";
     return new Response(new Uint8Array(bytes), {
       headers: {
         "content-type": file.mime,
         "content-length": String(bytes.length),
-        "content-disposition": `${image ? "inline" : "attachment"}; filename="${file.name.replace(/[^\w .()-]/g, "_")}"`,
+        "content-disposition": `${inline ? "inline" : "attachment"}; filename="${file.name.replace(/[^\w .()-]/g, "_")}"`,
         "cache-control": "private, no-store",
         "x-content-type-options": "nosniff",
-        "content-security-policy": "sandbox; default-src 'none'",
+        "content-security-policy": file.mime === "application/pdf" ? "default-src 'none'; frame-ancestors 'none'" : "sandbox; default-src 'none'",
       },
     });
   }

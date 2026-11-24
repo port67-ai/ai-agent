@@ -491,6 +491,20 @@ export type BrandPurposeFile = {
   /** Present only after a producer explicitly authorises models to read this file's content (FAC-VWS-006). */
   modelAuthorisation?: { authorisedBy: string; at: string };
 };
+export type BrandIntelSource = { url: string; title: string };
+/** One run of the Brand Intelligence agent. Section texts are model output with bracketed source tags; redLines is the intake list copied verbatim. */
+export type BrandIntelVersion = {
+  id: string; customerId: string; version: number;
+  status: "running" | "completed" | "failed";
+  startedAt: string; startedBy: string; finishedAt?: string;
+  /** Sections "0" to "6" of the dossier blueprint. */
+  sections: Partial<Record<"0" | "1" | "2" | "3" | "4" | "5" | "6" | "7", string>>;
+  redLines: { category: string; text: string; reason: string }[];
+  /** What the agent was and was not given, so a reader can judge the dossier. */
+  intake: { name: string; website: string; socials: Record<string, string>; purposeTextRead: boolean; knownForRead: boolean; filesNotRead: string[] };
+  sources: BrandIntelSource[]; searchQueries: string[]; warnings: string[];
+  provider?: string; model?: string; calls: number; error?: string;
+};
 export type CustomerAudit = { id: string; at: string; actor: string; action: string; detail: string };
 export type CustomerAccount = {
   id: string; name: string; website: string;
@@ -504,7 +518,32 @@ export type CustomerAccount = {
   createdAt: string; createdBy: string; updatedAt: string; updatedBy: string;
   audit: CustomerAudit[];
 };
+/**
+ * Video workspace commissions (CHG-0107, FAC-VWS-011 to 016): one piece of work for a customer account, starting with the
+ * Inspiration baseline. Stored per customer account in the system workspace `factory-commissions-<customer id>`.
+ */
+export type CommissionInput = "objective" | "product" | "audience" | "brand";
+export type EvidenceBasis = "announced" | "client_confirmed" | "inference";
+export type EvidenceItem = { id: string; input: CommissionInput; source: string; where: string; note: string; basis: EvidenceBasis; addedBy: string; addedAt: string };
+export type BrandListEntry = { id: string; text: string; scope: "recurring" | "single_campaign"; kind?: "can_change" | "out_of_character"; addedBy: string; addedAt: string };
+export type Commission = {
+  id: string; customerId: string; name: string;
+  /** Answers to each input's prompts, keyed by input then prompt. */
+  answers: Record<CommissionInput, Record<string, string>>;
+  preserve: BrandListEntry[];
+  change: BrandListEntry[];
+  wentTooFar: string;
+  evidence: EvidenceItem[];
+  /** Objective and audience should be confirmed directly with the client. */
+  confirmed: { objective?: { by: string; at: string }; audience?: { by: string; at: string } };
+  createdAt: string; createdBy: string; updatedAt: string; updatedBy: string;
+  audit: CustomerAudit[];
+};
 export type Database = {
+  /** Video workspace commissions; used only in the system workspace `factory-commissions-<customer id>`. */
+  commissions?: Commission[];
+  /** Brand Intelligence dossier versions for one customer account (workspace `factory-brandintel-<customerId>`). */
+  brandIntel?: BrandIntelVersion[];
   /** Video workspace customer accounts; used only in the system workspace `factory-customers`. */
   customers?: CustomerAccount[];
   /** Studio Brand Kit for one customer account, kept in its own small record (factory-brandkit-<account>). */

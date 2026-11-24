@@ -38,3 +38,12 @@ Additional regressions cover concurrent feedback rejection during a paid planner
 
 ## CHG-0104 acceptance
 New suites, all in `npm test`: factory-customers (validation, commands, limits, file type detection, website link reading), factory-customers-site (address safety, redirects, size and type limits, with network and DNS injected), factory-customers-api (roles, validation, uploads, private storage, authorisation, audit) and factory-customers-ui (the three-entry shell, access, editor render). The site safety tests were mutation-checked. A scratch jsdom run of the real components against the real handler was also used once and is not in the repository; it would need jsdom added as a dev dependency to be kept. Browser tests, the Firestore emulator and Firebase Storage were not run, and Find from website has not touched a real site. Commands: `npm test`, `npm run check:factory`, `npx tsc --noEmit`, `npm run build`, `python3 scripts/check_docs_governance.py --base origin/main`.
+
+## CHG-0107 acceptance
+tests/factory-commissions.test.ts (rules, commands, baseline), factory-commissions-api.test.ts (routes, roles, limits) and factory-commissions-ui.test.tsx (inputs 1, 3, 4, 5 and no Input 2, locked secondary checks, evidence basis, confirm ticks, baseline gaps). Manual: open /workspace, Projects, create a project with only a name, fill an input, add evidence, open Inspiration baseline.
+
+## CHG-0108 acceptance
+tests/factory-brand-intel.test.ts (parsing, citations, intake withholds unauthorised text, four ledger rows, verbatim red lines, failed run never current, single run at a time, version cap, interrupted run, not-configured refusal) and factory-brand-intel-ui.test.tsx. Manual live check: set PORT67_RESEARCH_ENABLED=true and keys, open /workspace, Customer account, press Submit and run Brand Intelligence, then compare the dossier with the brand's real site and check the cost on the admin costs page.
+
+## CHG-0109 acceptance
+factory-customers-ui (collapsibles, chips, Add button, dossier slot below red lines), factory-customers-api (PDF served inline, private, no-store), factory-brand-intel (section 7 prompt wording, 5 ledger rows) and factory-brand-intel-ui (verify-first callout, red line cards, source chips). Manual: open a filled account, confirm the three sections are closed and keep their state after Save; Add a PDF; click its chip.

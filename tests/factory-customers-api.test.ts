@@ -145,13 +145,14 @@ async function main() {
   const recordFile = await readFile(join(directory, "live", "factory-customers.json"), "utf8");
   assert.equal(recordFile.length < 20_000, true, "the record holds a reference, not the bytes");
   assert.equal((await readdir(join(directory, "live", "customers", id))).length, 1, "the bytes are in the private file store");
-  // Served only through the authorised route, as a download with hardening headers.
+  // Served only through the authorised route. A PDF opens in the tab; it stays private, no-store and non-sniffable.
   const served = await get(`customers/${id}/purpose/${fileId}`);
   assert.equal(served.status, 200);
   assert.equal(served.headers.get("content-type"), "application/pdf");
-  assert.match(served.headers.get("content-disposition") || "", /^attachment/);
+  assert.match(served.headers.get("content-disposition") || "", /^inline/);
   assert.equal(served.headers.get("x-content-type-options"), "nosniff");
-  assert.match(served.headers.get("content-security-policy") || "", /sandbox/);
+  assert.equal(served.headers.get("cache-control"), "private, no-store");
+  assert.match(served.headers.get("content-security-policy") || "", /default-src 'none'/);
   assert.equal(Buffer.from(await served.arrayBuffer()).length, 300_000);
   assert.equal((await get(`customers/${id}/purpose/00000000-0000-0000-0000-000000000000`)).status, 400);
   assert.equal((await get(`customers/${id}/purpose/..%2f..%2fetc`)).status, 400);

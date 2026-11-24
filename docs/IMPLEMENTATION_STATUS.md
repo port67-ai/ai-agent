@@ -378,3 +378,20 @@ CHG-0103 was documentation only (design spec, ADR-0004, PRODUCT-023, PRD section
 | FAC-VWS-008 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only. Gates record `onBehalfOfClient` today. |
 | FAC-VWS-009 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only. No data has been exported or deleted. |
 | FAC-VWS-010 | IMPLEMENTED locally; not deployed or seen live | `brandTextFields`, `authorisedBrandText` (customers.ts), `saveBrandText`, `setTextAuthorisation` (customers-commands.ts), route actions brand-text and brand-text-authorise, BrandText panel in CustomerEditor. Unit, API and render tests; no model reads the text yet. Not checked in a browser. |
+
+## CHG-0106: Commission project and Inspiration baseline (25 November 2026)
+
+Documentation only: design spec and PRD 1.35.0 section 31. No code. Intent PROPOSED until the owner signs off the spec.
+
+| Requirement | State | Evidence / remaining limit |
+|---|---|---|
+| FAC-VWS-011 | IMPLEMENTED LOCALLY (CHG-0107); uncommitted, no browser check | Commission record. Evidence: tests/factory-commissions.test.ts, factory-commissions-api.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-012 | IMPLEMENTED LOCALLY (CHG-0107); uncommitted, no browser check | Four guided primary inputs. Evidence: tests/factory-commissions.test.ts, factory-commissions-api.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-013 | IMPLEMENTED LOCALLY (CHG-0107); uncommitted, no browser check | Brand expression lists and guardrail. Evidence: tests/factory-commissions.test.ts, factory-commissions-api.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-014 | IMPLEMENTED LOCALLY (CHG-0107); uncommitted, no browser check | Evidence per input. Evidence: tests/factory-commissions.test.ts, factory-commissions-api.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-015 | IMPLEMENTED LOCALLY (CHG-0107); uncommitted, no browser check | Secondary checks locked. Evidence: tests/factory-commissions.test.ts, factory-commissions-api.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-016 | IMPLEMENTED LOCALLY (CHG-0107); uncommitted, no browser check | Inspiration baseline view. Evidence: tests/factory-commissions.test.ts, factory-commissions-api.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-017 | IMPLEMENTED LOCALLY (CHG-0108); stub-provider tests only, never run against a real provider, uncommitted | Submit and run. Evidence: tests/factory-brand-intel.test.ts and factory-brand-intel-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-018 | IMPLEMENTED LOCALLY (CHG-0108, section 7 added in CHG-0109); stub-provider tests only, never run against a real provider, uncommitted | Dossier content. Evidence: tests/factory-brand-intel.test.ts and factory-brand-intel-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-019 | IMPLEMENTED LOCALLY (CHG-0108); stub-provider tests only, never run against a real provider, uncommitted | Stored foundation. Evidence: tests/factory-brand-intel.test.ts and factory-brand-intel-ui.test.tsx; tsc, lint and build pass. |
+| FAC-VWS-020 | IMPLEMENTED LOCALLY (CHG-0109); no browser check, uncommitted | Customer account layout. Evidence: factory-customers-ui, factory-brand-intel-ui; tsc, lint and build pass. |

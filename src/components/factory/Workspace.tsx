@@ -5,6 +5,7 @@ import { Building2, FolderKanban, LayoutDashboard, LogOut, Menu, ShieldCheck } f
 import type { Principal } from "@/lib/factory/model";
 import { AccountLogin } from "./AccountLogin";
 import { CustomerAccounts } from "./CustomerAccounts";
+import { Projects } from "./Projects";
 import { Field } from "./shared";
 import { api } from "./workspace-api";
 
@@ -134,7 +135,7 @@ export default function Workspace() {
     <Shell principal={principal} tab={tab} setTab={setTab} onSignOut={() => void signOut()}>
       {tab === "overview" && <Placeholder title="Overview">The overview will bring each customer account and its projects together. What goes here is still to be decided.</Placeholder>}
       {tab === "customers" && <CustomerAccounts />}
-      {tab === "projects" && <Placeholder title="Projects">Each project (commission) belongs to one customer account. Project inputs are specified once the customer account is complete.</Placeholder>}
+      {tab === "projects" && <Projects />}
     </Shell>
   );
 }
