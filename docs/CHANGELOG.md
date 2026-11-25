@@ -803,3 +803,12 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; commissions, commissions-api, audience-agent and commissions-ui suites extended. Governance check run after these edits.
 - Limitations: audience answers entered before this change are still counted in status and shown in the baseline as "Entered before age groups", but are not editable in the new Input 4 form. Direction itself is not built; only the selection and its gate. Not run against a real provider or in a browser.
 - Status: built locally, uncommitted.
+
+## CHG-0112: 2026-11-25: Project inputs layout and simpler flow
+- Author/harness: Claude. Owner request: stack questions and boxes top to bottom, use the full window width, make Evidence and Can change or out of character greyed-out dropdowns outside the flow, and split the objective's think, feel or do question into three boxes.
+- What: single-column forms and full-width page on projects; Dropdown component (collapsed, disabled fieldset, "Not available yet"); switches `EVIDENCE_ACTIVE` and `CHANGE_LIST_ACTIVE` in commissions.ts (both false) so status and gaps ignore them; objective prompt `response` replaced by `think`, `feel`, `do`.
+- Requirements: FAC-VWS-023 (new); FAC-VWS-014 and FAC-VWS-016 behaviour changed while evidence is off.
+- PRD impact: 1.40.0.
+- Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; commissions and commissions-ui suites updated. Governance check run after these edits.
+- Limitations: no browser check of the layout. Any text saved earlier under the old combined question (`response`) is kept in the record but no longer shown. Evidence already saved stays in the record and baseline. Turning the two switches to true restores the previous rules.
+- Status: built locally, uncommitted.

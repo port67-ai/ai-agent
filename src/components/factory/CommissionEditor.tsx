@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { BrandListEntry, Commission, CommissionInput, EvidenceItem, Generation, RedLine } from "@/lib/factory/model";
-import { EVIDENCE_BASIS, EVIDENCE_WHERE, INPUTS, MAX_ANSWER, SECONDARY, STATUS_LABEL, inputStatus, type ListName } from "@/lib/factory/commissions";
+import { CHANGE_LIST_ACTIVE, EVIDENCE_ACTIVE, EVIDENCE_BASIS, EVIDENCE_WHERE, INPUTS, MAX_ANSWER, SECONDARY, STATUS_LABEL, inputStatus, type ListName } from "@/lib/factory/commissions";
 import { RED_LINE_CATEGORIES } from "@/lib/factory/customers";
 import { AudienceBlock } from "./AudienceBlock";
 import { Field } from "./shared";
@@ -26,10 +26,21 @@ const basisLabel = (k: string) => EVIDENCE_BASIS.find((b) => b.key === k)?.label
 const stamp = (at: string) => at.slice(0, 16).replace("T", " ") + " UTC";
 const tone = (s: string) => (s === "complete" ? "green" : s === "in_progress" ? "orange" : "light");
 
-function Evidence({ input, items, busy, onSave }: { input: CommissionInput; items: EvidenceItem[]; busy: boolean; onSave: Save }) {
+/** A collapsed dropdown. While `locked` it is greyed out: its contents can be read but nothing in it can be changed. */
+function Dropdown({ title, count, locked, children }: { title: string; count?: number; locked: boolean; children: React.ReactNode }) {
   return (
+    <details className={"w-dropdown" + (locked ? " w-locked" : "")} aria-disabled={locked ? "true" : undefined}>
+      <summary>{title}{count !== undefined ? ` (${count})` : ""}{locked && <span className="f-small"> Not available yet</span>}</summary>
+      <fieldset className="w-fieldset" disabled={locked}>{children}</fieldset>
+    </details>
+  );
+}
+
+function Evidence({ input, items, busy, onSave }: { input: CommissionInput; items: EvidenceItem[]; busy: boolean; onSave: Save }) {
+  const locked = !EVIDENCE_ACTIVE;
+  return (
+    <Dropdown title="Evidence" count={items.length} locked={locked}>
     <div className="w-evidence">
-      <h4>Evidence</h4>
       {items.length === 0 ? <p className="f-small">No evidence yet. Add where you looked, and whether it was announced, confirmed by the client, or your own inference.</p> : (
         <ul className="w-rows">
           {items.map((e) => (
@@ -55,6 +66,7 @@ function Evidence({ input, items, busy, onSave }: { input: CommissionInput; item
         <div><button className="f-button" disabled={busy}>Add evidence</button></div>
       </form>
     </div>
+    </Dropdown>
   );
 }
 
@@ -123,7 +135,9 @@ function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { de
       {def.key === "brand" && (
         <>
           <BrandList list="preserve" title="Preserve" hint="The non-negotiable DNA once the setting is removed." entries={commission.preserve} busy={busy} onSave={onSave} />
-          <BrandList list="change" title="Can change or out of character" hint="Where there is room for a fresh idea, and what would be out of character." entries={commission.change} busy={busy} onSave={onSave} />
+          <Dropdown title="Can change or out of character" count={commission.change.length} locked={!CHANGE_LIST_ACTIVE}>
+            <BrandList list="change" title="Can change or out of character" hint="Where there is room for a fresh idea, and what would be out of character." entries={commission.change} busy={busy} onSave={onSave} />
+          </Dropdown>
           <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); void onSave("went-too-far", { text: new FormData(e.currentTarget).get("text") }); }}>
             <Field label="One example that went too far (the client's own)"><textarea name="text" rows={3} maxLength={2000} defaultValue={commission.wentTooFar} /></Field>
             <div><button className="f-button" disabled={busy}>Save example</button></div>
@@ -141,7 +155,7 @@ function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { de
 export function CommissionEditor(props: CommissionEditorProps) {
   const { commission, redLines, busy, onSave, onGenerate } = props;
   return (
-    <div className="w-stack">
+    <div className="w-stack w-inputs">
       <section className="f-panel" aria-labelledby="proj-name">
         <div className="f-section-heading"><h3 id="proj-name">Project</h3></div>
         <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); void onSave("rename", { name: new FormData(e.currentTarget).get("name") }); }}>
