@@ -860,3 +860,7 @@ Owner requested image titles, categories and UX polish. FAC-VWS-029. PRD impact:
 
 ## CHG-0118 — API-listed workspace agents and classified prompt context
 FAC-VWS-025, FAC-VWS-030. PRD impact: 1.45.0 clarification. Workspace model selector and route API reject unlisted IDs; current unavailable route stays visible as status, not an option. Provider listing is cached up to ten minutes and is not proof of successful generation. Agent settings refresh on opening. Prompt context includes asset titles/categories where present, not image bytes. Tests extended; pending CI. Legacy administrative routing editor remains unchanged.
+
+
+## CHG-0119 — Reference-style asset browser
+FAC-VWS-029. PRD impact: none, visual refinement of existing acceptance criteria. Owner supplied a style reference after initial implementation. Asset grid, upload drop zone, category navigation and selected-image inspector replace the horizontal-only carousel. Responsive stacking on narrower screens. Existing private storage and prompt references preserved. Automated render assertions adjusted; CI and visual acceptance pending.
