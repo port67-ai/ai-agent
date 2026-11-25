@@ -67,3 +67,5 @@ Owner chose one model and prompt per input agent, shared by every project and ed
 Owner described four sections after Projects: references, scripting, characters, locations and props, and video generation prompts. Design recorded; build waits for sign-off and answers to five questions.
 
 Addendum to PRODUCT-029 (25 November 2026): Input 5 gets the same managed agent. Its two answers are long prose, so they allow 12,000 characters while all other answers stay at 2,000.
+
+Addendum to PRODUCT-030 (25 November 2026): built as CHG-0115 with defaults, because the five design questions were not answered. References are producer-added text metadata (no image vision, no ShotDeck integration). Scripts use 15, 30 and 60 second templates with AI draft and revise. Sheets are written descriptions only. Video generation produces prompts to copy for Seedance (version unconfirmed); no video is rendered. Plans exist per project and per age group selected for direction. Any of these can be changed by the owner.

@@ -530,6 +530,19 @@ export type AgentPromptVersion = { body: string; version: number; by: string; at
 export type AgentPromptRecord = { current?: AgentPromptVersion; history: AgentPromptVersion[] };
 /** What an input agent found besides the answers: labelled sections and the sources it used. Replaced each time the agent runs. */
 export type AiNotes = { sections: { title: string; text: string }[]; sources: { title: string; url: string }[]; generatedAt: string; by: string; model: string };
+/** Video steps (CHG-0115). A plan belongs to one project and one age group that was selected for direction. */
+export type VideoReference = { id: string; title: string; link: string; why: string; palette: string; composition: string; camera: string; film: string; lens: string; searchTerms: string; source: "producer" | "ai"; accepted: boolean; addedBy: string; addedAt: string };
+export type VideoShot = { seconds: number; visual: string; line: string; onScreen: string };
+export type VideoScript = { template: "15" | "30" | "60" | "custom"; title: string; shots: VideoShot[]; savedBy: string; savedAt: string };
+export type VideoChat = { id: string; at: string; by: string; instruction: string; reply: string };
+export type VideoSheet = { id: string; kind: "person" | "product" | "location" | "prop"; name: string; description: string; details: string; source: "producer" | "ai"; accepted: boolean; addedBy: string; addedAt: string };
+export type VideoPrompts = { overall: string; shots: { shot: number; prompt: string; negative: string }[]; generatedAt: string; by: string; model: string; edited?: boolean };
+export type VideoPlan = {
+  id: string; commissionId: string; generation: Generation;
+  references: VideoReference[]; referenceSummary?: string;
+  script?: VideoScript; chat: VideoChat[]; sheets: VideoSheet[]; prompts?: VideoPrompts;
+  createdAt: string; updatedAt: string; updatedBy: string;
+};
 /** Age groups for the intended audience (CHG-0111). Ranges are the owner's definitions. */
 export type Generation = "gen_x" | "gen_y" | "gen_z" | "gen_alpha";
 export type AudienceSet = { answers: Record<string, string>; savedAt: string; savedBy: string; ai?: boolean };
@@ -561,6 +574,8 @@ export type Database = {
   brandIntel?: BrandIntelVersion[];
   /** Editable prompts for the project input agents (workspace `factory-agent-prompts`), keyed by AI job id. */
   agentPrompts?: Record<string, AgentPromptRecord>;
+  /** Video steps plans for one customer account (workspace `factory-video-<customerId>`): one per project and age group. */
+  videoPlans?: VideoPlan[];
   /** Video workspace customer accounts; used only in the system workspace `factory-customers`. */
   customers?: CustomerAccount[];
   /** Studio Brand Kit for one customer account, kept in its own small record (factory-brandkit-<account>). */

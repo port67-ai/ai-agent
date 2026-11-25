@@ -93,13 +93,14 @@ assert.match(html, /<button class="f-button"[^>]*>Save business details<\/button
 assert.match(html, /<button class="f-button"[^>]*>Save social links<\/button>/);
 assert.match(html, /<button class="f-button"[^>]*>Add red line<\/button>/);
 
-// ---- Shell: exactly three entries, nothing from the old portal, admin group for admins only
+// ---- Shell: three main entries plus the four Video steps sections, nothing from the old portal, admin group for admins only
 const producer: Principal = { subject: "p", workspaceId: "w", role: "operator", email: "producer@port67.ai" };
 const admin: Principal = { subject: "a", workspaceId: "w", role: "operator", admin: true, identity: "firebase", email: "owner@port67.ai" };
 const shell = (p: Principal) => renderToStaticMarkup(<Shell principal={p} tab="customers" setTab={() => {}} onSignOut={() => {}}><p>body</p></Shell>);
 const asProducer = shell(producer);
-assert.deepEqual([...asProducer.matchAll(/<nav aria-label="Workspace navigation">(.*?)<\/nav>/g)][0][1].match(/<button/g)?.length, 3);
+assert.deepEqual([...asProducer.matchAll(/<nav aria-label="Workspace navigation">(.*?)<\/nav>/g)][0][1].match(/<button/g)?.length, 7);
 for (const label of ["Overview", "Customer account", "Projects"]) assert.match(asProducer, new RegExp(`</svg>${label}</button>`), label);
+for (const label of ["References", "Scripting", "Characters, locations and props", "Video generation"]) assert.match(asProducer, new RegExp(`>${label}</button>`), label);
 for (const old of ["Research room", "Business brief", "Campaign direction", "Ideas bank", "Video advert", "Asset library", "Performance learning", "Capabilities", "Workspace setup", "Team access", "Skill writer", "Private API costs"])
   assert.doesNotMatch(asProducer, new RegExp(old), old + " is parked, not in the new shell");
 assert.match(asProducer, /class="active"[^>]*><svg[^>]*>.*?<\/svg>Customer account/, "current page highlighted");

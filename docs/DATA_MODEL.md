@@ -53,3 +53,6 @@ A Commission has optional `brief` (product, market, timing) and `aiNotes` (per i
 
 ## Brand expression agent (CHG-0114)
 `brief` also holds `productUrl`, `subBrand` and `format`. `aiNotes.brand` holds the sources and confidence paragraph and links. Brand answers `recognisable` and `recurring` allow up to 12,000 characters.
+
+## Video plans (CHG-0115)
+Workspace `factory-video-<customerId>` holds `videoPlans`: one `VideoPlan` per project and age group with `references` (producer or AI, accepted flag, palette, composition, camera, film, lens, search terms), optional `referenceSummary`, a saved `script` (template, title, shots with seconds, visual, line, on-screen text), a `chat` log of revise instructions, `sheets` (person, product, location, prop; written description; accepted flag) and `prompts` (overall prompt, per-shot prompt and avoid text, model, who and when, edited flag). Limits: 30 references, 40 sheets, 30 chat entries, 30 plans, 30 shots.

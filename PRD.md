@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.42.0  
+**Version:** 1.43.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1674,7 +1674,7 @@ Owner direction, 25 November 2026 (CHG-0113, design only). Design: `docs/superpo
 
 | ID | Requirement | Acceptance criterion |
 |---|---|---|
-| FAC-VWS-026 | Video steps entry | A sidebar entry after Projects, "Video steps", with four sections in order: References, Scripting, Characters, locations and props, and Video generation. It works on one project and reads that project's inputs, the Brand Intelligence dossier and client red lines. |
+| FAC-VWS-026 | Video steps entry | A sidebar entry after Projects, "Video steps", with four sections in order: References, Scripting, Characters, locations and props, and Video generation. It works on one project and one age group, and only age groups saved and selected for direction on the project can be used. It reads that project's inputs, the Brand Intelligence dossier and client red lines. Plans are stored per project and age group. |
 | FAC-VWS-027 | References | A reference board per project: stills or links with why each belongs and a technical read (colour palette, composition, camera and movement, film look, lens), drafted by an AI agent and confirmed by a producer. References are private and rights-confirmed. |
 | FAC-VWS-028 | Scripting | Template scripts and an AI-led conversation that produces a numbered shot-by-shot script with timing, lines and on-screen text, saved by a producer. |
 | FAC-VWS-029 | Characters, locations and props | Sheets for people, products and locations with a fixed written description and reference images, drafted by an AI agent from the script and references, used for continuity. |

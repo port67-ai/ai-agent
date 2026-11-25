@@ -57,3 +57,6 @@ audience-agent.ts builds the owner's prompt, calls the model once through the sh
 
 ## CHG-0113: project input agents
 agent-prompts.ts holds each agent's editable prompt body, its placeholders and a fixed contract; agent-settings.ts stores edits as versions; commission-agents.ts runs Inputs 1 and 3 (grounded, metered through metered.ts) and audience-agent.ts runs Input 4. agent-settings-api.ts serves `agent-settings/:slot` for the AI agent box, using the routing already used by the admin AI models page.
+
+## CHG-0115: Video steps
+Routes `video/:customerId/:commissionId/:generation` (video-steps-api.ts, hooked in service.ts after sign-in) are producer and admin only and refuse an age group that is not saved and selected for direction. Pure rules, templates, validators, context assembly and parsers live in video-steps.ts; writes in video-steps-commands.ts; model calls in video-steps-run.ts through `meteredInvoke` with one routable slot per step. Plans live in the system workspace `factory-video-<customerId>`. UI: VideoSteps.tsx (pickers, age group tabs) and VideoStepsSections.tsx (four sections), each with the shared AgentPopout.

@@ -87,6 +87,7 @@ import { handleCustomers, isCustomerRoute, isCustomerUpload } from "./customers-
 import { handleCommissions, isCommissionRoute } from "./commissions-api";
 import { handleBrandIntel, isBrandIntelRoute } from "./brand-intel-api";
 import { handleAgentSettings, isAgentSettingsRoute } from "./agent-settings-api";
+import { handleVideo, isVideoRoute } from "./video-steps-api";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -655,6 +656,7 @@ export async function handleFactory(
     if (isCommissionRoute(path)) return await handleCommissions(request, path, a, data);
     if (isBrandIntelRoute(path)) return await handleBrandIntel(request, path, a, data);
     if (isAgentSettingsRoute(path)) return await handleAgentSettings(request, path, a, data);
+    if (isVideoRoute(path)) return await handleVideo(request, path, a, data);
     if (route === "admin/costs/series") {
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       const q=new URL(request.url).searchParams;
