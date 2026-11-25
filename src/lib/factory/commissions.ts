@@ -6,13 +6,15 @@ export const MAX_COMMISSIONS = 50;
 export const MAX_EVIDENCE = 30;
 export const MAX_LIST = 30;
 export const MAX_ANSWER = 2000;
+/** The two brand expression answers hold the AI's labelled prose, so they may be longer. */
+export const MAX_LONG_ANSWER = 12000;
 /** Evidence and the "can change or out of character" list are shown greyed out and are not part of the flow for now. Turn on to restore the rules below. */
 export const EVIDENCE_ACTIVE = false;
 export const CHANGE_LIST_ACTIVE = false;
 export const INPUT_KEYS: CommissionInput[] = ["objective", "product", "audience", "brand"];
 
 /** The four primary inputs, numbered as the owner listed them (there is no Input 2). */
-export const INPUTS: { key: CommissionInput; number: number; title: string; role: string; helper: string; prompts: { key: string; label: string }[] }[] = [
+export const INPUTS: { key: CommissionInput; number: number; title: string; role: string; helper: string; prompts: { key: string; label: string; max?: number }[] }[] = [
   { key: "objective", number: 1, title: "Commission objective", role: "The Filter", helper: "Decides what research to ignore. Confirm directly with the client.", prompts: [
     { key: "why", label: "Why has the client commissioned this work now?" },
     { key: "making", label: "What are you making, for whom, and where will they encounter it?" },
@@ -37,8 +39,8 @@ export const INPUTS: { key: CommissionInput; number: number; title: string; role
     { key: "intended", label: "Who does the client want this commission to reach, if that differs from today?" },
   ] },
   { key: "brand", number: 5, title: "Brand expression and boundaries", role: "The Anchor", helper: "The brand's non-negotiable DNA once the setting is removed. Separate an announced direction from your own inference.", prompts: [
-    { key: "recognisable", label: "What makes the brand recognisable in its imagery, colours, typography, tone, casting, settings and storytelling?" },
-    { key: "recurring", label: "Which elements recur across years and channels, and which belonged to a single campaign?" },
+    { key: "recognisable", label: "What makes the brand recognisable in its imagery, colours, typography, tone, casting, settings and storytelling?", max: MAX_LONG_ANSWER },
+    { key: "recurring", label: "Which elements recur across years and channels, and which belonged to a single campaign?", max: MAX_LONG_ANSWER },
   ] },
 ];
 /** The age groups for Input 4, with the owner's definitions. */
@@ -93,7 +95,7 @@ export function answerFields(input: unknown, answers: unknown): { input: Commiss
   for (const [k, v] of Object.entries(answers as Record<string, unknown>)) {
     const prompt = def.prompts.find((p) => p.key === k);
     if (!prompt) throw new Error("Unknown question");
-    out[k] = str(v, prompt.label, MAX_ANSWER);
+    out[k] = str(v, prompt.label, prompt.max ?? MAX_ANSWER);
   }
   return { input: def.key, answers: out };
 }

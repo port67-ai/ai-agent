@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { BrandListEntry, Commission, CommissionInput, Database, EvidenceItem, Generation } from "./model";
+import type { AiNotes, BrandListEntry, Commission, CommissionInput, Database, EvidenceItem, Generation } from "./model";
 import { GENERATIONS, generationDef, generationKey, MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, answerFields, commissionName, emptyAnswers, evidenceFields, inputDef, listEntryFields, listName, type ListName } from "./commissions";
-import { MAX_AUDIT } from "./customers";
+import { MAX_AUDIT, webUrl } from "./customers";
 
 // State changes for commissions (FAC-VWS-011 to FAC-VWS-014). Pure over a Database; the caller persists it. Every change is audited.
 const now = () => new Date().toISOString();
@@ -179,5 +179,29 @@ export function setDirection(db: Database, id: string, generations: unknown, act
   const ordered = GENERATIONS.map((g) => g.key).filter((k) => keys.includes(k));
   c.directionGenerations = ordered;
   record(c, actor, "direction_selection", ordered.length ? ordered.map((k) => generationDef(k)!.label).join(", ") : "none selected");
+  return c;
+}
+
+/** The specific offer, market and timing the input agents work from. */
+export function saveBrief(db: Database, id: string, data: Record<string, unknown>, actor: string): Commission {
+  const c = findCommission(db, id);
+  const field = (v: unknown, name: string, max: number) => {
+    if (v === undefined || v === null) return "";
+    if (typeof v !== "string" || v.length > max) throw new Error(`${name} must be text up to ${max} characters`);
+    return v.trim();
+  };
+  const link = (v: unknown) => { const t = field(v, "Product page link", 500); return t ? webUrl(t, "Product page link") : ""; };
+  const next = { product: field(data.product, "Product, service or offer", 300), market: field(data.market, "Market", 200), timing: field(data.timing, "Timing", 200), productUrl: link(data.productUrl), subBrand: field(data.subBrand, "Sub-brand or collection", 200), format: field(data.format, "Proposed video format", 200) };
+  const prev: Record<string, string | undefined> = { product: "", market: "", timing: "", productUrl: "", subBrand: "", format: "", ...(c.brief || {}) };
+  if (Object.entries(next).every(([k, v]) => v === prev[k])) return c;
+  c.brief = next;
+  record(c, actor, "brief_saved", next.product || "cleared");
+  return c;
+}
+/** Keep the agent's notes (assumptions, sources and so on) for Input 1 or 3 and note that a draft was made. */
+export function storeNotes(db: Database, id: string, input: "objective" | "product" | "brand", notes: Omit<AiNotes, "generatedAt" | "by">, actor: string): Commission {
+  const c = findCommission(db, id);
+  (c.aiNotes ||= {})[input] = { ...notes, generatedAt: now(), by: actor };
+  record(c, actor, "ai_draft_generated", `${inputDef(input)?.title || input} (${notes.model})`);
   return c;
 }

@@ -149,9 +149,9 @@ async function main() {
   failWith = "";
 
   // Other inputs, a missing account, and an unconfigured provider.
-  const other = await generate("brand");
+  const other = await generate("company");
   assert.equal(other.status, 400);
-  assert.match((await other.json()).error, /only available for the audience input/);
+  assert.match((await other.json()).error, /available for the objective, product, audience and brand inputs/);
   const count = (await ledgerRows()).length;
   cHooks.deps!.enabled = () => false;
   const off = await generate();

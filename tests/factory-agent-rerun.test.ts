@@ -66,7 +66,7 @@ assert.equal(slotOfTask("insights-draft"), "synthesis:insights", "legacy run tra
 assert.equal(slotOfTask("approveDirection"), undefined, "a human step is not an agent");
 assert.equal(taskOfSlot("synthesis:planner"), "planResearch");
 // Brand Intelligence (CHG-0108) and the intended-audience draft (CHG-0110) run on a customer account or commission, not a project, and is rerun from the account page, so it has no project rerun place.
-assert.deepEqual([...RERUN_ORDER].sort(), SLOTS.map((s) => s.id).filter((id) => !id.endsWith(":brand-intel") && id !== "synthesis:intended-audience").sort(), "every project agent has a place in the rerun order");
+assert.deepEqual([...RERUN_ORDER].sort(), SLOTS.map((s) => s.id).filter((id) => !id.endsWith(":brand-intel") && id !== "synthesis:intended-audience" && !id.includes(":commission-")).sort(), "every project agent has a place in the rerun order");
 assert.ok(RERUN_ORDER.indexOf("research:brand") < RERUN_ORDER.indexOf("synthesis:insights"));
 assert.ok(RERUN_ORDER.indexOf("synthesis:planner") < RERUN_ORDER.indexOf("research:brand"));
 

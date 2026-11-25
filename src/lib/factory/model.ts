@@ -526,6 +526,10 @@ export type CommissionInput = "objective" | "product" | "audience" | "brand";
 export type EvidenceBasis = "announced" | "client_confirmed" | "inference";
 export type EvidenceItem = { id: string; input: CommissionInput; source: string; where: string; note: string; basis: EvidenceBasis; addedBy: string; addedAt: string };
 export type BrandListEntry = { id: string; text: string; scope: "recurring" | "single_campaign"; kind?: "can_change" | "out_of_character"; addedBy: string; addedAt: string };
+export type AgentPromptVersion = { body: string; version: number; by: string; at: string };
+export type AgentPromptRecord = { current?: AgentPromptVersion; history: AgentPromptVersion[] };
+/** What an input agent found besides the answers: labelled sections and the sources it used. Replaced each time the agent runs. */
+export type AiNotes = { sections: { title: string; text: string }[]; sources: { title: string; url: string }[]; generatedAt: string; by: string; model: string };
 /** Age groups for the intended audience (CHG-0111). Ranges are the owner's definitions. */
 export type Generation = "gen_x" | "gen_y" | "gen_z" | "gen_alpha";
 export type AudienceSet = { answers: Record<string, string>; savedAt: string; savedBy: string; ai?: boolean };
@@ -533,6 +537,10 @@ export type Commission = {
   id: string; customerId: string; name: string;
   /** Answers to each input's prompts, keyed by input then prompt. */
   answers: Record<CommissionInput, Record<string, string>>;
+  /** The specific offer this project is about; used by the input agents. */
+  brief?: { product: string; market: string; timing: string; productUrl?: string; subBrand?: string; format?: string };
+  /** Notes from the Generate from AI agents for Inputs 1, 3 and 5. */
+  aiNotes?: Partial<Record<"objective" | "product" | "brand", AiNotes>>;
   /** Input 4 answers per age group, saved by a producer (an AI draft is only stored when saved). */
   audience?: Partial<Record<Generation, AudienceSet>>;
   /** Age groups the producer has selected to take forward to direction. At least one is needed before direction. */
@@ -551,6 +559,8 @@ export type Database = {
   commissions?: Commission[];
   /** Brand Intelligence dossier versions for one customer account (workspace `factory-brandintel-<customerId>`). */
   brandIntel?: BrandIntelVersion[];
+  /** Editable prompts for the project input agents (workspace `factory-agent-prompts`), keyed by AI job id. */
+  agentPrompts?: Record<string, AgentPromptRecord>;
   /** Video workspace customer accounts; used only in the system workspace `factory-customers`. */
   customers?: CustomerAccount[];
   /** Studio Brand Kit for one customer account, kept in its own small record (factory-brandkit-<account>). */

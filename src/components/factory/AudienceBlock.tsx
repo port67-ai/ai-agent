@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { Commission, Generation } from "@/lib/factory/model";
 import { GENERATIONS, INPUTS, MAX_ANSWER } from "@/lib/factory/commissions";
+import type { GenerateFn } from "./CommissionEditor";
 import { Field } from "./shared";
 
 // Input 4 by age group (CHG-0111): five answers per age group, generated or written, saved one group at a time, then at least one group
@@ -14,7 +15,7 @@ export function AudienceBlock({ commission, busy, onSave, onGenerate }: {
   commission: Commission;
   busy: boolean;
   onSave: (action: string, payload: Record<string, unknown>) => Promise<boolean>;
-  onGenerate?: (input: "audience", generation: Generation) => Promise<Draft | null>;
+  onGenerate?: GenerateFn;
 }) {
   const [active, setActive] = useState<Generation>("gen_y");
   const [drafts, setDrafts] = useState<Partial<Record<Generation, Draft>>>({});

@@ -94,7 +94,7 @@ export async function saveRouting(repo: Repository, raw: unknown, actor: string,
       ...next,
       updatedAt: at,
       updatedBy: actor,
-      history: [...(prev.history || []), { at, actor, summary: (changes(prev, next) + (note ? "; " + note : "")).slice(0, 600) }].slice(-MAX_HISTORY),
+      history: [...(prev.history || []), { at, actor, summary: ((tail) => changes(prev, next).slice(0, Math.max(0, 600 - tail.length)) + tail)(note ? "; " + note.slice(0, 200) : "") }].slice(-MAX_HISTORY),
     };
   });
 }
