@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { BrandListEntry, Commission, CommissionInput, Database, EvidenceItem } from "./model";
-import { MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, answerFields, commissionName, emptyAnswers, evidenceFields, inputDef, listEntryFields, listName, type ListName } from "./commissions";
+import type { BrandListEntry, Commission, CommissionInput, Database, EvidenceItem, Generation } from "./model";
+import { GENERATIONS, generationDef, generationKey, MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, answerFields, commissionName, emptyAnswers, evidenceFields, inputDef, listEntryFields, listName, type ListName } from "./commissions";
 import { MAX_AUDIT } from "./customers";
 
 // State changes for commissions (FAC-VWS-011 to FAC-VWS-014). Pure over a Database; the caller persists it. Every change is audited.
@@ -47,6 +47,7 @@ export function renameCommission(db: Database, id: string, nameValue: unknown, a
 /** Save the prompts sent for one input. Only changed prompts are recorded. */
 export function saveAnswers(db: Database, id: string, input: unknown, answers: unknown, actor: string): Commission {
   const c = findCommission(db, id);
+  if (input === "audience") throw new Error("Save the audience answers for an age group");
   const f = answerFields(input, answers);
   const changed = Object.entries(f.answers).filter(([k, v]) => (c.answers[f.input][k] || "") !== v);
   if (!changed.length) return c;
@@ -143,8 +144,40 @@ export function setConfirmed(db: Database, id: string, input: unknown, confirmed
 }
 
 /** Record that an AI draft was produced for an input. The draft itself is not stored; only a person's Save answers is. */
-export function recordDraft(db: Database, id: string, input: string, dossierVersion: number, actor: string): Commission {
+export function recordDraft(db: Database, id: string, input: string, dossierVersion: number, actor: string, generation?: string): Commission {
   const c = findCommission(db, id);
-  record(c, actor, "ai_draft_generated", `${inputDef(input)?.title || input} from Brand Intelligence version ${dossierVersion}`);
+  record(c, actor, "ai_draft_generated", `${inputDef(input)?.title || input}${generation ? `, ${generationDef(generation)?.label || generation}` : ""} from Brand Intelligence version ${dossierVersion}`);
+  return c;
+}
+
+/** Save Input 4 answers for one age group. Empty answers remove the group (and its selection). `ai` marks answers that began as an AI draft. */
+export function saveAudience(db: Database, id: string, generation: unknown, answers: unknown, actor: string, ai = false): Commission {
+  const c = findCommission(db, id);
+  const g = generationKey(generation);
+  const f = answerFields("audience", answers);
+  const label = generationDef(g)!.label;
+  const merged = { ...(c.audience?.[g]?.answers || {}), ...f.answers };
+  for (const k of Object.keys(merged)) if (!merged[k]) delete merged[k];
+  c.audience ||= {};
+  if (!Object.keys(merged).length) {
+    delete c.audience[g];
+    c.directionGenerations = (c.directionGenerations || []).filter((x) => x !== g);
+    record(c, actor, "audience_cleared", label);
+    return c;
+  }
+  c.audience[g] = { answers: merged, savedAt: now(), savedBy: actor, ...(ai ? { ai: true } : {}) };
+  record(c, actor, "audience_saved", `${label}: ${Object.keys(merged).length} answers`);
+  return c;
+}
+
+/** Choose the age groups to take forward to direction. Only saved groups can be chosen; none is allowed, but direction needs at least one. */
+export function setDirection(db: Database, id: string, generations: unknown, actor: string): Commission {
+  const c = findCommission(db, id);
+  if (!Array.isArray(generations)) throw new Error("generations must be a list");
+  const keys = [...new Set(generations.map(generationKey))] as Generation[];
+  for (const g of keys) if (!c.audience?.[g]) throw new Error(`Save the answers for ${generationDef(g)!.label} first`);
+  const ordered = GENERATIONS.map((g) => g.key).filter((k) => keys.includes(k));
+  c.directionGenerations = ordered;
+  record(c, actor, "direction_selection", ordered.length ? ordered.map((k) => generationDef(k)!.label).join(", ") : "none selected");
   return c;
 }

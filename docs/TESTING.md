@@ -50,3 +50,6 @@ factory-customers-ui (collapsibles, chips, Add button, dossier slot below red li
 
 ## CHG-0110 acceptance
 tests/factory-audience-agent.test.ts (needs a dossier, draft mapped to the five answers, nothing saved, audit line, ledger row on the commission, bad JSON and provider failure leave answers unchanged, unconfigured not charged) and the Generate from AI assertions in factory-commissions-ui. Manual: after a Brand Intelligence run, open a project, press Generate from AI on Input 4, review, Save answers.
+
+## CHG-0111 acceptance
+factory-commissions (age group save, merge, clear, selection rules, baseline), factory-commissions-api and factory-audience-agent (per-group prompt, under-18 note, one ledger row per group, invalid group refused, tolerant parsing, cut-off message) and factory-commissions-ui (tabs, ranges, selection).

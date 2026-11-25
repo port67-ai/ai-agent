@@ -5,13 +5,14 @@ import { CUSTOMER_ID, findCustomer } from "./customers-commands";
 import { realDeps, versionsOf as dossiersOf, brandIntelWorkspace, type Deps } from "./brand-intel-run";
 import { currentVersion } from "./brand-intel";
 import { generateAudience } from "./audience-agent";
-import { addEvidence, addListEntry, createCommission, commissionsOf, findCommission, removeEvidence, removeListEntry, renameCommission, saveAnswers, recordDraft, saveWentTooFar, setConfirmed, updateEvidence, updateListEntry } from "./commissions-commands";
+import { generationKey } from "./commissions";
+import { addEvidence, addListEntry, createCommission, commissionsOf, findCommission, removeEvidence, removeListEntry, renameCommission, saveAnswers, recordDraft, saveAudience, saveWentTooFar, setDirection, setConfirmed, updateEvidence, updateListEntry } from "./commissions-commands";
 
 // Video workspace commission routes (CHG-0107). Producers and admins only; customers and the demo are refused.
 //   GET  commissions/:customerId                list the account's commissions
 //   POST commissions/:customerId                create {name}
 //   GET  commissions/:customerId/:id            one commission, with the account's red lines for reference
-//   POST commissions/:customerId/:id            {action: generate (input: "audience") | rename | answers | list-add | list-update | list-remove | went-too-far | evidence-add | evidence-update | evidence-remove | confirm, ...}
+//   POST commissions/:customerId/:id            {action: generate (input: "audience", generation) | audience-save | direction | rename | answers | list-add | list-update | list-remove | went-too-far | evidence-add | evidence-update | evidence-remove | confirm, ...}
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" } });
 /** Test seam only: replaces the model call for Generate from AI. Never set in production code. */
 export const testHooks: { deps?: Deps } = {};
@@ -44,13 +45,16 @@ export async function handleCommissions(request: Request, path: string[], a: Pri
     const existing = findCommission(await repository.read(ws), id);
     const base = testHooks.deps || realDeps(repository);
     const deps: Deps = testHooks.deps ? base : { ...base, enabled: () => process.env.PORT67_SYNTHESIS_ENABLED === "true" };
-    const draft = await generateAudience(repository, customer, existing, dossier, actor, deps);
-    const updated = await repository.mutate(ws, (db) => recordDraft(db, id, "audience", dossier.version, actor));
-    return json({ draft, commission: updated, basedOnVersion: dossier.version });
+    const generation = generationKey(data.generation);
+    const draft = await generateAudience(repository, customer, existing, dossier, generation, actor, deps);
+    const updated = await repository.mutate(ws, (db) => recordDraft(db, id, "audience", dossier.version, actor, generation));
+    return json({ draft, generation, commission: updated, basedOnVersion: dossier.version });
   }
   const commission = await repository.mutate(ws, (db) => {
     if (action === "rename") return renameCommission(db, id, data.name, actor);
     if (action === "answers") return saveAnswers(db, id, data.input, data.answers, actor);
+    if (action === "audience-save") return saveAudience(db, id, data.generation, data.answers, actor, data.ai === true);
+    if (action === "direction") return setDirection(db, id, data.generations, actor);
     if (action === "list-add") { addListEntry(db, id, data.list, data, actor); return findCommission(db, id); }
     if (action === "list-update") { updateListEntry(db, id, data.list, data.entryId, data, actor); return findCommission(db, id); }
     if (action === "list-remove") { removeListEntry(db, id, data.list, data.entryId, actor); return findCommission(db, id); }

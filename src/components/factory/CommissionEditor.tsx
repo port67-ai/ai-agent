@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
-import { Sparkles, Trash2 } from "lucide-react";
-import type { BrandListEntry, Commission, CommissionInput, EvidenceItem, RedLine } from "@/lib/factory/model";
+import { Trash2 } from "lucide-react";
+import type { BrandListEntry, Commission, CommissionInput, EvidenceItem, Generation, RedLine } from "@/lib/factory/model";
 import { EVIDENCE_BASIS, EVIDENCE_WHERE, INPUTS, MAX_ANSWER, SECONDARY, STATUS_LABEL, inputStatus, type ListName } from "@/lib/factory/commissions";
 import { RED_LINE_CATEGORIES } from "@/lib/factory/customers";
+import { AudienceBlock } from "./AudienceBlock";
 import { Field } from "./shared";
 
 // Commission inputs for the video workspace (CHG-0107, FAC-VWS-012 to FAC-VWS-015). Presentational: the container owns the requests.
@@ -13,8 +14,8 @@ export type CommissionEditorProps = {
   busy: boolean;
   /** Run one action on the commission. Resolves true when it succeeded, so a form can clear itself. */
   onSave: (action: string, payload: Record<string, unknown>) => Promise<boolean>;
-  /** Ask the AI for a draft of the audience answers. Resolves with the draft (prompt key to text), or null if it failed. Saves nothing. */
-  onGenerate?: (input: CommissionInput) => Promise<Record<string, string> | null>;
+  /** Ask the AI for a draft of the audience answers for one age group. Resolves with the draft (prompt key to text), or null if it failed. Saves nothing. */
+  onGenerate?: (input: "audience", generation: Generation) => Promise<Record<string, string> | null>;
 };
 type Save = CommissionEditorProps["onSave"];
 
@@ -97,8 +98,6 @@ function BrandList({ list, title, hint, entries, busy, onSave }: { list: ListNam
 }
 
 function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { def: (typeof INPUTS)[number]; commission: Commission; redLines: RedLine[]; busy: boolean; onSave: Save; onGenerate?: CommissionEditorProps["onGenerate"] }) {
-  const [draft, setDraft] = useState<Record<string, string> | null>(null);
-  const [generating, setGenerating] = useState(false);
   const status = inputStatus(commission, def.key);
   const confirmable = def.key === "objective" || def.key === "audience";
   return (
@@ -108,24 +107,14 @@ function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { de
         <span><span className="f-tag light">{def.role}</span> <span className={"f-tag " + tone(status)}>{STATUS_LABEL[status]}</span></span>
       </div>
       <p className="f-small">{def.helper}</p>
-      {def.key === "audience" && onGenerate && (
-        <div className="w-generate">
-          <button type="button" className="f-button secondary" disabled={busy || generating} onClick={async () => {
-            const hasText = def.prompts.some((p) => (commission.answers[def.key][p.key] || "").trim());
-            if (hasText && !window.confirm("Replace the current answers with an AI draft? Nothing is saved until you press Save answers.")) return;
-            setGenerating(true);
-            try { const d = await onGenerate(def.key); if (d) setDraft(d); } finally { setGenerating(false); }
-          }}><Sparkles size={15} /> {generating ? "Generating…" : "Generate from AI"}</button>
-          <span className="f-small">Uses the customer&apos;s Brand Intelligence and this project&apos;s other answers. You review it before saving.</span>
-        </div>
+      {def.key === "audience" ? <AudienceBlock commission={commission} busy={busy} onSave={onSave} onGenerate={onGenerate} /> : (
+        <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.currentTarget); void onSave("answers", { input: def.key, answers: Object.fromEntries(def.prompts.map((p) => [p.key, d.get(p.key) || ""])) }); }}>
+          {def.prompts.map((p) => (
+            <Field key={p.key} label={p.label}><textarea name={p.key} rows={3} maxLength={MAX_ANSWER} defaultValue={commission.answers[def.key][p.key] || ""} /></Field>
+          ))}
+          <div><button className="f-button" disabled={busy}>Save answers</button></div>
+        </form>
       )}
-      {draft && <div className="f-callout" role="status">AI draft filled in below. Edit it, then press Save answers. Reloading discards it.</div>}
-      <form className="f-form-grid" onSubmit={async (e) => { e.preventDefault(); const d = new FormData(e.currentTarget); if (await onSave("answers", { input: def.key, answers: Object.fromEntries(def.prompts.map((p) => [p.key, d.get(p.key) || ""])) })) setDraft(null); }}>
-        {def.prompts.map((p) => (
-          <Field key={p.key + (draft ? "-ai" : "")} label={p.label}><textarea name={p.key} rows={draft ? 6 : 3} maxLength={MAX_ANSWER} defaultValue={draft?.[p.key] ?? (commission.answers[def.key][p.key] || "")} /></Field>
-        ))}
-        <div><button className="f-button" disabled={busy}>Save answers</button></div>
-      </form>
       {confirmable && (
         <label className="f-check-line">
           <input type="checkbox" checked={!!commission.confirmed[def.key as "objective" | "audience"]} disabled={busy} onChange={(e) => void onSave("confirm", { input: def.key, confirmed: e.target.checked })} /> Confirmed directly with the client

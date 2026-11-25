@@ -24,6 +24,16 @@ async function main() {
   assert.deepEqual(Object.keys(parsed).sort(), ["intended", "motivations", "putOffs", "who", "words"]);
   assert.equal(aa.parseAudience(JSON.stringify({ ...good, what_motivates_them: "x".repeat(5000) })).motivations.length, 2000);
   assert.throws(() => aa.parseAudience("not json"), /could not be read/);
+  // Tolerant of how providers wrap JSON; clear about cut-off and empty answers.
+  assert.equal(aa.parseAudience("```json\n" + JSON.stringify(good) + "\n```").who, "Buyers: who");
+  assert.equal(aa.parseAudience("Here you go: " + JSON.stringify(good) + " Hope that helps.").intended, "Buyers: intended");
+  assert.throws(() => aa.parseAudience("", true), /ran out of output length/);
+  assert.throws(() => aa.parseAudience('{"who_buys_uses_influences": "Buy', true), /cut off/);
+  assert.throws(() => aa.parseAudience("   "), /empty answer/);
+  assert.equal(aa.cutShort({ status: "incomplete", incomplete_details: { reason: "max_output_tokens" } }), true);
+  assert.equal(aa.cutShort({ candidates: [{ finishReason: "MAX_TOKENS" }] }), true);
+  assert.equal(aa.cutShort({ stop_reason: "max_tokens" }), true);
+  assert.equal(aa.cutShort({ status: "completed" }), false);
   assert.throws(() => aa.parseAudience(JSON.stringify({ ...good, what_puts_them_off: "  " })), /what_puts_them_off/);
   assert.throws(() => aa.parseAudience(JSON.stringify([1])), /expected form/);
   const schema = aa.audienceSchema() as { required: string[]; additionalProperties: boolean };
@@ -59,7 +69,7 @@ async function main() {
     invoke: async (_s, r) => { seen.push(r); return failWith ? { text: "", usage: {}, error: failWith, provider: "openai", model: "m" } : { text: reply, usage, provider: "openai", model: "m" }; },
     resolve: async () => sel, enabled: () => true, today: () => "2026-11-25",
   };
-  const generate = (input = "audience") => post(`commissions/${cid}/${id}`, { action: "generate", input });
+  const generate = (input = "audience", generation = "gen_y") => post(`commissions/${cid}/${id}`, { action: "generate", input, generation });
   const ledgerRows = async () => (((await repository.read(ADMIN_LEDGER_NAMESPACE)) as { apiCalls?: { projectId: string; agent?: string; status: string }[] }).apiCalls || []).filter((c) => c.agent === "synthesis:intended-audience");
 
   // No dossier yet: refused, no call, no charge.
@@ -91,28 +101,49 @@ async function main() {
   const body = await ok.json();
   assert.equal(body.draft.who, "Buyers: who");
   assert.equal(body.basedOnVersion, 1);
-  assert.deepEqual(body.commission.answers.audience, {}, "nothing is saved until a person saves");
+  assert.equal(body.generation, "gen_y");
+  assert.equal(body.commission.audience, undefined, "nothing is saved until a person saves");
   assert.equal(body.commission.answers.objective.why, "New range launching in October", "other answers untouched");
   assert.match(body.commission.audit.at(-1).action, /ai_draft_generated/);
   assert.equal(seen.length, 1);
   assert.equal(seen[0].research, undefined, "no web search");
   assert.ok(seen[0].schema, "structured output");
-  for (const k of ["<customer_account_research>", "<project_context>", "Nash's Bakery", "Commuters buy sourdough", "[competitor] Greggs", "New range launching in October", "Autumn campaign"]) assert.ok(seen[0].input.includes(k), k);
+  for (const k of ["<target_age_group>", "Gen Y, ages 30–45", "<customer_account_research>", "<project_context>", "Nash's Bakery", "Commuters buy sourdough", "[competitor] Greggs", "New range launching in October", "Autumn campaign"]) assert.ok(seen[0].input.includes(k), k);
   const rows = await ledgerRows();
   assert.equal(rows.length, 1);
   assert.equal(rows[0].projectId, id);
   assert.equal(rows[0].status, "completed");
 
-  // Saving is a separate, human step through the existing answers action.
-  const saved = await (await post(`commissions/${cid}/${id}`, { action: "answers", input: "audience", answers: { who: body.draft.who, intended: body.draft.intended } })).json();
-  assert.equal(saved.commission.answers.audience.who, "Buyers: who");
+  assert.ok(!seen[0].input.includes("<target_age_group>\nGen Z"), "only the chosen age group is named");
+  assert.match(aa.AUDIENCE_INSTRUCTIONS, /age-appropriate/);
+  assert.match(aa.AUDIENCE_INSTRUCTIONS, /parents or guardians/);
+  assert.match(aa.AUDIENCE_INSTRUCTIONS, /Never include sexual, violent, or exploitative content/);
+  // A group that includes under 18s is called out in the input.
+  assert.equal((await generate("audience", "gen_alpha")).status, 200);
+  assert.ok(seen[1].input.includes("Gen Alpha, ages 2–13. This range includes people under 18."));
+  assert.equal((await generate("audience", "gen_x")).status, 200);
+  assert.ok(seen[2].input.includes("Gen X, ages 46–61") && !seen[2].input.includes("under 18"));
+  assert.equal((await ledgerRows()).length, 3, "one metered call per age group");
+  seen.length = 0;
+  assert.equal((await generate("audience", "boomers")).status, 400, "unknown age group");
+  assert.equal((await generate("audience", "")).status, 400, "age group required");
+  assert.equal(seen.length, 0, "no call for an invalid age group");
+
+  // Saving is a separate, human step, per age group. Selecting needs a saved group; at least one is needed for direction.
+  const saved = await (await post(`commissions/${cid}/${id}`, { action: "audience-save", generation: "gen_y", ai: true, answers: { who: body.draft.who, intended: body.draft.intended } })).json();
+  assert.equal(saved.commission.audience.gen_y.answers.who, "Buyers: who");
+  assert.equal(saved.commission.audience.gen_y.ai, true);
+  assert.equal((await post(`commissions/${cid}/${id}`, { action: "direction", generations: ["gen_x"] })).status, 400, "gen_x is not saved");
+  const chosen = await (await post(`commissions/${cid}/${id}`, { action: "direction", generations: ["gen_y"] })).json();
+  assert.deepEqual(chosen.commission.directionGenerations, ["gen_y"]);
+  assert.equal((await post(`commissions/${cid}/${id}`, { action: "answers", input: "audience", answers: { who: "x" } })).status, 400, "the old single answers route is closed for the audience");
 
   // Bad outputs: nothing changes, the paid call is still on the ledger.
   reply = "oops";
   const bad = await generate();
   assert.equal(bad.status, 400);
   assert.match((await bad.json()).error, /could not be read/);
-  assert.equal((await ledgerRows()).length, 2);
+  assert.equal((await ledgerRows()).length, 4);
   reply = JSON.stringify(good); failWith = "AI provider returned 503; no output accepted";
   assert.match((await (await generate()).json()).error, /503/);
   failWith = "";

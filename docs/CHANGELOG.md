@@ -786,3 +786,13 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: tsc, `npm run check:factory`, `npm test` and `npm run build` pass in a clean copy; new suite factory-audience-agent and additions to factory-commissions-ui; agent count tests updated; governance check run after these edits.
 - Limitations: never run against a real provider, so draft quality is unjudged; needs PORT67_SYNTHESIS_ENABLED=true and a provider key; "account research" is the Brand Intelligence dossier (8,000 characters per section), so accounts without a completed dossier cannot use it; only Input 4 has the button; no browser check; uncommitted.
 - Status: built locally, uncommitted.
+
+## CHG-0111: 2026-11-25: Audience by age group, and audience answer parsing fix
+- Author/harness: Claude. Owner reported "The AI answer could not be read" and asked for age-specific audience content (Gen X 46-61, Gen Y 30-45, Gen Z 14-29, Gen Alpha 2-13), saved per group, with at least one group selected before direction.
+- Fix: the answer parser now tolerates code fences and surrounding text, the output limit rose from 3,000 to 8,000 tokens with low reasoning effort, and an empty or cut-off answer now says so (checked from the provider's own stop signal) instead of the generic message. The likely cause was the answer being cut off or wrapped; the real cause is unconfirmed until it is run again. Same AI job (synthesis:intended-audience) and the same model routing as before.
+- What: per-group answers (`audience`, `directionGenerations` on a project), actions `audience-save` and `direction`, `generate` now needs a `generation`; AudienceBlock UI with tabs, Generate per group and for all, Save all drafts, Use for direction; baseline lists saved groups and a direction-ready flag.
+- Requirements: FAC-VWS-021 (changed), FAC-VWS-022 (new).
+- PRD impact: 1.39.0.
+- Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; commissions, commissions-api, audience-agent and commissions-ui suites extended. Governance check run after these edits.
+- Limitations: audience answers entered before this change are still counted in status and shown in the baseline as "Entered before age groups", but are not editable in the new Input 4 form. Direction itself is not built; only the selection and its gate. Not run against a real provider or in a browser.
+- Status: built locally, uncommitted.
