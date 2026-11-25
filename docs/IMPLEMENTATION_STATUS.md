@@ -408,3 +408,7 @@ Documentation only: design spec and PRD 1.35.0 section 31. No code. Intent PROPO
 | FAC-VWS-028 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | Scripting. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |
 | FAC-VWS-029 | IMPLEMENTED LOCALLY (CHG-0115, CHG-0116); stub-provider tests only, uncommitted | Characters, locations and props. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered.  Image library: factory-video-images, factory-video-images-ui. |
 | FAC-VWS-030 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | Video generation prompts. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |
+
+
+## CHG-0117 — Workspace UX and classified image library (25 November 2026)
+Owner requested image titles, categories and UX polish. FAC-VWS-029. PRD impact: 1.45.0. Image upload metadata queue, category filtering, title-derived unique @name, optional legacy fields, responsive review and illustrated agent control. Physical storage keys remain stable. Existing prompts are not rewritten on rename. Tests extended; execution pending GitHub CI. Reference screenshot unavailable; no production deployment or live browser verification claimed.

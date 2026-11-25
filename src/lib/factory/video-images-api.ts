@@ -75,7 +75,7 @@ export async function handleVideoImages(request: Request, path: string[], a: Pri
     await putImage(key, bytes, mime);
     let made;
     try {
-      made = await repository.mutate(ws, (db) => { const img = buildImage(db, { id, commissionId, name: url.searchParams.get("name") || "image", description: url.searchParams.get("description") || "", mime, bytes: bytes.length, storageKey: key, actor: a.subject }); attachImage(db, img); return img; });
+      made = await repository.mutate(ws, (db) => { const img = buildImage(db, { id, commissionId, name: url.searchParams.get("name") || "image", title: url.searchParams.get("title") ?? undefined, category: url.searchParams.get("category") ?? undefined, description: url.searchParams.get("description") || "", mime, bytes: bytes.length, storageKey: key, actor: a.subject }); attachImage(db, img); return img; });
     } catch (e) { await deleteImage(key); throw e; }
     return json({ image: bare(made) }, 201);
   }

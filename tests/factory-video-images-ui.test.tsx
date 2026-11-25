@@ -23,7 +23,10 @@ assert.match(h, new RegExp(`src="/api/factory/video-images/${cid}/${pid}/file/i1
 assert.match(h, />@baker<\/span>/);
 assert.match(h, /aria-pressed="true"[^>]*title="loaf"/, "selected thumbnail is marked");
 assert.match(h, /2 of 2/);
-assert.match(h, /value="@loaf"/);
+assert.match(h, /value="loaf"/);
+assert.match(h, /Image title/);
+assert.match(h, /Choose category/);
+assert.match(h, /Uncategorised/);
 assert.match(h, /Copy @loaf/);
 assert.match(h, /Delete/);
 assert.match(h, /Description \(optional\)/);

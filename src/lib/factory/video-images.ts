@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Database, VideoImage } from "./model";
+import type { Database, VideoImage, VideoImageKind } from "./model";
 
 // Project image library for Video steps (CHG-0116). Pure rules over a Database; the caller persists it and stores the bytes.
 // Every image has a name, and the name is how prompts refer to it: @name. Names are unique within a project.
@@ -10,6 +10,9 @@ export const IMAGE_MIMES = ["image/png", "image/jpeg", "image/webp"] as const;
 export const IMAGE_LABEL = "PNG, JPEG or WebP, up to 8 MB each, 60 images per project";
 export const IMAGE_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 export const NAME_RULE = "Letters, numbers, dash and underscore only, up to 40 characters";
+export const IMAGE_CATEGORIES = ["Person", "Product", "Location", "Prop", "Scene"] as const;
+function categoryOf(v: unknown): VideoImageKind | undefined { if (v === undefined || v === null || v === "") return undefined; if (!IMAGE_CATEGORIES.includes(v as VideoImageKind)) throw new Error("Choose a valid image category"); return v as VideoImageKind; }
+function titleOf(v: unknown): string { const t = typeof v === "string" ? v.trim() : ""; if (!t || t.length > 120 || !slugName(t)) throw new Error("Enter an image title (1–120 characters)"); return t; }
 const now = () => new Date().toISOString();
 
 /** The real file type, from the first bytes. The browser's claim is ignored. */
@@ -40,8 +43,11 @@ export function attachImage(db: Database, img: VideoImage) {
   if (imagesOf(db, img.commissionId).length >= MAX_IMAGES) throw new Error(`At most ${MAX_IMAGES} images per project. Delete one first.`);
   (db.videoImages ||= []).push(img);
 }
-export function buildImage(db: Database, p: { id: string; commissionId: string; name: unknown; description: unknown; mime: VideoImage["mime"]; bytes: number; storageKey: string; actor: string }): VideoImage {
-  return { id: p.id, commissionId: p.commissionId, name: freeName(db, p.commissionId, String(p.name ?? "")), description: description(p.description), mime: p.mime, bytes: p.bytes, storageKey: p.storageKey, uploadedAt: now(), uploadedBy: p.actor };
+export function buildImage(db: Database, p: { id: string; commissionId: string; name: unknown; title?: unknown; category?: unknown; description: unknown; mime: VideoImage["mime"]; bytes: number; storageKey: string; actor: string }): VideoImage {
+  const title = p.title === undefined || p.title === null ? undefined : titleOf(p.title);
+  const category = categoryOf(p.category);
+  if (title !== undefined && !category) throw new Error("Choose an image category");
+  return { id: p.id, commissionId: p.commissionId, ...(title ? { title } : {}), ...(category ? { category } : {}), name: freeName(db, p.commissionId, title ?? String(p.name ?? "")), description: description(p.description), mime: p.mime, bytes: p.bytes, storageKey: p.storageKey, uploadedAt: now(), uploadedBy: p.actor };
 }
 export function findImage(db: Database, commissionId: string, id: unknown): VideoImage {
   const i = typeof id === "string" ? imagesOf(db, commissionId).find((x) => x.id === id) : undefined;
@@ -51,6 +57,8 @@ export function findImage(db: Database, commissionId: string, id: unknown): Vide
 /** Rename and/or change the description. A renamed image must keep a unique valid name. */
 export function updateImage(db: Database, commissionId: string, id: unknown, d: Record<string, unknown>): VideoImage {
   const i = findImage(db, commissionId, id);
+  if (d.category !== undefined) { const category = categoryOf(d.category); if (!category) throw new Error("Choose an image category"); i.category = category; }
+  if (d.title !== undefined) { const title = titleOf(d.title); if (title !== (i.title || i.name)) { const name = slugName(title); if (taken(db, commissionId, name, i.id)) throw new Error(`Another image in this project is already called @${name}`); i.name = name; } i.title = title; }
   if (d.name !== undefined) {
     const raw = String(d.name).trim().replace(/^@/, "");
     if (!/^[A-Za-z0-9_-]{1,40}$/.test(raw)) throw new Error("Name: " + NAME_RULE);
