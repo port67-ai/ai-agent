@@ -10,6 +10,7 @@ import { effectivePrompt } from "./agent-settings";
 import { STEP_SLOT, instructionText, templateDef, type VideoStep } from "./video-steps";
 import { addChat, addReference, acceptReference, acceptSheet, addSheet, findPlan, planFor, removeReference, removeSheet, savePrompts, saveScript, storeParsed, updateReference, updateSheet } from "./video-steps-commands";
 import { runVideoStep, videoWorkspace } from "./video-steps-run";
+import { imagesOf } from "./video-images";
 
 // Video steps routes (CHG-0115). Producers and admins only. A plan belongs to one project and one age group, and the age group must have
 // been saved and selected for direction on the project first.
@@ -51,7 +52,8 @@ export async function handleVideo(request: Request, path: string[], a: Principal
     const deps: Deps = testHooks.deps ? base : { ...base, enabled: () => process.env.PORT67_SYNTHESIS_ENABLED === "true" };
     const body = (await effectivePrompt(repository, STEP_SLOT[step])).body;
     const revising = step === "script" && !!instruction && !!existing?.script && data.template === undefined;
-    const { parsed, model } = await runVideoStep(repository, { customer, commission, generation, plan: existing, dossier, step, instruction: instruction || undefined, template: data.template as string | undefined }, actor, deps, body);
+    const images = imagesOf(await repository.read(ws), commissionId).map((i) => ({ name: i.name, description: i.description }));
+    const { parsed, model } = await runVideoStep(repository, { customer, commission, generation, plan: existing, dossier, images, step, instruction: instruction || undefined, template: data.template as string | undefined }, actor, deps, body);
     let draft: unknown = null;
     const plan = await repository.mutate(ws, (db) => {
       const p = planFor(db, commissionId, generation, actor);

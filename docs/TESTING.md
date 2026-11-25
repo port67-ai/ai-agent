@@ -62,3 +62,6 @@ factory-commission-agents (brand prompt and placeholders, prose mapped to the tw
 
 ## CHG-0115 acceptance
 factory-video-steps (age group gate, producer and AI references with accept rules, script save and revise, sheets and prompts need a saved script, duplicate skipping, ledger rows per step, failures change nothing), factory-video-steps-ui (four sections render, accepted and AI draft states, chat log, stale prompts warning, copy buttons), factory-customers-ui (shell now shows three main entries plus four Video steps entries). Not covered: live provider output, real browser layout, clipboard in a browser.
+
+## CHG-0116 acceptance
+factory-video-images (name cleaning and clashes, real type check and SVG refusal, size and empty refusals, private inline serving, project scoping, rename rules, delete removes the file, 60 limit, signed-out refusal, @names in the prompts context and unknown @names stripped), factory-video-images-ui (upload button, carousel, review panel, copy @name, prompts @name list and missing warning). Not covered: real browser layout, drag and drop, clipboard.

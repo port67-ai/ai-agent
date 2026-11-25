@@ -56,3 +56,6 @@ A Commission has optional `brief` (product, market, timing) and `aiNotes` (per i
 
 ## Video plans (CHG-0115)
 Workspace `factory-video-<customerId>` holds `videoPlans`: one `VideoPlan` per project and age group with `references` (producer or AI, accepted flag, palette, composition, camera, film, lens, search terms), optional `referenceSummary`, a saved `script` (template, title, shots with seconds, visual, line, on-screen text), a `chat` log of revise instructions, `sheets` (person, product, location, prop; written description; accepted flag) and `prompts` (overall prompt, per-shot prompt and avoid text, model, who and when, edited flag). Limits: 30 references, 40 sheets, 30 chat entries, 30 plans, 30 shots.
+
+## Project image library (CHG-0116)
+`Database.videoImages` in `factory-video-<customerId>`: `VideoImage` {id, commissionId, name (unique per project, case-insensitive, letters, numbers, dash, underscore, up to 40), description (up to 500), mime, bytes, storageKey, uploadedAt, uploadedBy}. Bytes are in private storage at `video-images/<customerId>/<commissionId>/<id>.<png|jpg|webp>`; the storage key is never sent to the browser. Limits: 8 MB each, 60 per project.

@@ -1,4 +1,5 @@
 import type { BrandIntelVersion, Commission, CustomerAccount, Generation, VideoPlan, VideoReference, VideoScript, VideoSheet, VideoShot } from "./model";
+import { dropUnknownMentions } from "./video-images";
 import type { VideoSlot } from "./agent-prompts";
 import { dossierText } from "./brand-intel";
 import { INPUTS, generationDef } from "./commissions";
@@ -73,7 +74,7 @@ export function promptsFields(d: Record<string, unknown>, shotCount: number) {
 
 // ---------- What the agents are given ----------
 const cap = (s: string, n = 3000) => s.trim().slice(0, n);
-export type VideoCtx = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion };
+export type VideoCtx = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string }[] };
 export function scriptText(s: VideoScript): string {
   return `Title: ${s.title}\nTemplate: ${s.template}, ${scriptSeconds(s)} seconds\n${s.shots.map((x, i) => `Shot ${i + 1} (${x.seconds}s)\n  Visual: ${x.visual}\n  Line: ${x.line || "(none)"}\n  On-screen text: ${x.onScreen || "(none)"}`).join("\n")}`;
 }
@@ -99,6 +100,7 @@ export function videoContext(step: VideoStep, c: VideoCtx): string {
   if (step !== "references") parts.push(`<accepted_references>\n${refs.length ? refs.map((r) => `- ${r.title}: palette ${r.palette || "n/a"}; composition ${r.composition || "n/a"}; camera ${r.camera || "n/a"}; look ${r.film || "n/a"}; lens ${r.lens || "n/a"}${r.why ? `; why: ${r.why}` : ""}`).join("\n") : "(none yet)"}\n</accepted_references>`);
   if ((step === "sheets" || step === "prompts") && plan?.script) parts.push(`<script>\n${scriptText(plan.script)}\n</script>`);
   if (step === "prompts") parts.push(`<sheets>\n${sheets.length ? sheets.map((s) => `- [${s.kind}] ${s.name}: ${s.description}${s.details ? ` Details: ${s.details}` : ""}`).join("\n") : "(none accepted)"}\n</sheets>`);
+  if (step === "prompts") parts.push(`<images>\n${c.images?.length ? c.images.map((i) => `- @${i.name}${i.description ? `: ${i.description}` : ""}`).join("\n") : "(none uploaded)"}\n</images>`);
   return parts.join("\n\n");
 }
 
@@ -122,7 +124,7 @@ export type ParsedVideo =
   | { step: "script"; title: string; notes: string; shots: VideoShot[] }
   | { step: "sheets"; sheets: Pick<VideoSheet, "kind" | "name" | "description" | "details">[] }
   | { step: "prompts"; overall: string; shots: { shot: number; prompt: string; negative: string }[] };
-export function parseVideo(step: VideoStep, o: Record<string, unknown>, scriptShots = 0): ParsedVideo {
+export function parseVideo(step: VideoStep, o: Record<string, unknown>, scriptShots = 0, imageNames: string[] = []): ParsedVideo {
   if (step === "references") {
     const refs = rows(o, "references", 1, 8).map((r) => ({ title: clean(r.title, 120), why: clean(r.why, 600), palette: clean(r.palette, 600), composition: clean(r.composition, 600), camera: clean(r.camera, 600), film: clean(r.film_look, 600), lens: clean(r.lens, 600), searchTerms: clean(r.search_terms, 600), link: "" })).filter((r) => r.title);
     if (!refs.length) throw new Error("The AI answer had no usable references. Try again; nothing was changed.");
@@ -137,9 +139,9 @@ export function parseVideo(step: VideoStep, o: Record<string, unknown>, scriptSh
     if (!sheets.length) throw new Error("The AI answer had no usable sheets. Try again; nothing was changed.");
     return { step, sheets };
   }
-  const shots = rows(o, "shots", 1, MAX_SHOTS).map((r, i) => ({ shot: i + 1, prompt: clean(r.prompt, 3000), negative: clean(r.negative, 1000) }));
+  const shots = rows(o, "shots", 1, MAX_SHOTS).map((r, i) => ({ shot: i + 1, prompt: dropUnknownMentions(clean(r.prompt, 3000), imageNames), negative: clean(r.negative, 1000) }));
   if (shots.length !== scriptShots || shots.some((s) => !s.prompt)) throw new Error(`The AI answer did not give one prompt for each of the ${scriptShots} script shots. Try again; nothing was changed.`);
-  const overall = clean(o.overall, 3000);
+  const overall = dropUnknownMentions(clean(o.overall, 3000), imageNames);
   if (!overall) throw new Error('The AI answer left out "overall". Try again; nothing was changed.');
   return { step, overall, shots };
 }
