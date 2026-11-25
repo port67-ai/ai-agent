@@ -52,3 +52,6 @@
 .w-basis-inf { background: #fff3e0; color: #8a4b00; }
 .w-sources { columns: 2; padding-left: 18px; }
 .w-generate { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 12px; }
+.w-warn { border-left: 4px solid #fdb73e; }
+.w-gen { margin: 10px 0; }
+.w-audience .w-tabs { flex-wrap: wrap; }

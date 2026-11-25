@@ -53,3 +53,6 @@ Addendum to PRODUCT-025 (25 November 2026): researched red lines are a separate 
 
 ## PRODUCT-026: 25 November 2026: AI drafts are never saved automatically
 Owner supplied the Intended Audience agent prompt. Decision: Generate from AI returns a draft that only fills the form; a producer must press Save answers. The agent reads the Brand Intelligence dossier as its account research and refuses without one.
+
+## PRODUCT-027: 25 November 2026: Audience is answered per age group
+Owner definitions: Gen X 46-61, Gen Y 30-45, Gen Z / Zoomers 14-29, Gen Alpha 2-13. Same five answers per group with different content. A producer must select at least one saved group to go to direction; others can be added later for new workflows. Content for groups including under 18s must be age-appropriate, with parents or guardians as buyers.

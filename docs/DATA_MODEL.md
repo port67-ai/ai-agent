@@ -44,3 +44,6 @@ One workspace per customer account, `factory-commissions-<customerId>`, holding 
 
 ## Brand Intelligence versions (CHG-0108)
 Workspace `factory-brandintel-<customerId>` holds `brandIntel`: versions with status, sections 0 to 6, the client red lines copied verbatim at run time, what the agent was given (intake), sources, search queries, warnings, call count and error. The newest 4 versions are kept, plus the current one. Each section is capped at 30,000 characters. Ledger rows use the customer id as account and project id and the version id as run id.
+
+## Audience by age group (CHG-0111)
+A Commission has optional `audience` (per age group: answers, savedAt, savedBy, ai) and `directionGenerations` (selected, saved groups, in age order). Groups: gen_x 46–61, gen_y 30–45, gen_z 14–29, gen_alpha 2–13. `answers.audience` is the legacy single set.

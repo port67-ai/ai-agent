@@ -526,10 +526,17 @@ export type CommissionInput = "objective" | "product" | "audience" | "brand";
 export type EvidenceBasis = "announced" | "client_confirmed" | "inference";
 export type EvidenceItem = { id: string; input: CommissionInput; source: string; where: string; note: string; basis: EvidenceBasis; addedBy: string; addedAt: string };
 export type BrandListEntry = { id: string; text: string; scope: "recurring" | "single_campaign"; kind?: "can_change" | "out_of_character"; addedBy: string; addedAt: string };
+/** Age groups for the intended audience (CHG-0111). Ranges are the owner's definitions. */
+export type Generation = "gen_x" | "gen_y" | "gen_z" | "gen_alpha";
+export type AudienceSet = { answers: Record<string, string>; savedAt: string; savedBy: string; ai?: boolean };
 export type Commission = {
   id: string; customerId: string; name: string;
   /** Answers to each input's prompts, keyed by input then prompt. */
   answers: Record<CommissionInput, Record<string, string>>;
+  /** Input 4 answers per age group, saved by a producer (an AI draft is only stored when saved). */
+  audience?: Partial<Record<Generation, AudienceSet>>;
+  /** Age groups the producer has selected to take forward to direction. At least one is needed before direction. */
+  directionGenerations?: Generation[];
   preserve: BrandListEntry[];
   change: BrandListEntry[];
   wentTooFar: string;

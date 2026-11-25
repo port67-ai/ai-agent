@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { Commission, Database } from "../src/lib/factory/model";
-import { INPUTS, INPUT_KEYS, MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, SECONDARY, answerFields, baseline, evidenceSource, inputStatus, listEntryFields } from "../src/lib/factory/commissions";
-import { addEvidence, addListEntry, createCommission, commissionsOf, removeEvidence, removeListEntry, renameCommission, saveAnswers, saveWentTooFar, setConfirmed, updateEvidence, updateListEntry } from "../src/lib/factory/commissions-commands";
+import { GENERATIONS, INPUTS, INPUT_KEYS, MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, SECONDARY, answerFields, baseline, evidenceSource, inputStatus, listEntryFields } from "../src/lib/factory/commissions";
+import { addEvidence, addListEntry, createCommission, commissionsOf, removeEvidence, removeListEntry, renameCommission, saveAnswers, saveAudience, saveWentTooFar, setConfirmed, setDirection, updateEvidence, updateListEntry } from "../src/lib/factory/commissions-commands";
 
 // Commissions and the Inspiration baseline (CHG-0107, FAC-VWS-011 to FAC-VWS-016): rules, commands, status and the baseline view.
 const throws = (fn: () => unknown, pattern: RegExp, why: string) => assert.throws(fn, pattern, why);
@@ -127,12 +127,15 @@ assert.deepEqual(listEntryFields("preserve", { text: " Waxed cotton ", scope: "r
   assert.deepEqual([b.reach, b.achieve, b.proof, b.evidence], [[], [], [], []]);
   assert.deepEqual(b.redLines, redLines, "account red lines are shown, not copied");
   // Started but incomplete.
-  saveAnswers(db, c.id, "audience", { who: "20-somethings in London", putOffs: "Feeling like cosplay" }, "p");
+  throws(() => saveAnswers(db, c.id, "audience", { who: "x" }, "p"), /age group/, "audience answers are saved per age group");
+  saveAudience(db, c.id, "gen_z", { who: "20-somethings in London", putOffs: "Feeling like cosplay" }, "p");
   b = baseline(c);
   assert.equal(b.status.audience, "in_progress");
   assert.ok(b.gaps.includes("Input 4, Current and intended audience has 3 unanswered questions"));
   assert.ok(b.gaps.includes("Input 4, Current and intended audience has no evidence"));
-  assert.deepEqual(b.reach.map((x) => x.text), ["20-somethings in London", "Feeling like cosplay"], "only answered prompts, in order");
+  assert.deepEqual(b.audiences.map((a) => [a.key, a.selected, a.lines.map((x) => x.text)]), [["gen_z", false, ["20-somethings in London", "Feeling like cosplay"]]], "only answered prompts, in order");
+  assert.equal(b.directionReady, false);
+  assert.ok(b.gaps.includes("No age group is selected for direction"));
   // Evidence alone is also "in progress"; complete needs every prompt and evidence.
   addEvidence(db, c.id, "brand", { ...ev, basis: "inference" }, "p");
   assert.equal(inputStatus(c, "brand"), "in_progress");
@@ -158,8 +161,43 @@ assert.deepEqual(listEntryFields("preserve", { text: " Waxed cotton ", scope: "r
   assert.ok(!b.gaps.includes("The objective has not been confirmed with the client"));
   assert.ok(b.gaps.includes("The audience has not been confirmed with the client"));
   // Complete across all four inputs leaves only what is genuinely missing.
-  for (const def of INPUTS) { saveAnswers(db, c.id, def.key, Object.fromEntries(def.prompts.map((p) => [p.key, "answer"])), "p"); if (!c.evidence.some((e) => e.input === def.key)) addEvidence(db, c.id, def.key, ev, "p"); }
+  for (const def of INPUTS) { if (def.key === "audience") saveAudience(db, c.id, "gen_y", Object.fromEntries(def.prompts.map((p) => [p.key, "answer"])), "p"); else saveAnswers(db, c.id, def.key, Object.fromEntries(def.prompts.map((p) => [p.key, "answer"])), "p"); if (!c.evidence.some((e) => e.input === def.key)) addEvidence(db, c.id, def.key, ev, "p"); }
   setConfirmed(db, c.id, "audience", true, "p");
+  assert.deepEqual(baseline(c).gaps, ["No age group is selected for direction"], "only the selection is missing");
+  setDirection(db, c.id, ["gen_y"], "p");
   assert.deepEqual(baseline(c).gaps, [], "nothing missing");
+}
+
+// ---- Age groups (CHG-0111)
+{
+  const db: Database = {} as Database;
+  const c = createCommission(db, "cust_" + "a".repeat(32), { name: "Ages" }, "p");
+  assert.deepEqual(GENERATIONS.map((g) => [g.key, g.label, g.range]), [["gen_x", "Gen X", "46–61"], ["gen_y", "Gen Y", "30–45"], ["gen_z", "Gen Z / Zoomers", "14–29"], ["gen_alpha", "Gen Alpha", "2–13"]]);
+  assert.deepEqual(GENERATIONS.map((g) => g.minors), [false, false, true, true], "groups that include under 18s are flagged");
+  throws(() => saveAudience(db, c.id, "boomers", { who: "x" }, "p"), /age group/, "rejected");
+  throws(() => saveAudience(db, c.id, "gen_x", { nonsense: "x" }, "p"), /Unknown question/, "rejected");
+  throws(() => setDirection(db, c.id, ["gen_x"], "p"), /Save the answers for Gen X first/, "only saved groups can be selected");
+  throws(() => setDirection(db, c.id, "gen_x", "p"), /list/, "rejected");
+  saveAudience(db, c.id, "gen_alpha", { who: "Parents buy; children use" }, "p", true);
+  saveAudience(db, c.id, "gen_x", { who: "Homeowners" }, "p");
+  assert.equal(c.audience!.gen_alpha!.ai, true, "an AI draft that was saved is marked");
+  assert.equal(c.audience!.gen_x!.ai, undefined);
+  setDirection(db, c.id, ["gen_alpha", "gen_x", "gen_x"], "p");
+  assert.deepEqual(c.directionGenerations, ["gen_x", "gen_alpha"], "de-duplicated and in age order");
+  let b = baseline(c);
+  assert.equal(b.directionReady, true);
+  assert.deepEqual(b.audiences.map((a) => [a.key, a.selected]), [["gen_x", true], ["gen_alpha", true]]);
+  // Saving more answers merges; clearing every answer removes the group and its selection; direction needs one left.
+  saveAudience(db, c.id, "gen_x", { motivations: "Quality" }, "p");
+  assert.deepEqual(c.audience!.gen_x!.answers, { who: "Homeowners", motivations: "Quality" });
+  saveAudience(db, c.id, "gen_x", { who: "", motivations: "" }, "p");
+  assert.equal(c.audience!.gen_x, undefined);
+  assert.deepEqual(c.directionGenerations, ["gen_alpha"]);
+  setDirection(db, c.id, [], "p");
+  b = baseline(c);
+  assert.equal(b.directionReady, false);
+  assert.ok(b.gaps.includes("No age group is selected for direction"));
+  assert.match(c.audit.at(-1)!.detail, /none selected/);
+  assert.ok(c.audit.some((a) => a.action === "audience_saved" && /Gen Alpha/.test(a.detail)));
 }
 console.log("commissions: all assertions passed");

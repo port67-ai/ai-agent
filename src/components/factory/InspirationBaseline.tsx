@@ -20,7 +20,18 @@ export function InspirationBaseline({ commission, redLines }: { commission: Comm
         <h3 id="bl-gaps">Gaps</h3>
         {v.gaps.length === 0 ? <p>Nothing is missing.</p> : <ul>{v.gaps.map((g) => <li key={g}>{g}</li>)}</ul>}
       </section>
-      <section className="f-panel" aria-labelledby="bl-reach"><h3 id="bl-reach">Who to reach</h3><Lines items={v.reach} /></section>
+      <section className="f-panel" aria-labelledby="bl-reach">
+        <h3 id="bl-reach">Who to reach</h3>
+        {v.audiences.length === 0 && v.reach.length === 0 && <p className="f-small">Nothing entered yet.</p>}
+        {v.audiences.map((a) => (
+          <div key={a.key} className="w-gen">
+            <h4>{a.label} <span className="f-small">{a.range}</span> {a.selected && <span className="f-tag green">Selected for direction</span>}</h4>
+            <Lines items={a.lines} />
+          </div>
+        ))}
+        {v.reach.length > 0 && <div className="w-gen"><h4>Entered before age groups</h4><Lines items={v.reach} /></div>}
+        <p className="f-small">{v.directionReady ? "Ready for direction." : "Select at least one saved age group to move on to direction."}</p>
+      </section>
       <section className="f-panel" aria-labelledby="bl-achieve"><h3 id="bl-achieve">What to achieve</h3><Lines items={v.achieve} /></section>
       <section className="f-panel" aria-labelledby="bl-recognise">
         <h3 id="bl-recognise">What the audience should recognise</h3>

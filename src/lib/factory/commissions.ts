@@ -1,4 +1,4 @@
-import type { BrandListEntry, Commission, CommissionInput, EvidenceBasis, EvidenceItem, RedLine } from "./model";
+import type { BrandListEntry, Commission, CommissionInput, EvidenceBasis, EvidenceItem, Generation, RedLine } from "./model";
 import { webUrl } from "./customers";
 
 // Commissions and the Inspiration baseline (CHG-0107, FAC-VWS-011 to FAC-VWS-016). Pure and client-safe: no Node imports, no AI.
@@ -36,6 +36,19 @@ export const INPUTS: { key: CommissionInput; number: number; title: string; role
     { key: "recurring", label: "Which elements recur across years and channels, and which belonged to a single campaign?" },
   ] },
 ];
+/** The age groups for Input 4, with the owner's definitions. */
+export const GENERATIONS: { key: Generation; label: string; range: string; minors: boolean }[] = [
+  { key: "gen_x", label: "Gen X", range: "46–61", minors: false },
+  { key: "gen_y", label: "Gen Y", range: "30–45", minors: false },
+  { key: "gen_z", label: "Gen Z / Zoomers", range: "14–29", minors: true },
+  { key: "gen_alpha", label: "Gen Alpha", range: "2–13", minors: true },
+];
+export const generationDef = (key: string) => GENERATIONS.find((g) => g.key === key);
+export function generationKey(value: unknown): Generation {
+  const g = generationDef(String(value));
+  if (!g) throw new Error("Choose an age group: Gen X, Gen Y, Gen Z or Gen Alpha");
+  return g.key;
+}
 export const inputDef = (key: string) => INPUTS.find((i) => i.key === key);
 
 /** Shown greyed out and not editable in this step. */
@@ -122,7 +135,10 @@ export function evidenceFields(data: Record<string, unknown>, partial = false) {
 
 export type InputStatus = "not_started" | "in_progress" | "complete";
 export const STATUS_LABEL: Record<InputStatus, string> = { not_started: "Not started", in_progress: "In progress", complete: "Complete" };
-const answered = (c: Commission, key: CommissionInput) => (inputDef(key)?.prompts || []).filter((p) => (c.answers[key]?.[p.key] || "").trim()).length;
+const count = (key: CommissionInput, a: Record<string, string> | undefined) => (inputDef(key)?.prompts || []).filter((p) => (a?.[p.key] || "").trim()).length;
+/** For the audience, the most complete age group counts (answers saved before age groups existed count too). */
+const answered = (c: Commission, key: CommissionInput) =>
+  key === "audience" ? Math.max(count(key, c.answers.audience), ...Object.values(c.audience || {}).map((s) => count(key, s?.answers))) : count(key, c.answers[key]);
 const evidenceFor = (c: Commission, key: CommissionInput) => c.evidence.filter((e) => e.input === key);
 /** Complete means every prompt answered and at least one evidence item. */
 export function inputStatus(c: Commission, key: CommissionInput): InputStatus {
@@ -135,7 +151,11 @@ export function inputStatus(c: Commission, key: CommissionInput): InputStatus {
 
 export type BaselineView = {
   status: Record<CommissionInput, InputStatus>;
+  /** Input 4 answers saved before age groups existed. */
   reach: { label: string; text: string }[];
+  /** Saved age groups, in order, with whether each is selected for direction. */
+  audiences: { key: Generation; label: string; range: string; selected: boolean; lines: { label: string; text: string }[] }[];
+  directionReady: boolean;
   achieve: { label: string; text: string }[];
   recognise: { label: string; text: string }[];
   preserve: BrandListEntry[];
@@ -146,7 +166,7 @@ export type BaselineView = {
   evidence: { input: CommissionInput; title: string; items: EvidenceItem[] }[];
   gaps: string[];
 };
-const lines = (c: Commission, key: CommissionInput) => inputDef(key)!.prompts.map((p) => ({ label: p.label, text: (c.answers[key]?.[p.key] || "").trim() })).filter((x) => x.text);
+const lines = (c: Commission, key: CommissionInput, from?: Record<string, string>) => inputDef(key)!.prompts.map((p) => ({ label: p.label, text: ((from ?? c.answers[key])?.[p.key] || "").trim() })).filter((x) => x.text);
 
 /** Assemble the baseline from what was entered. No AI. Shows even when incomplete, and lists what is missing. */
 export function baseline(c: Commission, redLines: RedLine[] = []): BaselineView {
@@ -164,11 +184,15 @@ export function baseline(c: Commission, redLines: RedLine[] = []): BaselineView 
   }
   if (!c.preserve.length) gaps.push("Nothing is listed to preserve");
   if (!c.change.length) gaps.push("Nothing is listed as can change or out of character");
+  const selected = (c.directionGenerations || []).filter((g) => c.audience?.[g]);
+  if (Object.keys(c.audience || {}).length && !selected.length) gaps.push("No age group is selected for direction");
   if (!c.confirmed.objective) gaps.push("The objective has not been confirmed with the client");
   if (!c.confirmed.audience) gaps.push("The audience has not been confirmed with the client");
   return {
     status,
     reach: lines(c, "audience"),
+    audiences: GENERATIONS.filter((g) => c.audience?.[g.key]).map((g) => ({ key: g.key, label: g.label, range: g.range, selected: selected.includes(g.key), lines: lines(c, "audience", c.audience![g.key]!.answers) })),
+    directionReady: selected.length >= 1,
     achieve: lines(c, "objective"),
     recognise: lines(c, "brand"),
     preserve: c.preserve,

@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
-import type { Commission, CustomerAccount, RedLine } from "@/lib/factory/model";
+import type { Commission, CustomerAccount, Generation, RedLine } from "@/lib/factory/model";
 import { CommissionEditor } from "./CommissionEditor";
 import { InspirationBaseline } from "./InspirationBaseline";
 import { Empty, Field } from "./shared";
@@ -12,7 +12,7 @@ import { api } from "./workspace-api";
 type Detail = { commission: Commission; redLines: RedLine[] };
 const NOTICES: Record<string, string> = {
   rename: "Project name saved.", answers: "Answers saved.", "list-add": "Entry added.", "list-update": "Entry saved.", "list-remove": "Entry removed.", "went-too-far": "Example saved.",
-  "evidence-add": "Evidence added.", "evidence-update": "Evidence saved.", "evidence-remove": "Evidence removed.", confirm: "Confirmation updated.",
+  "evidence-add": "Evidence added.", "evidence-update": "Evidence saved.", "evidence-remove": "Evidence removed.", confirm: "Confirmation updated.", "audience-save": "Age group saved.", direction: "Direction selection updated.",
 };
 
 export function Projects() {
@@ -63,15 +63,15 @@ export function Projects() {
     }, NOTICES[action] || "Saved.");
   }
 
-  async function generate(input: string): Promise<Record<string, string> | null> {
+  async function generate(input: "audience", generation: Generation): Promise<Record<string, string> | null> {
     if (!detail) return null;
     let draft: Record<string, string> | null = null;
     const ok = await run(async () => {
-      const data = await api<{ draft: Record<string, string>; commission: Commission }>(`commissions/${cid}/${detail.commission.id}`, { action: "generate", input });
+      const data = await api<{ draft: Record<string, string>; commission: Commission }>(`commissions/${cid}/${detail.commission.id}`, { action: "generate", input, generation });
       draft = data.draft;
       setDetail({ ...detail, commission: data.commission });
       setList((l) => l.map((x) => (x.id === data.commission.id ? data.commission : x)));
-    }, "AI draft filled in. Review it, then press Save answers.");
+    }, "AI draft ready. Review it, then press Save answers.");
     return ok ? draft : null;
   }
 
