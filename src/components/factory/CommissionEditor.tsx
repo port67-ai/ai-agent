@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 import type { BrandListEntry, Commission, CommissionInput, EvidenceItem, Generation, RedLine } from "@/lib/factory/model";
 import { CHANGE_LIST_ACTIVE, EVIDENCE_ACTIVE, EVIDENCE_BASIS, EVIDENCE_WHERE, INPUTS, MAX_ANSWER, SECONDARY, STATUS_LABEL, inputStatus, type ListName } from "@/lib/factory/commissions";
 import { RED_LINE_CATEGORIES } from "@/lib/factory/customers";
+import type { AgentSlot } from "@/lib/factory/agent-prompts";
+import { AgentPopout } from "./AgentPopout";
 import { AudienceBlock } from "./AudienceBlock";
 import { Field } from "./shared";
 
@@ -15,10 +17,13 @@ export type CommissionEditorProps = {
   /** Run one action on the commission. Resolves true when it succeeded, so a form can clear itself. */
   onSave: (action: string, payload: Record<string, unknown>) => Promise<boolean>;
   /** Ask the AI for a draft of the audience answers for one age group. Resolves with the draft (prompt key to text), or null if it failed. Saves nothing. */
-  onGenerate?: (input: "audience", generation: Generation) => Promise<Record<string, string> | null>;
+  onGenerate?: GenerateFn;
 };
+/** Ask the AI for a draft of an input's answers (the audience also names an age group). Resolves with the draft, or null if it failed. */
+export type GenerateFn = (input: "objective" | "product" | "brand" | "audience", generation?: Generation) => Promise<Record<string, string> | null>;
 type Save = CommissionEditorProps["onSave"];
 
+const AGENT_SLOT: Partial<Record<CommissionInput, AgentSlot>> = { objective: "research:commission-objective", product: "research:commission-product", brand: "research:commission-brand", audience: "synthesis:intended-audience" };
 const scopeLabel = (s: string) => (s === "recurring" ? "Recurs across years" : "Single campaign");
 const kindLabel = (k?: string) => (k === "out_of_character" ? "Out of character" : k === "can_change" ? "Can change" : "");
 const whereLabel = (k: string) => EVIDENCE_WHERE.find((w) => w.key === k)?.label || k;
@@ -110,6 +115,10 @@ function BrandList({ list, title, hint, entries, busy, onSave }: { list: ListNam
 }
 
 function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { def: (typeof INPUTS)[number]; commission: Commission; redLines: RedLine[]; busy: boolean; onSave: Save; onGenerate?: CommissionEditorProps["onGenerate"] }) {
+  const [draft, setDraft] = useState<Record<string, string> | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const research = def.key === "objective" || def.key === "product" || def.key === "brand";
+  const notes = research ? commission.aiNotes?.[def.key as "objective" | "product" | "brand"] : undefined;
   const status = inputStatus(commission, def.key);
   const confirmable = def.key === "objective" || def.key === "audience";
   return (
@@ -118,14 +127,36 @@ function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { de
         <h3 id={`in-${def.key}`}>Input {def.number}: {def.title}</h3>
         <span><span className="f-tag light">{def.role}</span> <span className={"f-tag " + tone(status)}>{STATUS_LABEL[status]}</span></span>
       </div>
+      {AGENT_SLOT[def.key] && <AgentPopout slot={AGENT_SLOT[def.key]!} />}
       <p className="f-small">{def.helper}</p>
       {def.key === "audience" ? <AudienceBlock commission={commission} busy={busy} onSave={onSave} onGenerate={onGenerate} /> : (
-        <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.currentTarget); void onSave("answers", { input: def.key, answers: Object.fromEntries(def.prompts.map((p) => [p.key, d.get(p.key) || ""])) }); }}>
-          {def.prompts.map((p) => (
-            <Field key={p.key} label={p.label}><textarea name={p.key} rows={3} maxLength={MAX_ANSWER} defaultValue={commission.answers[def.key][p.key] || ""} /></Field>
-          ))}
-          <div><button className="f-button" disabled={busy}>Save answers</button></div>
-        </form>
+        <>
+          {research && onGenerate && (
+            <div className="w-generate">
+              <button type="button" className="f-button secondary" disabled={busy || generating} onClick={async () => {
+                const hasText = def.prompts.some((p) => (commission.answers[def.key][p.key] || "").trim());
+                if (hasText && !window.confirm("Replace the boxes below with an AI draft? Nothing is saved until you press Save answers.")) return;
+                setGenerating(true);
+                try { const d = await onGenerate(def.key as "objective" | "product" | "brand"); if (d) setDraft(d); } finally { setGenerating(false); }
+              }}><Sparkles size={15} /> {generating ? "Researching…" : "Generate from AI"}</button>
+              <span className="f-small">Searches the web for the company and the product or service entered in the Project box, then fills the boxes below. This can take a few minutes. You review it before saving.</span>
+            </div>
+          )}
+          {draft && <div className="f-callout" role="status">AI draft filled in below, not saved yet. Edit it, then press Save answers.{" "}<button type="button" className="f-text-button" onClick={() => setDraft(null)}>Discard draft</button></div>}
+          <form className="f-form-grid" onSubmit={async (e) => { e.preventDefault(); const d = new FormData(e.currentTarget); if (await onSave("answers", { input: def.key, answers: Object.fromEntries(def.prompts.map((p) => [p.key, d.get(p.key) || ""])) })) setDraft(null); }}>
+            {def.prompts.map((p) => (
+              <Field key={p.key + (draft ? "-ai" : "")} label={p.label}><textarea name={p.key} rows={def.key === "brand" ? (draft ? 16 : 6) : draft ? 6 : 3} maxLength={p.max ?? MAX_ANSWER} defaultValue={draft?.[p.key] ?? (commission.answers[def.key][p.key] || "")} /></Field>
+            ))}
+            <div><button className="f-button" disabled={busy}>Save answers</button></div>
+          </form>
+          {notes && (
+            <details className="w-dropdown w-notes">
+              <summary>AI notes <span className="f-small">(from the last Generate from AI, {notes.model})</span></summary>
+              {notes.sections.map((n) => <div key={n.title}><h5>{n.title}</h5><p className="w-prewrap">{n.text}</p></div>)}
+              {notes.sources.length > 0 && <div><h5>Sources</h5><ul>{notes.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></li>)}</ul></div>}
+            </details>
+          )}
+        </>
       )}
       {confirmable && (
         <label className="f-check-line">
@@ -161,6 +192,15 @@ export function CommissionEditor(props: CommissionEditorProps) {
         <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); void onSave("rename", { name: new FormData(e.currentTarget).get("name") }); }}>
           <Field label="Project name"><input name="name" required maxLength={120} defaultValue={commission.name} /></Field>
           <div><button className="f-button" disabled={busy}>Save name</button></div>
+        </form>
+        <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.currentTarget); void onSave("brief", { product: d.get("product"), market: d.get("market"), timing: d.get("timing"), productUrl: d.get("productUrl"), subBrand: d.get("subBrand"), format: d.get("format") }); }}>
+          <Field label="Product, service or offer this project is about"><input name="product" maxLength={300} defaultValue={commission.brief?.product || ""} placeholder="For example, the sourdough loaf range" /></Field>
+          <Field label="Market or geography (optional)"><input name="market" maxLength={200} defaultValue={commission.brief?.market || ""} placeholder="For example, UK, prices in GBP" /></Field>
+          <Field label="Campaign timing or season (optional)"><input name="timing" maxLength={200} defaultValue={commission.brief?.timing || ""} placeholder="For example, Autumn" /></Field>
+          <Field label="Product page link (optional)"><input name="productUrl" type="text" inputMode="url" maxLength={500} defaultValue={commission.brief?.productUrl || ""} placeholder="https://example.com/product" /></Field>
+          <Field label="Sub-brand or collection (optional)"><input name="subBrand" maxLength={200} defaultValue={commission.brief?.subBrand || ""} /></Field>
+          <Field label="Proposed video format (optional)"><input name="format" maxLength={200} defaultValue={commission.brief?.format || ""} placeholder="For example, 15 second vertical video" /></Field>
+          <div><button className="f-button" disabled={busy}>Save project details</button> <span className="f-small">The AI agents on Inputs 1, 3 and 5 search for this product or service and the customer.</span></div>
         </form>
       </section>
       {INPUTS.map((def) => <InputCard key={def.key} def={def} commission={commission} redLines={redLines} busy={busy} onSave={onSave} onGenerate={onGenerate} />)}

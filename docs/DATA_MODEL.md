@@ -47,3 +47,9 @@ Workspace `factory-brandintel-<customerId>` holds `brandIntel`: versions with st
 
 ## Audience by age group (CHG-0111)
 A Commission has optional `audience` (per age group: answers, savedAt, savedBy, ai) and `directionGenerations` (selected, saved groups, in age order). Groups: gen_x 46–61, gen_y 30–45, gen_z 14–29, gen_alpha 2–13. `answers.audience` is the legacy single set.
+
+## Project input agents (CHG-0113)
+A Commission has optional `brief` (product, market, timing) and `aiNotes` (per input 1 and 3: sections, sources, model, when). Workspace `factory-agent-prompts` holds `agentPrompts` per AI job: current version and up to 20 earlier versions (body, version, by, at).
+
+## Brand expression agent (CHG-0114)
+`brief` also holds `productUrl`, `subBrand` and `format`. `aiNotes.brand` holds the sources and confidence paragraph and links. Brand answers `recognisable` and `recurring` allow up to 12,000 characters.

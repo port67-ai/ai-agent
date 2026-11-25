@@ -812,3 +812,24 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; commissions and commissions-ui suites updated. Governance check run after these edits.
 - Limitations: no browser check of the layout. Any text saved earlier under the old combined question (`response`) is kept in the record but no longer shown. Evidence already saved stays in the record and baseline. Turning the two switches to true restores the previous rules.
 - Status: built locally, uncommitted.
+
+## CHG-0113: 2026-11-25: Generate from AI for Inputs 1 and 3, the AI agent box, and the Video steps design
+- Author/harness: Claude. Owner supplied the commission objective and product or service prompts, asked for Generate from AI on Inputs 1 and 3, an AI agent pop-out (model dropdown and editable prompt) on Inputs 1, 3 and 4, and described a new Video steps tab. Owner chose: any producer or admin may change settings, shared by all projects.
+- What (built): commission-agents.ts, agent-prompts.ts (the owner's prompts with {{placeholders}} in place of [INSERT], plus fixed output contracts), agent-settings.ts and agent-settings-api.ts (versioned prompt edits in workspace `factory-agent-prompts`, model choice through the existing routing, with its history), metered.ts, AgentPopout.tsx; project details (product, market, timing) and AI notes on a project; two new AI jobs (research:commission-objective, research:commission-product) routable on the AI models page; the audience agent now reads its prompt from the same store.
+- Also fixed: a routing history entry cut off its reason ("moved N jobs...") when many jobs changed at once; the reason is now kept and the change list is shortened instead.
+- What (design only): Video steps, spec docs/superpowers/specs/2026-11-25-video-steps-design.md, PRD section 33.
+- Requirements: FAC-VWS-024 and FAC-VWS-025 implemented locally; FAC-VWS-026 to FAC-VWS-030 not started.
+- PRD impact: 1.41.0.
+- Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; new suites factory-commission-agents and factory-agent-ui; agent count tests updated. Governance check run after these edits.
+- Limitations: never run against a real provider or browser, so the research quality, run time, cost per generation and the model list shown in the dropdown are unverified. The output format section of the owner's prompts is replaced by fixed JSON output rules so answers can be parsed. Needs PORT67_RESEARCH_ENABLED=true for Inputs 1 and 3. Uncommitted.
+- Status: built locally, uncommitted; Video steps awaiting owner sign-off.
+
+## CHG-0114: 2026-11-25: Generate from AI and AI agent for Input 5, brand expression
+- Author/harness: Claude. Owner supplied a brand expression and boundaries prompt and asked for the same Generate from AI and managed AI agent as Inputs 1 and 3, filling the two brand questions.
+- What: new AI job research:commission-brand (routable on the AI models page); the owner's prompt in agent-prompts.ts with placeholders for company, product, product link, website, sub-brand or collection, market, timing and format, plus a fixed output contract mapping the prose to four fields; commission-agents.ts maps the opening and Section One to "what makes the brand recognisable" and Section Two to "which elements recur"; sources and confidence go to AI notes. The AI agent box and Generate from AI now appear on Input 5. Project details gain product page link (public https only), sub-brand or collection and proposed video format; these are also available as placeholders to the other research prompts (product link).
+- Limit change: the two brand answers may hold 12,000 characters (others stay at 2,000) because the prompt produces detailed prose; context passed to other agents is capped at 3,000 characters per answer.
+- Requirements: FAC-VWS-031 (new), FAC-VWS-025 (now Inputs 1, 3, 4 and 5).
+- PRD impact: 1.42.0.
+- Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; factory-commission-agents and factory-agent-ui extended; agent count test updated. Governance check run after these edits.
+- Limitations: never run against a real provider, so the quality of the prose, how well the model keeps the "Evidence and interpretation / Application" structure, run time (allowed up to 5 minutes) and cost are unmeasured; if the model returns the structure inside fewer or longer paragraphs it is saved as returned. Needs PORT67_RESEARCH_ENABLED=true. The prompt's own "OUTPUT STYLE" is kept; only the JSON wrapper is fixed. Uncommitted.
+- Status: built locally, uncommitted.

@@ -53,3 +53,9 @@ tests/factory-audience-agent.test.ts (needs a dossier, draft mapped to the five 
 
 ## CHG-0111 acceptance
 factory-commissions (age group save, merge, clear, selection rules, baseline), factory-commissions-api and factory-audience-agent (per-group prompt, under-18 note, one ledger row per group, invalid group refused, tolerant parsing, cut-off message) and factory-commissions-ui (tabs, ranges, selection).
+
+## CHG-0113 acceptance
+factory-commission-agents (prompts kept, placeholders, mapping, grounded call, red lines, notes, nothing auto-saved, failures, model and prompt changes used by the next run, reset, output rules cannot be edited away) and factory-agent-ui. Manual: open Projects, enter the product, press Generate from AI on Input 1 and 3, open AI agent, change model and prompt.
+
+## CHG-0114 acceptance
+factory-commission-agents (brand prompt and placeholders, prose mapped to the two boxes, notes and sources, 12,000 limit for brand answers only, edited prompt used with fixed rules, product link validation) and factory-agent-ui (agent box and Generate from AI on Input 5, taller brand boxes, new project fields).

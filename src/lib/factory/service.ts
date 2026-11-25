@@ -86,6 +86,7 @@ import type { StudioAssetRef, StudioBrief } from "./model";
 import { handleCustomers, isCustomerRoute, isCustomerUpload } from "./customers-api";
 import { handleCommissions, isCommissionRoute } from "./commissions-api";
 import { handleBrandIntel, isBrandIntelRoute } from "./brand-intel-api";
+import { handleAgentSettings, isAgentSettingsRoute } from "./agent-settings-api";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -653,6 +654,7 @@ export async function handleFactory(
     // Video workspace commissions (CHG-0107): producers and admins only, enforced inside the handler.
     if (isCommissionRoute(path)) return await handleCommissions(request, path, a, data);
     if (isBrandIntelRoute(path)) return await handleBrandIntel(request, path, a, data);
+    if (isAgentSettingsRoute(path)) return await handleAgentSettings(request, path, a, data);
     if (route === "admin/costs/series") {
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       const q=new URL(request.url).searchParams;

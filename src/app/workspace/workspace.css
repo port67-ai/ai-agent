@@ -64,3 +64,10 @@
 .w-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .w-dropdown.w-locked { opacity: 0.55; background: #f7f8f6; margin-bottom: 0; }
 .w-dropdown.w-locked > summary .f-small { font-weight: 400; margin-left: 6px; }
+.w-agentbox { margin: 8px 0 12px; }
+.w-agentbox > summary { display: flex; align-items: center; gap: 6px; }
+.w-agent h4 { margin: 8px 0 4px; }
+.w-agent-actions { display: flex; gap: 8px; margin: 10px 0; }
+.w-prompt { width: 100%; box-sizing: border-box; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.45; }
+.w-contract { white-space: pre-wrap; font-size: 12px; background: #f7f8f6; border-radius: 6px; padding: 10px; }
+.w-notes h5 { margin: 10px 0 2px; font-size: 13px; }

@@ -59,3 +59,11 @@ Owner definitions: Gen X 46-61, Gen Y 30-45, Gen Z / Zoomers 14-29, Gen Alpha 2-
 
 ## PRODUCT-028: 25 November 2026: Evidence and the change list are parked
 Owner direction: keep the project flow clear. Evidence per input and the Can change or out of character list stay in the product but are greyed out and outside the flow until needed. They are switched off by two constants, not removed.
+
+## PRODUCT-029: 25 November 2026: Input agent model and prompt are shared, editable by producers
+Owner chose one model and prompt per input agent, shared by every project and editable by any producer or admin, with versions and a reset. The output rules, client red lines and age-appropriateness rules are fixed text outside the editable prompt.
+
+## PRODUCT-030: 25 November 2026: Video steps
+Owner described four sections after Projects: references, scripting, characters, locations and props, and video generation prompts. Design recorded; build waits for sign-off and answers to five questions.
+
+Addendum to PRODUCT-029 (25 November 2026): Input 5 gets the same managed agent. Its two answers are long prose, so they allow 12,000 characters while all other answers stay at 2,000.

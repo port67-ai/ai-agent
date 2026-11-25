@@ -400,3 +400,11 @@ Documentation only: design spec and PRD 1.35.0 section 31. No code. Intent PROPO
 | FAC-VWS-021 | IMPLEMENTED LOCALLY (CHG-0110); stub-provider tests only, never run against a real provider, uncommitted | Generate from AI, intended audience. Evidence: tests/factory-audience-agent.test.ts, factory-commissions-ui.test.tsx; tsc, lint and build pass. |
 | FAC-VWS-022 | IMPLEMENTED LOCALLY (CHG-0111); stub-provider tests only, uncommitted | Audience by age group. Evidence: factory-commissions, factory-commissions-api, factory-audience-agent, factory-commissions-ui; tsc, lint and build pass. |
 | FAC-VWS-023 | IMPLEMENTED LOCALLY (CHG-0112); no browser check, uncommitted | Project inputs layout and flow. Evidence: factory-commissions, factory-commissions-ui; tsc, lint and build pass. |
+| FAC-VWS-024 | IMPLEMENTED LOCALLY (CHG-0113); stub-provider tests only, uncommitted | Generate from AI, objective and product. Evidence: factory-commission-agents; tsc, lint and build pass. |
+| FAC-VWS-025 | IMPLEMENTED LOCALLY (CHG-0113); stub-provider tests only, uncommitted | AI agent box. Evidence: factory-commission-agents, factory-agent-ui. |
+| FAC-VWS-031 | IMPLEMENTED LOCALLY (CHG-0114); stub-provider tests only, uncommitted | Generate from AI, brand expression. Evidence: factory-commission-agents, factory-agent-ui; tsc, lint and build pass. |
+| FAC-VWS-026 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Video steps entry). |
+| FAC-VWS-027 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (References). |
+| FAC-VWS-028 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Scripting). |
+| FAC-VWS-029 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Characters, locations and props). |
+| FAC-VWS-030 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Video generation prompts). |

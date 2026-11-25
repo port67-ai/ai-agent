@@ -54,3 +54,6 @@ brand-intel.ts (pure: intake, prompts, parsing, citations), brand-intel-run.ts (
 
 ## CHG-0110: Intended Audience agent
 audience-agent.ts builds the owner's prompt, calls the model once through the shared provider layer (job synthesis:intended-audience, no web search, strict JSON schema), validates all five fields and meters the call on the admin ledger against the account and the commission. The route returns a draft; only the existing `answers` action stores text.
+
+## CHG-0113: project input agents
+agent-prompts.ts holds each agent's editable prompt body, its placeholders and a fixed contract; agent-settings.ts stores edits as versions; commission-agents.ts runs Inputs 1 and 3 (grounded, metered through metered.ts) and audience-agent.ts runs Input 4. agent-settings-api.ts serves `agent-settings/:slot` for the AI agent box, using the routing already used by the admin AI models page.
