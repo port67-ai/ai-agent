@@ -74,7 +74,7 @@ export function promptsFields(d: Record<string, unknown>, shotCount: number) {
 
 // ---------- What the agents are given ----------
 const cap = (s: string, n = 3000) => s.trim().slice(0, n);
-export type VideoCtx = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string }[] };
+export type VideoCtx = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string; title?: string; category?: string }[] };
 export function scriptText(s: VideoScript): string {
   return `Title: ${s.title}\nTemplate: ${s.template}, ${scriptSeconds(s)} seconds\n${s.shots.map((x, i) => `Shot ${i + 1} (${x.seconds}s)\n  Visual: ${x.visual}\n  Line: ${x.line || "(none)"}\n  On-screen text: ${x.onScreen || "(none)"}`).join("\n")}`;
 }
@@ -100,7 +100,7 @@ export function videoContext(step: VideoStep, c: VideoCtx): string {
   if (step !== "references") parts.push(`<accepted_references>\n${refs.length ? refs.map((r) => `- ${r.title}: palette ${r.palette || "n/a"}; composition ${r.composition || "n/a"}; camera ${r.camera || "n/a"}; look ${r.film || "n/a"}; lens ${r.lens || "n/a"}${r.why ? `; why: ${r.why}` : ""}`).join("\n") : "(none yet)"}\n</accepted_references>`);
   if ((step === "sheets" || step === "prompts") && plan?.script) parts.push(`<script>\n${scriptText(plan.script)}\n</script>`);
   if (step === "prompts") parts.push(`<sheets>\n${sheets.length ? sheets.map((s) => `- [${s.kind}] ${s.name}: ${s.description}${s.details ? ` Details: ${s.details}` : ""}`).join("\n") : "(none accepted)"}\n</sheets>`);
-  if (step === "prompts") parts.push(`<images>\n${c.images?.length ? c.images.map((i) => `- @${i.name}${i.description ? `: ${i.description}` : ""}`).join("\n") : "(none uploaded)"}\n</images>`);
+  if (step === "prompts") parts.push(`<images>\n${c.images?.length ? c.images.map((i) => `- @${i.name}${i.category ? ` [${i.category}]` : ""}${i.title ? ` (${i.title})` : ""}${i.description ? `: ${i.description}` : ""}`).join("\n") : "(none uploaded)"}\n</images>`);
   return parts.join("\n\n");
 }
 

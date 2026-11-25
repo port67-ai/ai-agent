@@ -1,7 +1,7 @@
 import type { Principal } from "./model";
 import { repository } from "./repository";
 import { PROVIDERS, SLOTS, type SlotId } from "./ai-slots";
-import { listProviderModels, routingOverview, setSlotRoute } from "./ai-routing";
+import { keyConfigured, listProviderModels, routingOverview, setSlotRoute } from "./ai-routing";
 import { CONTRACTS, PLACEHOLDERS, isAgentSlot, type AgentSlot } from "./agent-prompts";
 import { effectivePrompt, resetPrompt, savePrompt } from "./agent-settings";
 
@@ -34,6 +34,8 @@ export async function handleAgentSettings(request: Request, path: string[], a: P
     const action = typeof data.action === "string" ? data.action : "";
     if (action === "route") {
       const provider = String(data.provider || ""), model = String(data.model || "");
+      const eligibleProvider = PROVIDERS.find(p => p.id === provider && keyConfigured(p.id) && (def.stage !== "research" || p.research));
+      if (!eligibleProvider || !(await models(eligibleProvider.id)).includes(model)) throw new Error("Choose a model returned by the configured provider API for this agent");
       await setSlotRoute(repository, slot as SlotId, { provider, model }, a.subject, "changed from the project AI agent box");
     } else if (action === "prompt") await savePrompt(repository, slot, data.body, a.subject);
     else if (action === "reset-prompt") await resetPrompt(repository, slot);

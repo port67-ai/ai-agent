@@ -191,6 +191,7 @@ async function main() {
   const changed = await (await post("agent-settings/research:commission-objective", { action: "route", provider: "gemini", model: "gemini-2.5-flash" })).json();
   assert.deepEqual([changed.route.provider, changed.route.model, changed.route.source], ["gemini", "gemini-2.5-flash", "slot"]);
   assert.equal((await post("agent-settings/research:commission-objective", { action: "route", provider: "nope", model: "x" })).status, 400);
+  assert.equal((await post("agent-settings/research:commission-objective", { action: "route", provider: "gemini", model: "not-api-listed" })).status, 400);
   // Change the prompt: used by the next run, versioned, reset restores the original.
   const edited = ap.OBJECTIVE_PROMPT.replace("senior marketing strategist", "award-winning creative strategist");
   const v1 = await (await post("agent-settings/research:commission-objective", { action: "prompt", body: edited })).json();
