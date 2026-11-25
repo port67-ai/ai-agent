@@ -59,3 +59,6 @@ factory-commission-agents (prompts kept, placeholders, mapping, grounded call, r
 
 ## CHG-0114 acceptance
 factory-commission-agents (brand prompt and placeholders, prose mapped to the two boxes, notes and sources, 12,000 limit for brand answers only, edited prompt used with fixed rules, product link validation) and factory-agent-ui (agent box and Generate from AI on Input 5, taller brand boxes, new project fields).
+
+## CHG-0115 acceptance
+factory-video-steps (age group gate, producer and AI references with accept rules, script save and revise, sheets and prompts need a saved script, duplicate skipping, ledger rows per step, failures change nothing), factory-video-steps-ui (four sections render, accepted and AI draft states, chat log, stale prompts warning, copy buttons), factory-customers-ui (shell now shows three main entries plus four Video steps entries). Not covered: live provider output, real browser layout, clipboard in a browser.

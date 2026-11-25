@@ -401,8 +401,8 @@ Documentation only: design spec and PRD 1.35.0 section 31. No code. Intent PROPO
 | FAC-VWS-024 | IMPLEMENTED LOCALLY (CHG-0113); stub-provider tests only, uncommitted | Generate from AI, objective and product. Evidence: factory-commission-agents; tsc, lint and build pass. |
 | FAC-VWS-025 | IMPLEMENTED LOCALLY (CHG-0113); stub-provider tests only, uncommitted | AI agent box. Evidence: factory-commission-agents, factory-agent-ui. |
 | FAC-VWS-031 | IMPLEMENTED LOCALLY (CHG-0114); stub-provider tests only, uncommitted | Generate from AI, brand expression. Evidence: factory-commission-agents, factory-agent-ui; tsc, lint and build pass. |
-| FAC-VWS-026 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Video steps entry). |
-| FAC-VWS-027 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (References). |
-| FAC-VWS-028 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Scripting). |
-| FAC-VWS-029 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Characters, locations and props). |
-| FAC-VWS-030 | NOT STARTED; owner-directed, spec awaiting sign-off | Design only (Video generation prompts). |
+| FAC-VWS-026 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | Video steps entry. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |
+| FAC-VWS-027 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | References. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |
+| FAC-VWS-028 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | Scripting. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |
+| FAC-VWS-029 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | Characters, locations and props. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |
+| FAC-VWS-030 | IMPLEMENTED LOCALLY (CHG-0115); stub-provider tests only, uncommitted | Video generation prompts. Evidence: factory-video-steps, factory-video-steps-ui; tsc, lint and build pass. Text only: no images, no ShotDeck pull, no video rendered. |

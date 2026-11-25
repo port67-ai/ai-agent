@@ -1,21 +1,27 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2, FolderKanban, LayoutDashboard, LogOut, Menu, ShieldCheck } from "lucide-react";
+import { Building2, FolderKanban, LayoutDashboard, LogOut, Menu, ShieldCheck, Clapperboard } from "lucide-react";
 import type { Principal } from "@/lib/factory/model";
 import { AccountLogin } from "./AccountLogin";
 import { CustomerAccounts } from "./CustomerAccounts";
 import { Projects } from "./Projects";
+import { VideoSteps, type VideoSection } from "./VideoSteps";
 import { Field } from "./shared";
 import { api } from "./workspace-api";
 
 // Video workspace shell (CHG-0103, FAC-VWS-001 and 002): producers and admins only, three sidebar entries, more added one at a time.
 // The previous portal tabs stay in the repository, parked and unreachable from here.
-type Tab = "overview" | "customers" | "projects";
+type Tab = "overview" | "customers" | "projects" | "video-references" | "video-script" | "video-sheets" | "video-prompts";
 const NAV: { id: Tab; label: string; icon: typeof Building2 }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "customers", label: "Customer account", icon: Building2 },
   { id: "projects", label: "Projects", icon: FolderKanban },
+];
+/** Video steps: a group in the sidebar with its four sections underneath. */
+const VIDEO_NAV: { id: Tab; label: string }[] = [
+  { id: "video-references", label: "References" }, { id: "video-script", label: "Scripting" },
+  { id: "video-sheets", label: "Characters, locations and props" }, { id: "video-prompts", label: "Video generation" },
 ];
 
 export function Placeholder({ title, children }: { title: string; children: string }) {
@@ -33,7 +39,7 @@ export const isStaff = (p: Principal | null): p is Principal => !!p && p.role ==
 export function Shell({ principal, tab, setTab, onSignOut, children }: { principal: Principal; tab: Tab; setTab: (t: Tab) => void; onSignOut: () => void; children: React.ReactNode }) {
   const [mobile, setMobile] = useState(false);
   const ownerAdmin = !!principal.admin && principal.identity === "firebase";
-  const label = NAV.find((n) => n.id === tab)?.label || "";
+  const label = NAV.find((n) => n.id === tab)?.label || (VIDEO_NAV.some((n) => n.id === tab) ? `Video steps / ${VIDEO_NAV.find((n) => n.id === tab)!.label}` : "");
   return (
     <div className="f-shell">
       <aside className={"f-sidebar " + (mobile ? "open" : "")}>
@@ -42,6 +48,10 @@ export function Shell({ principal, tab, setTab, onSignOut, children }: { princip
         <nav aria-label="Workspace navigation">
           {NAV.map(({ id, label: text, icon: Icon }) => (
             <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => { setTab(id); setMobile(false); }}><Icon size={18} />{text}</button>
+          ))}
+          <div className="w-navgroup"><Clapperboard size={18} aria-hidden="true" /> Video steps</div>
+          {VIDEO_NAV.map(({ id, label: text }) => (
+            <button key={id} type="button" className={"w-navsub " + (tab === id ? "active" : "")} onClick={() => { setTab(id); setMobile(false); }}>{text}</button>
           ))}
         </nav>
         {ownerAdmin && (
@@ -136,6 +146,7 @@ export default function Workspace() {
       {tab === "overview" && <Placeholder title="Overview">The overview will bring each customer account and its projects together. What goes here is still to be decided.</Placeholder>}
       {tab === "customers" && <CustomerAccounts />}
       {tab === "projects" && <Projects />}
+      {tab.startsWith("video-") && <VideoSteps key={tab} section={tab.slice(6) as VideoSection} />}
     </Shell>
   );
 }

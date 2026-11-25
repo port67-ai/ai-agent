@@ -1,6 +1,6 @@
 # Video steps: design
 
-Status: DRAFT for owner sign-off. Documentation only. Change ID CHG-0113 (design part); requirements FAC-VWS-026 to FAC-VWS-030 (PRD 1.41.0, section 33); decision PRODUCT-030. Follows the project inputs (CHG-0107 to CHG-0113). No code until the owner says go.
+Status: BUILT LOCALLY in CHG-0115 with defaults for the unanswered questions (see CHANGELOG). Originally a draft for owner sign-off. Change ID CHG-0113 (design part); requirements FAC-VWS-026 to FAC-VWS-030 (PRD 1.41.0, section 33); decision PRODUCT-030. Follows the project inputs (CHG-0107 to CHG-0113). No code until the owner says go.
 
 ## What it is
 
