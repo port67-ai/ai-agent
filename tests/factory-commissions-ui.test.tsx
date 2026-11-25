@@ -26,7 +26,7 @@ const full: Commission = {
   confirmed: { objective: { by: "p", at: "t" } },
   audit: [{ id: "a1", at: "2026-11-25T09:00:00Z", actor: "p", action: "project_created", detail: "Autumn campaign" }],
 };
-const ed = (c: Commission) => renderToStaticMarkup(<CommissionEditor commission={c} redLines={redLines} busy={false} onSave={noop} />);
+const ed = (c: Commission, withAi = true) => renderToStaticMarkup(<CommissionEditor commission={c} redLines={redLines} busy={false} onSave={noop} onGenerate={withAi ? async () => null : undefined} />);
 
 const html = ed(empty);
 for (const t of ["Input 1: Commission objective", "Input 3: Product or service being commissioned", "Input 4: Current and intended audience", "Input 5: Brand expression and boundaries"]) assert.match(html, new RegExp(t), t);
@@ -65,4 +65,9 @@ assert.match(b1, /Warm light/);
 assert.match(b1, /Greggs/);
 assert.doesNotMatch(b1, /The objective has not been confirmed/);
 assert.match(b1, /The audience has not been confirmed/);
+// Generate from AI: only on the audience input, with a plain explanation, and only when the page offers it.
+assert.equal((html.match(/Generate from AI/g) || []).length, 1, "one button, on Input 4");
+assert.ok(html.indexOf("Generate from AI") > html.indexOf("Input 4: Current and intended audience") && html.indexOf("Generate from AI") < html.indexOf("Input 5: Brand expression"));
+assert.match(html, /Uses the customer(&#x27;|&#39;|')s Brand Intelligence and this project(&#x27;|&#39;|')s other answers\. You review it before saving/);
+assert.doesNotMatch(ed(empty, false), /Generate from AI/);
 console.log("factory-commissions-ui ok");

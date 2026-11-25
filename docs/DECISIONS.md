@@ -50,3 +50,6 @@ Addendum to PRODUCT-024 (25 November 2026): sidebar label stays "Projects" and a
 Owner instruction: run a Brand Intelligence agent from the customer account on a submit button and store its dossier as the foundation for later agents. Decisions: versioned re-runs, three searching calls plus one synthesis call, typed brand text only (and only if authorised), client red lines copied verbatim and never model written, failed runs never become the foundation.
 
 Addendum to PRODUCT-025 (25 November 2026): researched red lines are a separate section (7), labelled as inferred and not client-confirmed, and never merged into the client's verbatim red lines.
+
+## PRODUCT-026: 25 November 2026: AI drafts are never saved automatically
+Owner supplied the Intended Audience agent prompt. Decision: Generate from AI returns a draft that only fills the form; a producer must press Save answers. The agent reads the Brand Intelligence dossier as its account research and refuses without one.

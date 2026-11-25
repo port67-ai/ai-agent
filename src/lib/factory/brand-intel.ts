@@ -136,9 +136,9 @@ export function citationsOf(data: unknown): { sources: BrandIntelSource[]; queri
 }
 
 /** The foundation text later agents read: sections in order, with the client's red lines first under section 6 and exactly as entered. */
-export function dossierText(v: BrandIntelVersion): string {
+export function dossierText(v: BrandIntelVersion, maxPerSection = MAX_SECTION): string {
   return SECTION_IDS.map((id) => {
     const red = id === "6" ? `Hard Client Red Lines (verbatim from intake):\n${v.redLines.length ? v.redLines.map((r) => `- [${r.category}] ${r.text}${r.reason ? ` (${r.reason})` : ""}`).join("\n") : "- none recorded"}\n\n` : "";
-    return `## ${id}. ${SECTION_TITLES[id]}\n${red}${v.sections[id] || "(not available)"}`;
+    return `## ${id}. ${SECTION_TITLES[id]}\n${red}${(v.sections[id] || "(not available)").slice(0, maxPerSection)}`;
   }).join("\n\n");
 }
