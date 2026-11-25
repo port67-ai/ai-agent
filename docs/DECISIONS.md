@@ -69,3 +69,6 @@ Owner described four sections after Projects: references, scripting, characters,
 Addendum to PRODUCT-029 (25 November 2026): Input 5 gets the same managed agent. Its two answers are long prose, so they allow 12,000 characters while all other answers stay at 2,000.
 
 Addendum to PRODUCT-030 (25 November 2026): built as CHG-0115 with defaults, because the five design questions were not answered. References are producer-added text metadata (no image vision, no ShotDeck integration). Scripts use 15, 30 and 60 second templates with AI draft and revise. Sheets are written descriptions only. Video generation produces prompts to copy for Seedance (version unconfirmed); no video is rendered. Plans exist per project and per age group selected for direction. Any of these can be changed by the owner.
+
+## PRODUCT-031: 25 November 2026: Project image library and @names
+Images for video prompts live in a per-project library on the Characters, locations and props page. Each image has a unique name per project and prompts refer to it as @name. Library is per project, not per age group. PNG, JPEG and WebP only (no SVG), 8 MB each, 60 per project. The AI receives names and descriptions as text and may only use listed names; invented names are stripped. Owner can change the limits.

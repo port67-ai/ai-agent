@@ -9,7 +9,7 @@ import { STEP_SLOT, parseVideo, scriptText, skeleton, templateDef, videoContext,
 
 // One agent call for a Video steps step (CHG-0115). Synthesis only, no web search; metered on the admin ledger against the project.
 export const videoWorkspace = (customerId: string) => `factory-video-${customerId}`;
-export type VideoRun = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; step: VideoStep; instruction?: string; template?: string };
+export type VideoRun = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string }[]; step: VideoStep; instruction?: string; template?: string };
 
 function readJson(text: string, truncated: boolean): Record<string, unknown> {
   if (!text.trim()) throw new Error(truncated ? "The AI ran out of output length before it wrote anything. Try again, or choose a model with more output room in the AI agent box. Nothing was changed." : "The AI sent back an empty answer. Try again; nothing was changed.");
@@ -35,7 +35,7 @@ export async function runVideoStep(repo: Repository, r: VideoRun, actor: string,
   const result = await meteredInvoke(repo, { accountId: r.customer.id, workspaceId: videoWorkspace(r.customer.id), projectId: r.commission.id, runId: randomUUID() }, slot, "synthesis", sel, actor, deps,
     { instructions: `${body ?? DEFAULT_PROMPTS[slot]}\n\n${CONTRACTS[slot]}`, input: `${videoContext(r.step, r)}\n\nTASK\n${task(r)}`, schema: videoSchema(r.step), name: `port67_video_${r.step}`, maxOutputTokens: r.step === "prompts" ? 12000 : 8000, reasoningEffort: "low", timeoutMs: 150_000 });
   if (result.error) throw new Error(result.error);
-  const parsed = parseVideo(r.step, readJson(result.text, cutShort(result.data)), r.plan?.script?.shots.length || 0);
+  const parsed = parseVideo(r.step, readJson(result.text, cutShort(result.data)), r.plan?.script?.shots.length || 0, (r.images || []).map((i) => i.name));
   return { parsed, model: `${sel.provider} ${sel.model}` };
 }
 export { skeleton };

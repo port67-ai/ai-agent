@@ -88,6 +88,7 @@ import { handleCommissions, isCommissionRoute } from "./commissions-api";
 import { handleBrandIntel, isBrandIntelRoute } from "./brand-intel-api";
 import { handleAgentSettings, isAgentSettingsRoute } from "./agent-settings-api";
 import { handleVideo, isVideoRoute } from "./video-steps-api";
+import { handleVideoImages, isVideoImageRoute, isVideoImageUpload } from "./video-images-api";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -513,7 +514,7 @@ export async function handleFactory(
     await loadApprovalMode(repository);
     // Studio uploads carry the raw file as the request body; every other POST is a small JSON body.
     const upload = request.method === "POST" && path.length === 4 && path[0] === "projects" && path[2] === "studio" && path[3] === "upload";
-    const customerUpload = isCustomerUpload(request, path);
+    const customerUpload = isCustomerUpload(request, path) || isVideoImageUpload(request, path);
     const data = request.method === "POST" && !upload && !customerUpload ? await body(request) : {};
     const visitorName = "port67_factory_visitor";
     const visitor = readSession(cookie(request, visitorName), sessionKey());
@@ -657,6 +658,7 @@ export async function handleFactory(
     if (isBrandIntelRoute(path)) return await handleBrandIntel(request, path, a, data);
     if (isAgentSettingsRoute(path)) return await handleAgentSettings(request, path, a, data);
     if (isVideoRoute(path)) return await handleVideo(request, path, a, data);
+    if (isVideoImageRoute(path)) return await handleVideoImages(request, path, a, data);
     if (route === "admin/costs/series") {
       if(!a.admin || a.identity!=="firebase" || a.demo) return json({error:"Forbidden: owner admin access required"},403);
       const q=new URL(request.url).searchParams;

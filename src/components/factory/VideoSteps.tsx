@@ -4,6 +4,7 @@ import type { Commission, CustomerAccount, Generation, VideoPlan } from "@/lib/f
 import { GENERATIONS } from "@/lib/factory/commissions";
 import { STEP_LABEL } from "@/lib/factory/video-steps";
 import { PromptsSection, ReferencesSection, ScriptSection, SheetsSection, type ScriptSeed } from "./VideoStepsSections";
+import { ImageLibrary, type LibraryImage } from "./ImageLibrary";
 import { Empty, Field } from "./shared";
 import { api } from "./workspace-api";
 
@@ -22,6 +23,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [images, setImages] = useState<LibraryImage[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const project = projects.find((p) => p.id === pid);
@@ -39,7 +41,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
   }, []);
   const chooseCustomer = useCallback(async (id: string) => {
     const d = await api<{ commissions: Commission[] }>(`commissions/${id}`);
-    setCid(id); setProjects(d.commissions); setPid(""); setGen(""); setPlan(null); setSeed(undefined);
+    setCid(id); setProjects(d.commissions); setPid(""); setGen(""); setPlan(null); setSeed(undefined); setImages([]);
   }, []);
   useEffect(() => {
     let alive = true;
@@ -60,6 +62,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
     const first = GENERATIONS.find((g) => (p?.directionGenerations || []).includes(g.key) && p?.audience?.[g.key]);
     setGen(first?.key || "");
     if (first) await loadPlan(cid, id, first.key);
+    if (section === "prompts") setImages((await api<{ images: LibraryImage[] }>(`video-images/${cid}/${id}`)).images);
   });
   const chooseGen = (g: Generation) => run(async () => { setGen(g); setPlan(null); await loadPlan(cid, pid, g); });
   const base = `video/${cid}/${pid}/${gen}`;
@@ -74,6 +77,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
     setGenerating(false);
   };
   const props = { plan, busy, generating, onSave: save, onGenerate: generate };
+  const library = section === "sheets" && pid ? <ImageLibrary key={`${cid}/${pid}`} cid={cid} commissionId={pid} onChange={setImages} onError={setError} /> : null;
 
   return (
     <div className="w-page">
@@ -98,6 +102,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
               </select>
             </Field>
           </div>
+          {library}
           {!pid ? <Empty title="Choose a project">Pick the project to work on.</Empty> : groups.length === 0 ? (
             <Empty title="Select an age group for direction first">Video steps start from a saved, selected age group. Open the project, save the audience for at least one age group on Input 4, and tick &quot;Use … for direction&quot;.</Empty>
           ) : (
@@ -108,7 +113,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
               {gen && section === "references" && <ReferencesSection {...props} />}
               {gen && section === "script" && <ScriptSection key={(plan?.script?.savedAt || "") + (seed?.n || "")} {...props} seed={seed} />}
               {gen && section === "sheets" && <SheetsSection {...props} />}
-              {gen && section === "prompts" && <PromptsSection key={plan?.prompts?.generatedAt || "none"} {...props} />}
+              {gen && section === "prompts" && <PromptsSection key={plan?.prompts?.generatedAt || "none"} {...props} images={images} />}
             </>
           )}
         </>

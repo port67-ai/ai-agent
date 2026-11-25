@@ -6,6 +6,8 @@ import type { AgentSlot } from "@/lib/factory/agent-prompts";
 import { SHEET_KINDS, TEMPLATES, scriptSeconds, skeleton } from "@/lib/factory/video-steps";
 import { AgentPopout } from "./AgentPopout";
 import { Field } from "./shared";
+import { CopyName, type LibraryImage } from "./ImageLibrary";
+import { mentions } from "@/lib/factory/video-images";
 
 // The four sections of Video steps (CHG-0115). Presentational: the container owns the requests and the plan.
 type Save = (action: string, payload: Record<string, unknown>) => Promise<boolean>;
@@ -160,7 +162,7 @@ export function SheetsSection({ plan, busy, generating, onSave, onGenerate }: Pr
   return (
     <div className="w-stack">
       <section className="f-panel" aria-labelledby="vs-sheets">
-        <div className="f-section-heading"><h3 id="vs-sheets">Characters, locations and props</h3></div>
+        <div className="f-section-heading"><h3 id="vs-sheets">Written sheets</h3></div>
         <Agent slot="synthesis:video-sheets" />
         <p className="f-small">A fixed written sheet for each person, product, location and prop, so they look the same in every shot. The AI drafts them from the saved script; accept the ones you want. Only accepted sheets go forward to video generation.</p>
         <div className="w-generate">
@@ -208,8 +210,10 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return <button type="button" className="f-button secondary small" onClick={async () => { try { await navigator.clipboard.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); } catch { /* clipboard not available */ } }}><Copy size={14} /> {done ? "Copied" : label}</button>;
 }
 export const allPrompts = (plan: VideoPlan) => `${plan.prompts?.overall || ""}\n\n${(plan.prompts?.shots || []).map((s) => `Shot ${s.shot}: ${s.prompt}`).join("\n\n")}`.trim();
-export function PromptsSection({ plan, busy, generating, onSave, onGenerate }: Props) {
+export function PromptsSection({ plan, busy, generating, onSave, onGenerate, images = [] }: Props & { images?: LibraryImage[] }) {
   const pr = plan?.prompts;
+  const known = new Set(images.map((i) => i.name.toLowerCase()));
+  const missing = pr ? [...new Set([pr.overall, ...pr.shots.map((x) => x.prompt)].flatMap(mentions))].filter((n) => !known.has(n.toLowerCase())) : [];
   const stale = !!(pr && plan?.script && plan.script.savedAt > pr.generatedAt);
   return (
     <div className="w-stack">
@@ -221,6 +225,11 @@ export function PromptsSection({ plan, busy, generating, onSave, onGenerate }: P
           <GenButton label={pr ? "Regenerate prompts" : "Generate prompts"} busy={busy} generating={generating} disabled={!plan?.script} onClick={() => onGenerate("prompts")} />
           {!plan?.script && <span className="f-small">Save a script first.</span>}
         </div>
+        <div className="w-refs">
+          <strong>Images you can refer to</strong>
+          {images.length === 0 ? <span className="f-small"> None yet. Upload some under Characters, locations and props.</span> : <div className="w-actions">{images.map((i) => <CopyName key={i.id} name={i.name} />)}</div>}
+        </div>
+        {missing.length > 0 && <div className="f-callout w-warn" role="status">These prompts mention {missing.map((n) => `@${n}`).join(", ")}, which {missing.length === 1 ? "is" : "are"} not in the project image library any more. Add or rename an image, or edit the prompt.</div>}
         {stale && <div className="f-callout w-warn" role="status">The script was saved after these prompts were generated. Regenerate them to match.</div>}
         {pr && plan && (
           <form className="f-form-grid w-onecol" onSubmit={async (e) => {

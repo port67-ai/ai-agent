@@ -535,6 +535,8 @@ export type VideoReference = { id: string; title: string; link: string; why: str
 export type VideoShot = { seconds: number; visual: string; line: string; onScreen: string };
 export type VideoScript = { template: "15" | "30" | "60" | "custom"; title: string; shots: VideoShot[]; savedBy: string; savedAt: string };
 export type VideoChat = { id: string; at: string; by: string; instruction: string; reply: string };
+/** One image in a project's library, used as an @name reference in video prompts. The bytes live in private storage, never in the record. */
+export type VideoImage = { id: string; commissionId: string; name: string; description: string; mime: "image/png" | "image/jpeg" | "image/webp"; bytes: number; storageKey: string; uploadedAt: string; uploadedBy: string };
 export type VideoSheet = { id: string; kind: "person" | "product" | "location" | "prop"; name: string; description: string; details: string; source: "producer" | "ai"; accepted: boolean; addedBy: string; addedAt: string };
 export type VideoPrompts = { overall: string; shots: { shot: number; prompt: string; negative: string }[]; generatedAt: string; by: string; model: string; edited?: boolean };
 export type VideoPlan = {
@@ -576,6 +578,8 @@ export type Database = {
   agentPrompts?: Record<string, AgentPromptRecord>;
   /** Video steps plans for one customer account (workspace `factory-video-<customerId>`): one per project and age group. */
   videoPlans?: VideoPlan[];
+  /** Image library for the projects of one customer account (same workspace as videoPlans). Each image belongs to one project. */
+  videoImages?: VideoImage[];
   /** Video workspace customer accounts; used only in the system workspace `factory-customers`. */
   customers?: CustomerAccount[];
   /** Studio Brand Kit for one customer account, kept in its own small record (factory-brandkit-<account>). */

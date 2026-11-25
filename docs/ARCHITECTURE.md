@@ -60,3 +60,6 @@ agent-prompts.ts holds each agent's editable prompt body, its placeholders and a
 
 ## CHG-0115: Video steps
 Routes `video/:customerId/:commissionId/:generation` (video-steps-api.ts, hooked in service.ts after sign-in) are producer and admin only and refuse an age group that is not saved and selected for direction. Pure rules, templates, validators, context assembly and parsers live in video-steps.ts; writes in video-steps-commands.ts; model calls in video-steps-run.ts through `meteredInvoke` with one routable slot per step. Plans live in the system workspace `factory-video-<customerId>`. UI: VideoSteps.tsx (pickers, age group tabs) and VideoStepsSections.tsx (four sections), each with the shared AgentPopout.
+
+## CHG-0116: Project image library
+Routes `video-images/:customerId/:commissionId[...]` (video-images-api.ts, hooked in service.ts; the upload route is a raw body like brand purpose uploads). Pure rules (type sniffing, names, limits, @mention handling) in video-images.ts; private bytes in video-image-store.ts. UI: ImageLibrary.tsx (container and ImageLibraryView) shown on the Characters, locations and props page.
