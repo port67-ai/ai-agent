@@ -141,3 +141,10 @@ export function setConfirmed(db: Database, id: string, input: unknown, confirmed
   else delete c.confirmed[input];
   record(c, actor, confirmed ? "confirmed_with_client" : "confirmation_withdrawn", input);
 }
+
+/** Record that an AI draft was produced for an input. The draft itself is not stored; only a person's Save answers is. */
+export function recordDraft(db: Database, id: string, input: string, dossierVersion: number, actor: string): Commission {
+  const c = findCommission(db, id);
+  record(c, actor, "ai_draft_generated", `${inputDef(input)?.title || input} from Brand Intelligence version ${dossierVersion}`);
+  return c;
+}

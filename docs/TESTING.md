@@ -47,3 +47,6 @@ tests/factory-brand-intel.test.ts (parsing, citations, intake withholds unauthor
 
 ## CHG-0109 acceptance
 factory-customers-ui (collapsibles, chips, Add button, dossier slot below red lines), factory-customers-api (PDF served inline, private, no-store), factory-brand-intel (section 7 prompt wording, 5 ledger rows) and factory-brand-intel-ui (verify-first callout, red line cards, source chips). Manual: open a filled account, confirm the three sections are closed and keep their state after Save; Add a PDF; click its chip.
+
+## CHG-0110 acceptance
+tests/factory-audience-agent.test.ts (needs a dossier, draft mapped to the five answers, nothing saved, audit line, ledger row on the commission, bad JSON and provider failure leave answers unchanged, unconfigured not charged) and the Generate from AI assertions in factory-commissions-ui. Manual: after a Brand Intelligence run, open a project, press Generate from AI on Input 4, review, Save answers.

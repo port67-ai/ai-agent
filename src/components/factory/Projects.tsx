@@ -63,6 +63,18 @@ export function Projects() {
     }, NOTICES[action] || "Saved.");
   }
 
+  async function generate(input: string): Promise<Record<string, string> | null> {
+    if (!detail) return null;
+    let draft: Record<string, string> | null = null;
+    const ok = await run(async () => {
+      const data = await api<{ draft: Record<string, string>; commission: Commission }>(`commissions/${cid}/${detail.commission.id}`, { action: "generate", input });
+      draft = data.draft;
+      setDetail({ ...detail, commission: data.commission });
+      setList((l) => l.map((x) => (x.id === data.commission.id ? data.commission : x)));
+    }, "AI draft filled in. Review it, then press Save answers.");
+    return ok ? draft : null;
+  }
+
   return (
     <div className="w-page">
       <header className="f-page-header">
@@ -109,7 +121,7 @@ export function Projects() {
                   <button type="button" role="tab" aria-selected={view === "baseline"} className={"f-button" + (view === "baseline" ? "" : " secondary")} onClick={() => setView("baseline")}>Inspiration baseline</button>
                 </div>
                 {view === "inputs"
-                  ? <CommissionEditor key={detail.commission.id} commission={detail.commission} redLines={detail.redLines} busy={busy} onSave={save} />
+                  ? <CommissionEditor key={detail.commission.id} commission={detail.commission} redLines={detail.redLines} busy={busy} onSave={save} onGenerate={generate} />
                   : <InspirationBaseline commission={detail.commission} redLines={detail.redLines} />}
               </>
             ) : (

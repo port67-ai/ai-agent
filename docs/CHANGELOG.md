@@ -777,3 +777,12 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: tsc, `npm run check:factory`, `npm test` and `npm run build` pass in a clean copy; customers-api, customers-ui, brand-intel and brand-intel-ui suites updated; governance check run after these edits.
 - Limitations: not run against a real provider or in a browser. The PDF inline view relies on Chrome showing a PDF under the header `default-src 'none'`; if it does not, the tab will download the file instead. The Add button asks for the rights confirmation with a browser confirm box rather than a ticked box.
 - Status: built locally, uncommitted.
+
+## CHG-0110: 2026-11-25: Intended Audience agent (Generate from AI)
+- Author/harness: Claude. Owner supplied the Intended Audience AI Agent system prompt and output schema for a Generate from AI button.
+- What: audience-agent.ts (owner's prompt verbatim plus output and safety rules, strict JSON schema, validation, metered call); `generate` action on commissions routes; button and draft handling on Input 4; AI job synthesis:intended-audience, routable on the AI models page.
+- Requirements: FAC-VWS-021 (new).
+- PRD impact: 1.38.0.
+- Evidence: tsc, `npm run check:factory`, `npm test` and `npm run build` pass in a clean copy; new suite factory-audience-agent and additions to factory-commissions-ui; agent count tests updated; governance check run after these edits.
+- Limitations: never run against a real provider, so draft quality is unjudged; needs PORT67_SYNTHESIS_ENABLED=true and a provider key; "account research" is the Brand Intelligence dossier (8,000 characters per section), so accounts without a completed dossier cannot use it; only Input 4 has the button; no browser check; uncommitted.
+- Status: built locally, uncommitted.

@@ -51,3 +51,6 @@ Routes `commissions/:customerId[/:id]` (commissions-api.ts, hooked in service.ts
 
 ## CHG-0108: Brand Intelligence
 brand-intel.ts (pure: intake, prompts, parsing, citations), brand-intel-run.ts (start, background execute, ledger reserve and finish per call, `brandFoundation` reader), brand-intel-api.ts (`brand-intel/:customerId`, producers and admins only). The run is a background promise on the Render server; a record still running after 20 minutes is shown as interrupted. Models come from the AI models page jobs research:brand-intel and synthesis:brand-intel. Web content is treated as untrusted in every prompt.
+
+## CHG-0110: Intended Audience agent
+audience-agent.ts builds the owner's prompt, calls the model once through the shared provider layer (job synthesis:intended-audience, no web search, strict JSON schema), validates all five fields and meters the call on the admin ledger against the account and the commission. The route returns a draft; only the existing `answers` action stores text.
