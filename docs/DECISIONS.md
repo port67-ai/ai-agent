@@ -56,3 +56,6 @@ Owner supplied the Intended Audience agent prompt. Decision: Generate from AI re
 
 ## PRODUCT-027: 25 November 2026: Audience is answered per age group
 Owner definitions: Gen X 46-61, Gen Y 30-45, Gen Z / Zoomers 14-29, Gen Alpha 2-13. Same five answers per group with different content. A producer must select at least one saved group to go to direction; others can be added later for new workflows. Content for groups including under 18s must be age-appropriate, with parents or guardians as buyers.
+
+## PRODUCT-028: 25 November 2026: Evidence and the change list are parked
+Owner direction: keep the project flow clear. Evidence per input and the Can change or out of character list stay in the product but are greyed out and outside the flow until needed. They are switched off by two constants, not removed.

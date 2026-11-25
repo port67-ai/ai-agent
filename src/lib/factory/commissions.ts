@@ -6,6 +6,9 @@ export const MAX_COMMISSIONS = 50;
 export const MAX_EVIDENCE = 30;
 export const MAX_LIST = 30;
 export const MAX_ANSWER = 2000;
+/** Evidence and the "can change or out of character" list are shown greyed out and are not part of the flow for now. Turn on to restore the rules below. */
+export const EVIDENCE_ACTIVE = false;
+export const CHANGE_LIST_ACTIVE = false;
 export const INPUT_KEYS: CommissionInput[] = ["objective", "product", "audience", "brand"];
 
 /** The four primary inputs, numbered as the owner listed them (there is no Input 2). */
@@ -13,7 +16,9 @@ export const INPUTS: { key: CommissionInput; number: number; title: string; role
   { key: "objective", number: 1, title: "Commission objective", role: "The Filter", helper: "Decides what research to ignore. Confirm directly with the client.", prompts: [
     { key: "why", label: "Why has the client commissioned this work now?" },
     { key: "making", label: "What are you making, for whom, and where will they encounter it?" },
-    { key: "response", label: "What should that person think, feel or do afterwards?" },
+    { key: "think", label: "What should they think afterwards?" },
+    { key: "feel", label: "What should they feel?" },
+    { key: "do", label: "What should they do after?" },
     { key: "success", label: "How will the client judge success?" },
   ] },
   { key: "product", number: 3, title: "Product or service being commissioned", role: "The Proof", helper: "Keeps inspiration grounded in physical truth rather than empty aesthetics.", prompts: [
@@ -140,13 +145,13 @@ const count = (key: CommissionInput, a: Record<string, string> | undefined) => (
 const answered = (c: Commission, key: CommissionInput) =>
   key === "audience" ? Math.max(count(key, c.answers.audience), ...Object.values(c.audience || {}).map((s) => count(key, s?.answers))) : count(key, c.answers[key]);
 const evidenceFor = (c: Commission, key: CommissionInput) => c.evidence.filter((e) => e.input === key);
-/** Complete means every prompt answered and at least one evidence item. */
+/** Complete means every prompt answered (and, once evidence is switched on, at least one evidence item). */
 export function inputStatus(c: Commission, key: CommissionInput): InputStatus {
   const total = inputDef(key)!.prompts.length;
   const n = answered(c, key);
-  const ev = evidenceFor(c, key).length;
+  const ev = EVIDENCE_ACTIVE ? evidenceFor(c, key).length : 0;
   if (n === 0 && ev === 0) return "not_started";
-  return n === total && ev > 0 ? "complete" : "in_progress";
+  return n === total && (!EVIDENCE_ACTIVE || ev > 0) ? "complete" : "in_progress";
 }
 
 export type BaselineView = {
@@ -179,11 +184,11 @@ export function baseline(c: Commission, redLines: RedLine[] = []): BaselineView 
     if (status[def.key] === "not_started") gaps.push(`${label} is not started`);
     else {
       if (n < def.prompts.length) gaps.push(`${label} has ${def.prompts.length - n} unanswered question${def.prompts.length - n === 1 ? "" : "s"}`);
-      if (!ev) gaps.push(`${label} has no evidence`);
+      if (EVIDENCE_ACTIVE && !ev) gaps.push(`${label} has no evidence`);
     }
   }
   if (!c.preserve.length) gaps.push("Nothing is listed to preserve");
-  if (!c.change.length) gaps.push("Nothing is listed as can change or out of character");
+  if (CHANGE_LIST_ACTIVE && !c.change.length) gaps.push("Nothing is listed as can change or out of character");
   const selected = (c.directionGenerations || []).filter((g) => c.audience?.[g]);
   if (Object.keys(c.audience || {}).length && !selected.length) gaps.push("No age group is selected for direction");
   if (!c.confirmed.objective) gaps.push("The objective has not been confirmed with the client");

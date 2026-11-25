@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { Commission, Database } from "../src/lib/factory/model";
-import { GENERATIONS, INPUTS, INPUT_KEYS, MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, SECONDARY, answerFields, baseline, evidenceSource, inputStatus, listEntryFields } from "../src/lib/factory/commissions";
+import { CHANGE_LIST_ACTIVE, EVIDENCE_ACTIVE, GENERATIONS, INPUTS, INPUT_KEYS, MAX_COMMISSIONS, MAX_EVIDENCE, MAX_LIST, SECONDARY, answerFields, baseline, evidenceSource, inputStatus, listEntryFields } from "../src/lib/factory/commissions";
 import { addEvidence, addListEntry, createCommission, commissionsOf, removeEvidence, removeListEntry, renameCommission, saveAnswers, saveAudience, saveWentTooFar, setConfirmed, setDirection, updateEvidence, updateListEntry } from "../src/lib/factory/commissions-commands";
 
 // Commissions and the Inspiration baseline (CHG-0107, FAC-VWS-011 to FAC-VWS-016): rules, commands, status and the baseline view.
@@ -11,7 +11,7 @@ const ev = { source: "https://example.com/about", where: "product_page", note: "
 
 // ---- The four inputs are numbered as the owner listed them, and the secondary checks are present
 assert.deepEqual(INPUTS.map((i) => [i.number, i.key, i.role]), [[1, "objective", "The Filter"], [3, "product", "The Proof"], [4, "audience", "The Bridge"], [5, "brand", "The Anchor"]]);
-assert.deepEqual(INPUTS.map((i) => i.prompts.length), [4, 6, 5, 2]);
+assert.deepEqual(INPUTS.map((i) => i.prompts.length), [6, 6, 5, 2]);
 assert.deepEqual(SECONDARY.map((s) => s.title), ["Company story and values", "Competition and alternatives", "Parallels and creative inspiration"]);
 
 // ---- Validation
@@ -51,13 +51,13 @@ assert.deepEqual(listEntryFields("preserve", { text: " Waxed cotton ", scope: "r
 
   // Answers: only the prompts sent change; clearing removes; unchanged adds no entry.
   saveAnswers(db, c.id, "objective", { why: "Reframe", success: "Sell-through in London" }, "p");
-  saveAnswers(db, c.id, "objective", { response: "Feel it is practical" }, "p");
-  assert.deepEqual(c.answers.objective, { why: "Reframe", success: "Sell-through in London", response: "Feel it is practical" });
+  saveAnswers(db, c.id, "objective", { feel: "Feel it is practical" }, "p");
+  assert.deepEqual(c.answers.objective, { why: "Reframe", success: "Sell-through in London", feel: "Feel it is practical" });
   const a = c.audit.length;
   saveAnswers(db, c.id, "objective", { why: "Reframe" }, "p");
   assert.equal(c.audit.length, a, "same answer, no entry");
-  saveAnswers(db, c.id, "objective", { response: "" }, "p");
-  assert.equal(c.answers.objective.response, undefined, "cleared");
+  saveAnswers(db, c.id, "objective", { feel: "" }, "p");
+  assert.equal(c.answers.objective.feel, undefined, "cleared");
   assert.deepEqual(c.answers.product, {}, "other inputs untouched");
 
   // Brand lists: entries with scope and kind; edits and removal audited; capped.
@@ -120,7 +120,7 @@ assert.deepEqual(listEntryFields("preserve", { text: " Waxed cotton ", scope: "r
   // Empty: the baseline still shows, with every gap listed.
   let b = baseline(c, redLines);
   assert.deepEqual(INPUT_KEYS.map((k) => b.status[k]), ["not_started", "not_started", "not_started", "not_started"]);
-  assert.equal(b.gaps.length, 8);
+  assert.equal(b.gaps.length, 7, "four inputs, preserve, two confirmations; evidence and the change list are greyed out");
   assert.ok(b.gaps.includes("Input 1, Commission objective is not started"));
   assert.ok(b.gaps.includes("Nothing is listed to preserve"));
   assert.ok(b.gaps.includes("The audience has not been confirmed with the client"));
@@ -132,12 +132,17 @@ assert.deepEqual(listEntryFields("preserve", { text: " Waxed cotton ", scope: "r
   b = baseline(c);
   assert.equal(b.status.audience, "in_progress");
   assert.ok(b.gaps.includes("Input 4, Current and intended audience has 3 unanswered questions"));
-  assert.ok(b.gaps.includes("Input 4, Current and intended audience has no evidence"));
+  assert.ok(!b.gaps.some((g) => g.includes("no evidence")), "evidence is greyed out, so it is not a gap");
+  assert.ok(!b.gaps.includes("Nothing is listed as can change or out of character"), "the change list is greyed out, so it is not a gap");
   assert.deepEqual(b.audiences.map((a) => [a.key, a.selected, a.lines.map((x) => x.text)]), [["gen_z", false, ["20-somethings in London", "Feeling like cosplay"]]], "only answered prompts, in order");
   assert.equal(b.directionReady, false);
   assert.ok(b.gaps.includes("No age group is selected for direction"));
-  // Evidence alone is also "in progress"; complete needs every prompt and evidence.
+  // Evidence is greyed out for now: it neither starts nor completes an input. Complete means every prompt answered.
+  assert.equal(EVIDENCE_ACTIVE, false);
+  assert.equal(CHANGE_LIST_ACTIVE, false);
   addEvidence(db, c.id, "brand", { ...ev, basis: "inference" }, "p");
+  assert.equal(inputStatus(c, "brand"), "not_started", "evidence alone does not start an input");
+  saveAnswers(db, c.id, "brand", { recognisable: "Tactile materiality" }, "p");
   assert.equal(inputStatus(c, "brand"), "in_progress");
   saveAnswers(db, c.id, "brand", { recognisable: "Tactile materiality", recurring: "Wax, corduroy, brass" }, "p");
   assert.equal(inputStatus(c, "brand"), "complete");
@@ -200,4 +205,6 @@ assert.deepEqual(listEntryFields("preserve", { text: " Waxed cotton ", scope: "r
   assert.match(c.audit.at(-1)!.detail, /none selected/);
   assert.ok(c.audit.some((a) => a.action === "audience_saved" && /Gen Alpha/.test(a.detail)));
 }
+// The objective's reaction question is three boxes: think, feel, do.
+assert.deepEqual(INPUTS[0].prompts.map((p) => p.key), ["why", "making", "think", "feel", "do", "success"]);
 console.log("commissions: all assertions passed");

@@ -39,7 +39,18 @@ assert.match(html, /Which elements recur across years and channels/);
 assert.equal((html.match(/Not started/g) || []).length, 4);
 // Secondary checks are shown but locked.
 for (const s of ["Company story and values", "Competition and alternatives", "Parallels and creative inspiration"]) assert.match(html, new RegExp(s), s);
-assert.equal((html.match(/aria-disabled="true"/g) || []).length, 3);
+assert.equal((html.match(/<div class="f-panel w-locked" aria-disabled="true"/g) || []).length, 3);
+// Evidence on every input, and the change list, are collapsed dropdowns that are greyed out for now.
+assert.equal((html.match(/<details class="w-dropdown w-locked" aria-disabled="true"><summary>Evidence \(0\)/g) || []).length, 4, "evidence dropdown on all four inputs");
+assert.match(html, /<details class="w-dropdown w-locked" aria-disabled="true"><summary>Can change or out of character \(0\)/);
+assert.equal((html.match(/<fieldset class="w-fieldset" disabled="">/g) || []).length, 5, "everything inside is disabled");
+assert.equal((html.match(/<details class="w-dropdown[^>]*open/g) || []).length, 0, "closed by default");
+assert.match(html, /Not available yet/);
+// The reaction question is three separate boxes.
+for (const q of ["What should they think afterwards\\?", "What should they feel\\?", "What should they do after\\?"]) assert.match(html, new RegExp(q), q);
+assert.doesNotMatch(html, /think, feel or do/);
+assert.ok(html.indexOf("What should they think afterwards") < html.indexOf("What should they feel") && html.indexOf("What should they feel") < html.indexOf("What should they do after"));
+assert.match(html, /class="w-stack w-inputs"/, "questions run top to bottom");
 // Confirmation ticks only on objective and audience.
 assert.equal((html.match(/Confirmed directly with the client/g) || []).length, 2);
 // Brand lists, went-too-far and the account red lines.
