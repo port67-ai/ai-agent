@@ -58,8 +58,8 @@ export function acceptSheet(p: VideoPlan, id: unknown, accepted: unknown, actor:
 // ---- Prompts
 export function savePrompts(p: VideoPlan, d: Record<string, unknown>, actor: string) {
   if (!p.script || !p.prompts) throw new Error("Generate the prompts first");
-  const f = promptsFields(d, p.script.shots.length);
-  p.prompts = { ...p.prompts, overall: f.overall, shots: f.shots, edited: true };
+  const f = promptsFields(d, p.script.narrative ? p.prompts.shots.length : p.script.shots.length);
+  p.prompts = { ...p.prompts, overall: f.overall, shots: f.shots.map((s, i) => ({ ...p.prompts!.shots[i], ...s })), edited: true };
   touch(p, actor);
 }
 

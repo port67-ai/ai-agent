@@ -61,7 +61,9 @@ export function shotsFields(value: unknown): VideoShot[] {
     return { seconds, visual: str(o.visual, `Shot ${i + 1} visual`, 800, true), line: str(o.line, `Shot ${i + 1} spoken line`, 600), onScreen: str(o.onScreen, `Shot ${i + 1} on-screen text`, 200) };
   });
 }
-export function scriptFields(d: Record<string, unknown>): Pick<VideoScript, "template" | "title" | "shots"> {
+export function narrativeBrief(d: Record<string, unknown>) { return { title: str(d.title, "Script title", 120, true), creativeBrief: str(d.creativeBrief, "Creative brief", 12000, true) }; }
+export function scriptFields(d: Record<string, unknown>): Pick<VideoScript, "template" | "title" | "shots" | "creativeBrief" | "narrative"> {
+  if ("narrative" in d || "creativeBrief" in d) return { ...narrativeBrief(d), narrative: str(d.narrative, "Developed script", 20000, true), template: "custom", shots: [] };
   const template = d.template === "custom" || templateDef(String(d.template)) ? (d.template as VideoScript["template"]) : (() => { throw new Error("Choose a template or custom"); })();
   return { template, title: str(d.title, "Title", 120, true), shots: shotsFields(d.shots) };
 }
@@ -76,6 +78,7 @@ export function promptsFields(d: Record<string, unknown>, shotCount: number) {
 const cap = (s: string, n = 3000) => s.trim().slice(0, n);
 export type VideoCtx = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string; title?: string; category?: string }[] };
 export function scriptText(s: VideoScript): string {
+  if (s.narrative) return `Title: ${s.title}\nApproved narrative:\n${s.narrative}`;
   return `Title: ${s.title}\nTemplate: ${s.template}, ${scriptSeconds(s)} seconds\n${s.shots.map((x, i) => `Shot ${i + 1} (${x.seconds}s)\n  Visual: ${x.visual}\n  Line: ${x.line || "(none)"}\n  On-screen text: ${x.onScreen || "(none)"}`).join("\n")}`;
 }
 /** The data block for a step. Earlier steps are included only once they exist (references and sheets only when accepted). */
@@ -107,7 +110,9 @@ export function videoContext(step: VideoStep, c: VideoCtx): string {
 // ---------- Schemas and checks on what the agents return ----------
 const text = { type: "string" } as const;
 const obj = (props: Record<string, unknown>) => ({ type: "object", additionalProperties: false, required: Object.keys(props), properties: props });
-export function videoSchema(step: VideoStep) {
+export function videoSchema(step: VideoStep, narrativeMode = false) {
+  if (step === "script" && narrativeMode) return obj({ title: text, narrative: text, notes: text });
+  if (step === "prompts" && narrativeMode) return obj({ overall: text, shots: { type: "array", items: obj({ shot: { type: "integer" }, seconds: { type: "integer" }, visual: text, line: text, on_screen: text, prompt: text, negative: text }) } });
   if (step === "references") return obj({ summary: text, references: { type: "array", items: obj({ title: text, why: text, palette: text, composition: text, camera: text, film_look: text, lens: text, search_terms: text }) } });
   if (step === "script") return obj({ title: text, notes: text, shots: { type: "array", items: obj({ seconds: { type: "integer" }, visual: text, line: text, on_screen: text }) } });
   if (step === "sheets") return obj({ sheets: { type: "array", items: obj({ kind: { type: "string", enum: SHEET_KINDS.map((k) => k.key) }, name: text, description: text, details: text }) } });
@@ -121,16 +126,17 @@ const rows = (o: Record<string, unknown>, key: string, min: number, max: number)
 };
 export type ParsedVideo =
   | { step: "references"; summary: string; references: Omit<VideoReference, "id" | "source" | "accepted" | "addedBy" | "addedAt">[] }
-  | { step: "script"; title: string; notes: string; shots: VideoShot[] }
+  | { step: "script"; title: string; notes: string; shots: VideoShot[]; narrative?: string }
   | { step: "sheets"; sheets: Pick<VideoSheet, "kind" | "name" | "description" | "details">[] }
-  | { step: "prompts"; overall: string; shots: { shot: number; prompt: string; negative: string }[] };
-export function parseVideo(step: VideoStep, o: Record<string, unknown>, scriptShots = 0, imageNames: string[] = []): ParsedVideo {
+  | { step: "prompts"; overall: string; shots: { shot: number; prompt: string; negative: string; seconds?: number; visual?: string; line?: string; onScreen?: string }[] };
+export function parseVideo(step: VideoStep, o: Record<string, unknown>, scriptShots = 0, imageNames: string[] = [], narrativeMode = false): ParsedVideo {
   if (step === "references") {
     const refs = rows(o, "references", 1, 8).map((r) => ({ title: clean(r.title, 120), why: clean(r.why, 600), palette: clean(r.palette, 600), composition: clean(r.composition, 600), camera: clean(r.camera, 600), film: clean(r.film_look, 600), lens: clean(r.lens, 600), searchTerms: clean(r.search_terms, 600), link: "" })).filter((r) => r.title);
     if (!refs.length) throw new Error("The AI answer had no usable references. Try again; nothing was changed.");
     return { step, summary: clean(o.summary, 1000), references: refs };
   }
   if (step === "script") {
+    if (narrativeMode) return { step, title: clean(o.title, 120) || "Untitled script", narrative: str(o.narrative, "Developed script", 20000, true), notes: clean(o.notes, 600), shots: [] };
     const shots = shotsFields(rows(o, "shots", 1, MAX_SHOTS).map((r) => ({ seconds: r.seconds, visual: clean(r.visual, 800), line: clean(r.line, 600), onScreen: clean(r.on_screen, 200) })));
     return { step, title: clean(o.title, 120) || "Untitled script", notes: clean(o.notes, 600), shots };
   }
@@ -139,8 +145,8 @@ export function parseVideo(step: VideoStep, o: Record<string, unknown>, scriptSh
     if (!sheets.length) throw new Error("The AI answer had no usable sheets. Try again; nothing was changed.");
     return { step, sheets };
   }
-  const shots = rows(o, "shots", 1, MAX_SHOTS).map((r, i) => ({ shot: i + 1, prompt: dropUnknownMentions(clean(r.prompt, 3000), imageNames), negative: clean(r.negative, 1000) }));
-  if (shots.length !== scriptShots || shots.some((s) => !s.prompt)) throw new Error(`The AI answer did not give one prompt for each of the ${scriptShots} script shots. Try again; nothing was changed.`);
+  const shots = rows(o, "shots", 1, MAX_SHOTS).map((r, i) => ({ shot: i + 1, prompt: dropUnknownMentions(clean(r.prompt, 3000), imageNames), negative: clean(r.negative, 1000), ...(narrativeMode ? shotsFields([{ seconds: r.seconds, visual: r.visual, line: r.line, onScreen: r.on_screen }])[0] : {}) }));
+  if ((!narrativeMode && shots.length !== scriptShots) || shots.some((s) => !s.prompt)) throw new Error(`The AI answer did not give one prompt for each of the ${scriptShots} script shots. Try again; nothing was changed.`);
   const overall = dropUnknownMentions(clean(o.overall, 3000), imageNames);
   if (!overall) throw new Error('The AI answer left out "overall". Try again; nothing was changed.');
   return { step, overall, shots };

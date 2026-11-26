@@ -35,6 +35,12 @@ async function main() {
     assert.deepEqual(ap.PLACEHOLDERS[slot], []);
   }
   assert.ok(ap.VIDEO_REFERENCES_BODY.includes("ShotDeck") && ap.VIDEO_PROMPTS_BODY.includes("text-to-video"));
+  assert.deepEqual(vs.scriptFields({ title: "Winter", creativeBrief: "Rain and warmth", narrative: "She arrives." }), { title: "Winter", creativeBrief: "Rain and warmth", narrative: "She arrives.", template: "custom", shots: [] });
+  assert.throws(() => vs.scriptFields({ title: "Winter", creativeBrief: "Rain", narrative: "" }), /Developed script is required/);
+  const narrative = vs.parseVideo("script", { title: "Winter", narrative: "She arrives.", notes: "" }, 0, [], true);
+  assert.ok(narrative.step === "script" && narrative.narrative === "She arrives." && narrative.shots.length === 0);
+  const planned = vs.parseVideo("prompts", { overall: "Warm", shots: [{ shot: 1, seconds: 4, visual: "She arrives", line: "", on_screen: "", prompt: "@car arrives", negative: "" }] }, 0, ["car"], true);
+  assert.ok(planned.step === "prompts" && planned.shots[0].seconds === 4 && planned.shots[0].visual === "She arrives");
 
   // ---- Setup through the API
   let cookie = "";

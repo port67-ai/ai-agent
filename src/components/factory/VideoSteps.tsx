@@ -70,9 +70,9 @@ export function VideoSteps({ section }: { section: VideoSection }) {
   const generate = async (step: "references" | "script" | "sheets" | "prompts", extra: Record<string, unknown> = {}) => {
     setGenerating(true);
     await run(async () => {
-      const d = await api<{ plan: VideoPlan; draft?: { title: string; shots: ScriptSeed["shots"] } | null }>(base, { action: "generate", step, ...extra });
+      const d = await api<{ plan: VideoPlan; draft?: ScriptSeed | null }>(base, { action: "generate", step, ...extra });
       setPlan(d.plan);
-      if (step === "script" && d.draft) setSeed({ template: (extra.template as ScriptSeed["template"]) || d.plan.script?.template || "custom", title: d.draft.title, shots: d.draft.shots, n: Date.now() });
+      if (step === "script" && d.draft) setSeed({ ...d.draft, n: Date.now() });
     }, step === "script" ? "Draft ready in the editor. Check it, then press Save script." : "Done. Review the results below.");
     setGenerating(false);
   };

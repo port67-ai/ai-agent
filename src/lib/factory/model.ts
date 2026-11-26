@@ -533,13 +533,13 @@ export type AiNotes = { sections: { title: string; text: string }[]; sources: { 
 /** Video steps (CHG-0115). A plan belongs to one project and one age group that was selected for direction. */
 export type VideoReference = { id: string; title: string; link: string; why: string; palette: string; composition: string; camera: string; film: string; lens: string; searchTerms: string; source: "producer" | "ai"; accepted: boolean; addedBy: string; addedAt: string };
 export type VideoShot = { seconds: number; visual: string; line: string; onScreen: string };
-export type VideoScript = { template: "15" | "30" | "60" | "custom"; title: string; shots: VideoShot[]; savedBy: string; savedAt: string };
+export type VideoScript = { template: "15" | "30" | "60" | "custom"; title: string; shots: VideoShot[]; creativeBrief?: string; narrative?: string; savedBy: string; savedAt: string };
 export type VideoChat = { id: string; at: string; by: string; instruction: string; reply: string };
 /** One image in a project's library, used as an @name reference in video prompts. The bytes live in private storage, never in the record. */
 export type VideoImageKind = "Person" | "Product" | "Location" | "Prop" | "Scene";
 export type VideoImage = { title?: string; category?: VideoImageKind; id: string; commissionId: string; name: string; description: string; mime: "image/png" | "image/jpeg" | "image/webp"; bytes: number; storageKey: string; uploadedAt: string; uploadedBy: string };
 export type VideoSheet = { id: string; kind: "person" | "product" | "location" | "prop"; name: string; description: string; details: string; source: "producer" | "ai"; accepted: boolean; addedBy: string; addedAt: string };
-export type VideoPrompts = { overall: string; shots: { shot: number; prompt: string; negative: string }[]; generatedAt: string; by: string; model: string; edited?: boolean };
+export type VideoPrompts = { overall: string; shots: { shot: number; prompt: string; negative: string; seconds?: number; visual?: string; line?: string; onScreen?: string }[]; generatedAt: string; by: string; model: string; edited?: boolean };
 export type VideoPlan = {
   id: string; commissionId: string; generation: Generation;
   references: VideoReference[]; referenceSummary?: string;

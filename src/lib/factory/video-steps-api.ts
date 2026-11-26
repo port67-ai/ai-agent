@@ -7,7 +7,7 @@ import { generationDef, generationKey } from "./commissions";
 import { brandIntelWorkspace, realDeps, versionsOf, type Deps } from "./brand-intel-run";
 import { currentVersion } from "./brand-intel";
 import { effectivePrompt } from "./agent-settings";
-import { STEP_SLOT, instructionText, templateDef, type VideoStep } from "./video-steps";
+import { STEP_SLOT, instructionText, narrativeBrief, templateDef, type VideoStep } from "./video-steps";
 import { addChat, addReference, acceptReference, acceptSheet, addSheet, findPlan, planFor, removeReference, removeSheet, savePrompts, saveScript, storeParsed, updateReference, updateSheet } from "./video-steps-commands";
 import { runVideoStep, videoWorkspace } from "./video-steps-run";
 import { imagesOf } from "./video-images";
@@ -47,19 +47,22 @@ export async function handleVideo(request: Request, path: string[], a: Principal
     if ((step === "sheets" || step === "prompts") && !existing?.script) throw new Error("Save a script first. This step is written from it.");
     if (step === "script" && data.template !== undefined && data.template !== "custom" && !templateDef(String(data.template))) throw new Error("Choose a template");
     const instruction = instructionText(data.instruction);
+    const creative = step === "script" && "creativeBrief" in data ? narrativeBrief(data) : undefined;
+    const revision = creative && typeof data.narrative === "string" && data.narrative.length <= 20000 ? data.narrative : undefined;
     const dossier = currentVersion(versionsOf(await repository.read(brandIntelWorkspace(cid))));
     const base = testHooks.deps || realDeps(repository);
     const deps: Deps = testHooks.deps ? base : { ...base, enabled: () => process.env.PORT67_SYNTHESIS_ENABLED === "true" };
     const body = (await effectivePrompt(repository, STEP_SLOT[step])).body;
     const revising = step === "script" && !!instruction && !!existing?.script && data.template === undefined;
     const images = imagesOf(await repository.read(ws), commissionId).map((i) => ({ name: i.name, description: i.description, title: i.title, category: i.category }));
-    const { parsed, model } = await runVideoStep(repository, { customer, commission, generation, plan: existing, dossier, images, step, instruction: instruction || undefined, template: data.template as string | undefined }, actor, deps, body);
+    const { parsed, model } = await runVideoStep(repository, { customer, commission, generation, plan: existing, dossier, images, step, instruction: instruction || undefined, template: data.template as string | undefined, creative, revision }, actor, deps, body);
     let draft: unknown = null;
     const plan = await repository.mutate(ws, (db) => {
       const p = planFor(db, commissionId, generation, actor);
+      if ((step === "sheets" || step === "prompts") && p.script?.savedAt !== existing?.script?.savedAt) throw new Error("The saved script changed during generation. Try again.");
       if (parsed.step === "script") {
-        addChat(p, instruction || `New script from the ${data.template === "custom" || !data.template ? "custom" : data.template + " second"} template`, parsed.notes || (revising ? "Revised." : "Drafted."), actor);
-        draft = { title: parsed.title, shots: parsed.shots, notes: parsed.notes };
+        addChat(p, instruction || (creative ? "Develop creative narrative" : `New script from the ${data.template === "custom" || !data.template ? "custom" : data.template + " second"} template`), parsed.notes || (revising ? "Revised." : "Drafted."), actor);
+        draft = creative ? { title: creative.title, creativeBrief: creative.creativeBrief, narrative: parsed.narrative, notes: parsed.notes } : { title: parsed.title, shots: parsed.shots, notes: parsed.notes };
       } else storeParsed(p, parsed, model, actor);
       return p;
     });

@@ -868,3 +868,10 @@ FAC-VWS-029. PRD impact: none, visual refinement of existing acceptance criteria
 
 ## CHG-0120 — PR #85 whitespace correction (26 November 2026)
 FAC-VWS-029. PRD impact: none; formatting only. Factory MVP workflow 45714098190 passed for 4d0b6ff; documentation structural checks passed but git diff --check failed on two whitespace-only lines in ImageLibrary.tsx. Removed trailing whitespace. Fresh CI pending; dedicated visual acceptance remains outstanding.
+
+
+## CHG-0121 — Narrative-first scripting (26 November 2026)
+Owner approved FAC-VWS-028 and FAC-VWS-030 changes; PRD impact: 1.46.0. Preserve raw creative brief and approved narrative separately; generation drafts are not approved automatically. Shot planning belongs to Video generation; legacy timed scripts remain compatible. Existing model routing, metering, access gates and red lines remain. Implementation on feat/narrative-first-scripting; tests and UI integration pending. No deployment or paid calls.
+
+
+CHG-0121 UI integration: narrative editor, revision, manual approval and downstream shot display; unit assertions added; CI pending. Existing timed scripts remain stored until an explicit new narrative save. No deployment.

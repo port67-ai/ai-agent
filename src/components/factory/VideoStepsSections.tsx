@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Copy, Plus, Sparkles, Trash2 } from "lucide-react";
-import type { VideoPlan, VideoReference, VideoSheet, VideoShot } from "@/lib/factory/model";
+import { Copy, Sparkles, Trash2 } from "lucide-react";
+import type { VideoPlan, VideoReference, VideoSheet } from "@/lib/factory/model";
 import type { AgentSlot } from "@/lib/factory/agent-prompts";
-import { SHEET_KINDS, TEMPLATES, scriptSeconds, skeleton } from "@/lib/factory/video-steps";
+import { SHEET_KINDS, scriptText } from "@/lib/factory/video-steps";
 import { AgentPopout } from "./AgentPopout";
 import { Field } from "./shared";
 import { CopyName, type LibraryImage } from "./ImageLibrary";
@@ -82,65 +82,34 @@ export function ReferencesSection({ plan, busy, generating, onSave, onGenerate }
 }
 
 // ---------------- Scripting ----------------
-export type ScriptSeed = { template: "15" | "30" | "60" | "custom"; title: string; shots: VideoShot[] };
+export type ScriptSeed = { title: string; creativeBrief: string; narrative: string };
 export function ScriptSection({ plan, seed, busy, generating, onSave, onGenerate }: Props & { seed?: ScriptSeed }) {
-  const start: ScriptSeed = seed || (plan?.script ? { template: plan.script.template, title: plan.script.title, shots: plan.script.shots } : { template: "15", title: "", shots: [] });
-  const [template, setTemplate] = useState(start.template);
-  const [title, setTitle] = useState(start.title);
-  const [shots, setShots] = useState<VideoShot[]>(start.shots);
-  const [instruction, setInstruction] = useState("");
-  const set = (i: number, k: keyof VideoShot, v: string) => setShots((all) => all.map((s, j) => (j === i ? { ...s, [k]: k === "seconds" ? Number(v) || 0 : v } : s)));
   const saved = plan?.script;
-  const tpl = TEMPLATES.find((t) => t.key === template);
+  const [title, setTitle] = useState(seed?.title ?? saved?.title ?? "");
+  const [creativeBrief, setCreativeBrief] = useState(seed?.creativeBrief ?? saved?.creativeBrief ?? (saved ? scriptText(saved) : ""));
+  const [narrative, setNarrative] = useState(seed?.narrative ?? saved?.narrative ?? "");
+  const [instruction, setInstruction] = useState("");
+  const locked = busy || generating;
   return (
-    <div className="w-stack">
-      <section className="f-panel" aria-labelledby="vs-script">
-        <div className="f-section-heading"><h3 id="vs-script">Scripting</h3></div>
-        <Agent slot="synthesis:video-script" />
-        <p className="f-small">Start from a template, let the AI draft it, then talk it through: tell the AI what to change and it revises the script. Nothing is saved until you press Save script.</p>
-        <div className="w-generate">
-          <label className="f-field w-inline"><span>Template</span>
-            <select aria-label="Template" value={template} onChange={(e) => setTemplate(e.target.value as ScriptSeed["template"])}>
-              {TEMPLATES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-              <option value="custom">Custom length</option>
-            </select>
-          </label>
-          <button type="button" className="f-button secondary" disabled={busy || generating || template === "custom"} onClick={() => { setShots(skeleton(template as "15" | "30" | "60")); }}>Start from template</button>
-          <GenButton label="Draft with AI" busy={busy} generating={generating} onClick={() => onGenerate("script", { template })} />
-        </div>
-        {tpl && <p className="f-small">{tpl.beats.map((b) => `${b.beat} ${b.seconds}s`).join(", ")}.</p>}
-        <form className="f-form-grid w-onecol" onSubmit={async (e) => { e.preventDefault(); await onSave("script-save", { template, title, shots: shots.map((s) => ({ seconds: s.seconds, visual: s.visual, line: s.line, onScreen: s.onScreen })) }); }}>
-          <Field label="Script title"><input value={title} required maxLength={120} onChange={(e) => setTitle(e.target.value)} /></Field>
-          {shots.map((s, i) => (
-            <fieldset key={i} className="w-shot">
-              <legend>Shot {i + 1}</legend>
-              <Field label="Seconds"><input type="number" min={1} max={60} value={s.seconds} onChange={(e) => set(i, "seconds", e.target.value)} /></Field>
-              <Field label="What is seen"><textarea rows={2} maxLength={800} value={s.visual} onChange={(e) => set(i, "visual", e.target.value)} /></Field>
-              <Field label="Spoken line or voice-over"><textarea rows={2} maxLength={600} value={s.line} onChange={(e) => set(i, "line", e.target.value)} /></Field>
-              <Field label="On-screen text"><input maxLength={200} value={s.onScreen} onChange={(e) => set(i, "onScreen", e.target.value)} /></Field>
-              <button type="button" className="f-button secondary small" onClick={() => setShots((all) => all.filter((_, j) => j !== i))}><Trash2 size={14} /> Remove shot</button>
-            </fieldset>
-          ))}
-          <div>
-            <button type="button" className="f-button secondary" onClick={() => setShots((all) => [...all, { seconds: 3, visual: "", line: "", onScreen: "" }])}><Plus size={14} /> Add shot</button>{" "}
-            <span className="f-small">{shots.length} shots, {scriptSeconds({ shots })} seconds</span>
-          </div>
-          <div><button className="f-button" disabled={busy || shots.length === 0}>Save script</button>{saved && <span className="f-small"> Saved {stamp(saved.savedAt)} by {saved.savedBy}.</span>}</div>
-        </form>
-      </section>
-      <section className="f-panel" aria-labelledby="vs-chat">
-        <h3 id="vs-chat">Talk it through</h3>
-        <p className="f-small">Say what to change, for example &quot;make the hook faster&quot; or &quot;add a cutaway of the crust&quot;. The AI revises the saved script and shows it above for you to check and save.</p>
-        <div className="w-generate">
-          <textarea aria-label="Instruction for the AI" rows={2} maxLength={1000} value={instruction} onChange={(e) => setInstruction(e.target.value)} className="w-wide" />
-          <GenButton label="Revise with AI" busy={busy} generating={generating} disabled={!saved || !instruction.trim()} onClick={() => { onGenerate("script", { instruction }); setInstruction(""); }} />
-        </div>
-        {!saved && <p className="f-small">Save a script first; revisions work on the saved script.</p>}
-        {(plan?.chat.length || 0) > 0 && (
-          <ul className="f-history">{[...(plan?.chat || [])].reverse().map((c) => <li key={c.id}><span className="f-small">{stamp(c.at)}</span> <strong>{c.instruction}</strong> {c.reply && <span className="f-small">AI: {c.reply}</span>}</li>)}</ul>
-        )}
-      </section>
-    </div>
+    <section className="f-panel" aria-labelledby="vs-script">
+      <div className="f-section-heading"><h3 id="vs-script">Scripting</h3></div>
+      <Agent slot="synthesis:video-script" />
+      <p className="f-small">Describe the story, themes, feelings and expectations in your own words. The AI develops a cinematic narrative; shot planning happens in Video generation.</p>
+      {saved && !saved.narrative && <p className="f-callout">Your existing timed script remains saved. Its text is available in the creative brief; approving a new narrative replaces it.</p>}
+      <form className="f-form-grid w-onecol" onSubmit={async e => { e.preventDefault(); await onSave("script-save", { title, creativeBrief, narrative }); }}>
+        <Field label="Script title"><input value={title} required maxLength={120} disabled={locked} onChange={e => setTitle(e.target.value)} /></Field>
+        <Field label="Story, themes and creative expectations"><textarea rows={12} required maxLength={12000} disabled={locked} value={creativeBrief} onChange={e => setCreativeBrief(e.target.value)} placeholder="Describe or dictate the story you want to tell…" /></Field>
+        <div><button type="button" className="f-button" disabled={locked || !title.trim() || !creativeBrief.trim()} onClick={() => onGenerate("script", { title, creativeBrief })}><Sparkles size={15} /> {generating ? "Developing…" : "Develop script with AI"}</button></div>
+        <Field label="Developed script"><textarea rows={18} maxLength={20000} disabled={locked} value={narrative} onChange={e => setNarrative(e.target.value)} placeholder="Review and edit the developed cinematic narrative here." /></Field>
+        <details className="w-dropdown"><summary>Revise with AI</summary>
+          <Field label="Revision instruction"><textarea rows={3} maxLength={1000} disabled={locked} value={instruction} onChange={e => setInstruction(e.target.value)} /></Field>
+          <button type="button" className="f-button" disabled={locked || !title.trim() || !creativeBrief.trim() || !narrative.trim() || !instruction.trim()} onClick={() => onGenerate("script", { title, creativeBrief, narrative, instruction })}>Revise with AI</button>
+        </details>
+        <div><button className="f-button" disabled={locked || !title.trim() || !creativeBrief.trim() || !narrative.trim()}>Save script</button>{saved && <span className="f-small"> Saved {stamp(saved.savedAt)} by {saved.savedBy}.</span>}</div>
+        <p className="f-small">Only the saved script is used in later stages. AI drafts do not replace it until you save.</p>
+      </form>
+      {(plan?.chat.length || 0) > 0 && <details className="w-dropdown"><summary>Revision history</summary><ul className="f-history">{[...(plan?.chat || [])].reverse().map(c => <li key={c.id}><strong>{c.instruction}</strong> {c.reply}</li>)}</ul></details>}
+    </section>
   );
 }
 
@@ -220,7 +189,7 @@ export function PromptsSection({ plan, busy, generating, onSave, onGenerate, ima
       <section className="f-panel" aria-labelledby="vs-prompts">
         <div className="f-section-heading"><h3 id="vs-prompts">Video generation</h3></div>
         <Agent slot="synthesis:video-prompts" />
-        <p className="f-small">Pulls the script, accepted sheets and accepted references together into one prompt per shot and an overall style prompt, written for a text-to-video model such as Seedance. Copy them into the video tool. Spoken lines and on-screen text are added in editing, not in the prompts.</p>
+        <p className="f-small">Breaks the approved narrative into production shots, or uses the existing timed script, and combines accepted sheets and references into one prompt per shot and an overall style prompt, written for a text-to-video model such as Seedance. Copy them into the video tool. Spoken lines and on-screen text are added in editing, not in the prompts.</p>
         <div className="w-generate">
           <GenButton label={pr ? "Regenerate prompts" : "Generate prompts"} busy={busy} generating={generating} disabled={!plan?.script} onClick={() => onGenerate("prompts")} />
           {!plan?.script && <span className="f-small">Save a script first.</span>}
@@ -241,11 +210,11 @@ export function PromptsSection({ plan, busy, generating, onSave, onGenerate, ima
             <Field label="Overall style prompt"><textarea name="overall" rows={4} maxLength={3000} defaultValue={pr.overall} /></Field>
             <div><CopyButton text={pr.overall} label="Copy overall" /> <CopyButton text={allPrompts(plan)} label="Copy everything" /></div>
             {pr.shots.map((s) => {
-              const shot = plan.script?.shots[s.shot - 1];
+              const shot = plan.script?.narrative ? s : plan.script?.shots[s.shot - 1];
               return (
                 <fieldset key={s.shot} className="w-shot">
                   <legend>Shot {s.shot}{shot ? ` (${shot.seconds}s)` : ""}</legend>
-                  {shot && <p className="f-small">Script: {shot.visual}</p>}
+                  {shot?.visual && <p className="f-small">Script: {shot.visual}</p>}{plan.script?.narrative && (s.line || s.onScreen) && <p className="f-small">Spoken line: {s.line || "None"} · On-screen text: {s.onScreen || "None"}</p>}
                   <Field label="Prompt"><textarea name={`prompt${s.shot}`} rows={5} maxLength={3000} defaultValue={s.prompt} /></Field>
                   <Field label="Avoid"><input name={`negative${s.shot}`} maxLength={1000} defaultValue={s.negative} /></Field>
                   <CopyButton text={s.prompt} label={`Copy shot ${s.shot}`} />
