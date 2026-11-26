@@ -20,7 +20,7 @@ assert.match(h, /Searches the web, so it needs a model with web search/);
 assert.match(h, /shared by every project/);
 // Model dropdown: grouped by provider, current model selected, Save disabled until it changes.
 assert.match(h, /<select aria-label="Large language model"/);
-assert.match(h, /<optgroup label="OpenAI"><option value="openai\|gpt-5-mini" selected="">gpt-5-mini<\/option><option value="openai\|gpt-5">gpt-5<\/option><\/optgroup>/);
+assert.match(h, /<optgroup label="OpenAI"><option value="openai\|gpt-5-mini" selected="">gpt-5-mini — Fast \/ economical<\/option><option value="openai\|gpt-5">gpt-5 — General writing \/ structured output<\/option><\/optgroup>/);
 assert.match(h, /<optgroup label="Google Gemini"><option value="gemini\|gemini-2.5-flash">/);
 assert.match(h, /<button type="button" class="f-button" disabled="">Save model<\/button>/);
 assert.match(h, /Now using openai: gpt-5-mini \(set for this agent\)/);
@@ -45,7 +45,7 @@ assert.match(syn, /<button type="button" class="f-button secondary">Reset to ori
 assert.match(panel({ ...settings, providers: [], route: { error: "No model chosen yet" } }), /No AI provider key with web search \(OpenAI or Gemini\) is set in Render yet/);
 const unavailable = panel({ ...settings, route: { provider: "openai", model: "old-model", source: "default" } });
 assert.doesNotMatch(unavailable, /<option value="openai\|old-model"/);
-assert.match(unavailable, /not in the current API model list/);
+assert.match(unavailable, /outside the current recommended shortlist/);
 
 // ---- On the project: AI agent box on Inputs 1, 3 and 4 only; Generate from AI on 1 and 3; project details; AI notes.
 const base: Commission = {

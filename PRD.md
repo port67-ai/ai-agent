@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD
-**Version:** 1.47.0
+**Version:** 1.48.0
 **Date:** 12 November 2026
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending
 **Owner:** Port67.ai — Product & Architecture
@@ -1681,3 +1681,5 @@ Owner direction, 25 November 2026 (CHG-0113, design only). Design: `docs/superpo
 | FAC-VWS-030 | Video generation prompt pipeline | Two sections, three independently configurable AI agents: project information (four labelled blocks), director’s timed beat script, and technical generation prompt. Each output is editable and requires explicit acceptance before the next stage. Duration and aspect ratio are producer-controlled. Stage 3 uses only selected project assets by exact @name. Changes to accepted upstream outputs invalidate later approvals. Previous prompts remain available for compatibility. Output is copied to the video tool; no video rendering. |
 
 CHG-0118: Workspace agent settings use a compact illustrated control opening the model and prompt editor. Only LLM IDs returned by configured provider APIs and eligible for the agent may be selected or saved; unavailable current routes are identified separately. Image category and title are supplied in generation prompt context.
+
+CHG-0124 (FAC-VWS-025, FAC-VWS-030): workspace agent model selectors show a compact API-listed family shortlist, with use labels; existing routes are not automatically changed. Stage 3 selects a video target independently of its LLM: Seedance 2.5 multishot or MAGI-3 using the supplied MAGI-2 Lite compatibility profile (unverified). Persist skill version and target with generated output; changing either requires regeneration. Seedance uses numbered attachment references and MAGI uses named references. No video rendering.

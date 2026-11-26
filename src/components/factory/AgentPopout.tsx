@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Bot } from "lucide-react";
 import type { AgentSlot } from "@/lib/factory/agent-prompts";
+import { modelUse } from "@/lib/factory/curated-models";
 import { api } from "./workspace-api";
 
 // The AI agent box on a project input (CHG-0113): which model the agent uses and the prompt it follows. Settings are shared by every project.
@@ -35,7 +36,7 @@ export function AgentPanel({ s, busy, onRoute, onPrompt, onReset }: { s: AgentSe
           <select aria-label="Large language model" value={choice} onChange={(e) => setChoice(e.target.value)}>
             {(!current || !listed.has(current)) && <option value="" disabled>{"error" in s.route ? s.route.error : "Choose an API-listed model"}</option>}
             {s.providers.map((p) => (
-              <optgroup key={p.id} label={p.label}>{p.models.map((m) => <option key={m} value={`${p.id}|${m}`}>{m}</option>)}</optgroup>
+              <optgroup key={p.id} label={p.label}>{p.models.map((m) => <option key={m} value={`${p.id}|${m}`}>{m} — {modelUse(m)}</option>)}</optgroup>
             ))}
           </select>
         </label>
@@ -43,8 +44,8 @@ export function AgentPanel({ s, busy, onRoute, onPrompt, onReset }: { s: AgentSe
           <button type="button" className="f-button" disabled={busy || !listed.has(choice) || choice === current} onClick={() => { const [provider, model] = choice.split("|"); onRoute(provider, model); }}>Save model</button>
           {"provider" in s.route && <span className="f-small"> Now using {s.route.provider}: {s.route.model} ({s.route.source === "slot" ? "set for this agent" : "default"}).</span>}
         </div>
-        {current && !listed.has(current) && <p className="f-small" role="status">The configured model is not in the current API model list. Choose an available model before changing the route.</p>}
-        {s.providers.length > 0 && listed.size === 0 && <p className="f-small">No models returned by the configured APIs. Close and reopen to retry.</p>}
+        {current && !listed.has(current) && <p className="f-small" role="status">The configured model is outside the current recommended shortlist (or unavailable). Choose an available model before changing the route.</p>}
+        {s.providers.length > 0 && listed.size === 0 && <p className="f-small">No recommended models returned by the configured APIs. Close and reopen to retry.</p>}
         {s.providers.length === 0 && <p className="f-small">No AI provider key{s.stage === "research" ? " with web search (OpenAI or Gemini)" : ""} is set in Render yet.</p>}
       </div>
 
