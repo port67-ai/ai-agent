@@ -38,10 +38,11 @@ function checkText(stage: PipelineStage, text: string, assets: VideoImage[], tar
     if (unknown.length) throw new Error("Technical prompt uses an unselected or unknown asset: @" + unknown[0]);
   }
 }
-function source(c: Context, plan: VideoPlan, images: VideoImage[]) {
+function source(c: Pick<Context, "customer" | "commission" | "generation" | "dossier">, plan: VideoPlan, images: VideoImage[]) {
   const data = videoContext("prompts", { ...c, plan, images: metadata(images) });
   return data + "\n<asset_catalogue>" + JSON.stringify(metadata(images)) + "</asset_catalogue>";
 }
+export function pipelineIsCurrent(c: Pick<Context, "customer" | "commission" | "generation" | "dossier">, plan: VideoPlan, images: VideoImage[]) { return !!plan.pipeline && plan.pipeline.sourceKey === hash(source(c, plan, images)); }
 function clearAfter(p: VideoPipeline, stage: PipelineStage) {
   if (stage === "info") { delete p.beats; delete p.technical; }
   if (stage === "beats") delete p.technical;
