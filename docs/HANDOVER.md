@@ -308,3 +308,7 @@ Owner approved FAC-VWS-028 and FAC-VWS-030 changes; PRD impact: 1.46.0. Preserve
 
 
 CHG-0121 UI integration: narrative editor, revision, manual approval and downstream shot display; unit assertions added; CI pending. Existing timed scripts remain stored until an explicit new narrative save. No deployment.
+
+
+## CHG-0122 — Three-stage video generation pipeline (26 November 2026)
+FAC-VWS-030 and FAC-VWS-025. PRD impact: 1.47.0. Owner supplied project information, director beat and technical prompt templates. Three separately metered/configurable agents; editable output and explicit approval gates; producer duration/aspect ratio; multiple selected image IDs resolved server-side. Industry-neutral prompts. Legacy prompts retained. Target label Seedance 2.5 supplied by owner, model/API capability not verified; copy-only output and image metadata, no media upload to external tool. Branch feat/video-prompt-pipeline. Implementation/CI pending.

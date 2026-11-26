@@ -540,7 +540,11 @@ export type VideoImageKind = "Person" | "Product" | "Location" | "Prop" | "Scene
 export type VideoImage = { title?: string; category?: VideoImageKind; id: string; commissionId: string; name: string; description: string; mime: "image/png" | "image/jpeg" | "image/webp"; bytes: number; storageKey: string; uploadedAt: string; uploadedBy: string };
 export type VideoSheet = { id: string; kind: "person" | "product" | "location" | "prop"; name: string; description: string; details: string; source: "producer" | "ai"; accepted: boolean; addedBy: string; addedAt: string };
 export type VideoPrompts = { overall: string; shots: { shot: number; prompt: string; negative: string; seconds?: number; visual?: string; line?: string; onScreen?: string }[]; generatedAt: string; by: string; model: string; edited?: boolean };
+export type PipelineStage = "info" | "beats" | "technical";
+export type PipelineEntry = { text: string; accepted: boolean; revision: string; generatedAt: string; by: string; model: string; assetIds?: string[]; assetNames?: string[] };
+export type VideoPipeline = { duration: number; aspectRatio: string; sourceKey: string; info?: PipelineEntry; beats?: PipelineEntry; technical?: PipelineEntry };
 export type VideoPlan = {
+  pipeline?: VideoPipeline;
   id: string; commissionId: string; generation: Generation;
   references: VideoReference[]; referenceSummary?: string;
   script?: VideoScript; chat: VideoChat[]; sheets: VideoSheet[]; prompts?: VideoPrompts;
