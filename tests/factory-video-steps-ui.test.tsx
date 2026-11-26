@@ -30,12 +30,15 @@ assert.match(refs, /Generate reference brief/);
 assert.match(refs, /Add reference/);
 
 const script = renderToStaticMarkup(<ScriptSection plan={plan} {...p} />);
-assert.match(script, /Shot 1/);
+assert.match(script, /Story, themes and creative expectations/);
+assert.match(script, /Develop script with AI/);
+assert.match(script, /Developed script/);
+assert.doesNotMatch(script, /Start from template/);
 assert.match(script, /Save script/);
 assert.match(script, /Revise with AI/);
 assert.match(script, /faster hook/);
 const noScript = renderToStaticMarkup(<ScriptSection plan={null} {...p} />);
-assert.match(noScript, /Save a script first; revisions work on the saved script\./);
+assert.match(noScript, /Only the saved script is used/);
 
 const sheets = renderToStaticMarkup(<SheetsSection plan={plan} {...p} />);
 assert.match(sheets, /Small brick bakery/);
