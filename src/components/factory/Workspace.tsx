@@ -7,6 +7,7 @@ import { AccountLogin } from "./AccountLogin";
 import { CustomerAccounts } from "./CustomerAccounts";
 import { Projects } from "./Projects";
 import { VideoSteps, type VideoSection } from "./VideoSteps";
+import { WorkflowOverview, type WorkflowSelection } from "./WorkflowOverview";
 import { Field } from "./shared";
 import { api } from "./workspace-api";
 
@@ -86,6 +87,7 @@ export default function Workspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
+  const [selection, setSelection] = useState<WorkflowSelection>({cid:"",pid:""});
   const refresh = useCallback(async () => {
     const session = await api<{ principal: Principal | null }>("session");
     setPrincipal(session.principal);
@@ -143,10 +145,10 @@ export default function Workspace() {
     );
   return (
     <Shell principal={principal} tab={tab} setTab={setTab} onSignOut={() => void signOut()}>
-      {tab === "overview" && <Placeholder title="Overview">The overview will bring each customer account and its projects together. What goes here is still to be decided.</Placeholder>}
-      {tab === "customers" && <CustomerAccounts />}
-      {tab === "projects" && <Projects />}
-      {tab.startsWith("video-") && <VideoSteps key={tab} section={tab.slice(6) as VideoSection} />}
+      {tab === "overview" && <WorkflowOverview selection={selection} onSelection={setSelection} onOpen={(tab)=>setTab(tab)} />}
+      {tab === "customers" && <CustomerAccounts initialCustomer={selection.cid} />}
+      {tab === "projects" && <Projects initialCustomer={selection.cid} initialProject={selection.pid} />}
+      {tab.startsWith("video-") && <VideoSteps key={tab} section={tab.slice(6) as VideoSection} initialCustomer={selection.cid} initialProject={selection.pid} />}
     </Shell>
   );
 }

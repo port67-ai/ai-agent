@@ -15,7 +15,7 @@ const NOTICES: Record<string, string> = {
   "evidence-add": "Evidence added.", "evidence-update": "Evidence saved.", "evidence-remove": "Evidence removed.", confirm: "Confirmation updated.", brief: "Project details saved.", "audience-save": "Age group saved.", direction: "Direction selection updated.",
 };
 
-export function Projects() {
+export function Projects({ initialCustomer = "", initialProject = "" }: { initialCustomer?: string; initialProject?: string } = {}) {
   const [customers, setCustomers] = useState<Pick<CustomerAccount, "id" | "name">[]>([]);
   const [cid, setCid] = useState("");
   const [list, setList] = useState<Commission[]>([]);
@@ -44,11 +44,12 @@ export function Projects() {
         const data = await api<{ customers: CustomerAccount[] }>("customers");
         if (!active) return;
         setCustomers(data.customers);
-        if (data.customers[0]) await choose(data.customers[0].id);
+        const customer = data.customers.find(c=>c.id===initialCustomer) || data.customers[0];
+        if (customer) { await choose(customer.id); if (customer.id===initialCustomer && initialProject) { const d=await api<{ commission: Commission; customer: { redLines: RedLine[] } }>(`commissions/${customer.id}/${initialProject}`); if(active) setDetail({commission:d.commission,redLines:d.customer.redLines}); } }
       } catch (e) { if (active) setError((e as Error).message); } finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
-  }, [choose]);
+  }, [choose, initialCustomer, initialProject]);
 
   const open = (id: string) => run(async () => {
     const data = await api<{ commission: Commission; customer: { redLines: RedLine[] } }>(`commissions/${cid}/${id}`);
