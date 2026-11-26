@@ -145,3 +145,16 @@
 .w-review .f-form-grid { width:100%; }
 .w-review-img { width:100%; }
 @media(max-width:1000px){.w-asset-layout{grid-template-columns:1fr}.w-asset-layout .w-review{max-width:none}}
+
+/* CHG-0122: video generation pipeline */
+.w-pipeline-heading { display:flex; width:100%; justify-content:space-between; align-items:center; gap:12px; text-align:left; background:transparent; border:0; padding:8px 0; }
+.w-pipeline-heading > span:first-child { display:flex; flex-direction:column; gap:4px; }
+.w-pipeline-heading strong { font-size:17px; }
+.w-pipeline-status { display:flex; align-items:center; gap:6px; font-size:12px; }
+.w-pipeline-body { margin-top:16px; }
+.w-pipeline-section { font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+.w-pipeline-assets { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.w-pipeline-asset { display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--f-line); border-radius:8px; min-width:0; cursor:pointer; }
+.w-pipeline-asset img { width:58px; height:58px; object-fit:cover; border-radius:6px; }
+.w-pipeline-asset span { display:flex; flex-direction:column; min-width:0; overflow-wrap:anywhere; }
+.w-pipeline-asset small { font-size:11px; }

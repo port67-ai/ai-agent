@@ -11,6 +11,7 @@ import { STEP_SLOT, instructionText, narrativeBrief, templateDef, type VideoStep
 import { addChat, addReference, acceptReference, acceptSheet, addSheet, findPlan, planFor, removeReference, removeSheet, savePrompts, saveScript, storeParsed, updateReference, updateSheet } from "./video-steps-commands";
 import { runVideoStep, videoWorkspace } from "./video-steps-run";
 import { imagesOf } from "./video-images";
+import { handlePipeline } from "./video-pipeline";
 
 // Video steps routes (CHG-0115). Producers and admins only. A plan belongs to one project and one age group, and the age group must have
 // been saved and selected for direction on the project first.
@@ -39,6 +40,13 @@ export async function handleVideo(request: Request, path: string[], a: Principal
 
   if (request.method === "GET") return view(findPlan(await repository.read(ws), commissionId, generation));
   const action = typeof data.action === "string" ? data.action : "";
+
+  if (action === "pipeline-generate" || action === "pipeline-accept") {
+    const dossier = currentVersion(versionsOf(await repository.read(brandIntelWorkspace(cid))));
+    const base = testHooks.deps || realDeps(repository);
+    const deps: Deps = testHooks.deps ? base : { ...base, enabled: () => process.env.PORT67_SYNTHESIS_ENABLED === "true" };
+    return view(await handlePipeline(repository, { customer, commission, generation, dossier, actor, ws, deps }, data));
+  }
 
   if (action === "generate") {
     const step = data.step as VideoStep;

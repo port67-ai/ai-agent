@@ -215,6 +215,32 @@ async function main() {
   seen.length = 0;
   assert.equal((await gen("script", { template: "30" })).status, 200);
   assert.ok(seen[0].instructions.includes("award-winning commercial writer") && seen[0].instructions.includes("Output rules"), "the edited script prompt is used with the fixed rules");
+  // CHG-0122: pipeline approval, explicit production settings, metering and invalidation.
+  const pipe = (stage: string, action = "pipeline-generate", extra: Record<string, unknown> = {}) => post(`${base}/gen_y`, { action, stage, ...extra });
+  assert.equal((await pipe("beats")).status, 400);
+  const info = "<BRAND_CONTEXT>Bakery</BRAND_CONTEXT>\n<COMMISSION_BRIEF>15 seconds, 9:16</COMMISSION_BRIEF>\n<AUDIENCE_PSYCHOLOGY>Everyday craft</AUDIENCE_PSYCHOLOGY>\n<CREATIVE_SEED_AND_ASSETS>Bread</CREATIVE_SEED_AND_ASSETS>";
+  override = { text: info };
+  let pipeline = (await (await pipe("info", "pipeline-generate", { duration: 15, aspectRatio: "9:16" })).json()).plan.pipeline;
+  assert.equal(pipeline.info.accepted, false);
+  assert.equal((await pipe("beats")).status, 400);
+  pipeline = (await (await pipe("info", "pipeline-accept", { revision: pipeline.info.revision, text: info })).json()).plan.pipeline;
+  assert.equal(pipeline.info.accepted, true);
+  override = { text: "0:00–0:15 | Bakery | Bread" };
+  pipeline = (await (await pipe("beats")).json()).plan.pipeline;
+  assert.equal(pipeline.beats.accepted, false);
+  assert.equal((await pipe("technical")).status, 400);
+  pipeline = (await (await pipe("beats", "pipeline-accept", { revision: pipeline.beats.revision, text: pipeline.beats.text })).json()).plan.pipeline;
+  assert.equal((await pipe("technical", "pipeline-generate", { assetIds: ["unknown"] })).status, 400);
+  override = { text: "Use @unknown" };
+  assert.equal((await pipe("technical")).status, 400);
+  override = { text: "Warm light. Bread on table." };
+  pipeline = (await (await pipe("technical")).json()).plan.pipeline;
+  pipeline = (await (await pipe("technical", "pipeline-accept", { revision: pipeline.technical.revision, text: pipeline.technical.text })).json()).plan.pipeline;
+  assert.equal(pipeline.technical.accepted, true);
+  pipeline = (await (await pipe("info", "pipeline-accept", { revision: pipeline.info.revision, text: info + "\nEdited" })).json()).plan.pipeline;
+  assert.equal(pipeline.beats, undefined); assert.equal(pipeline.technical, undefined);
+  assert.ok((await ledger("synthesis:video-project-info")).length > 0);
+  override = undefined;
   console.log("video-steps: all assertions passed");
 }
 main().catch((e) => { console.error(e); process.exit(1); });
