@@ -6,6 +6,7 @@ import { STEP_LABEL } from "@/lib/factory/video-steps";
 import { PromptsSection, ReferencesSection, ScriptSection, SheetsSection, type ScriptSeed } from "./VideoStepsSections";
 import { ImageLibrary, type LibraryImage } from "./ImageLibrary";
 import { Empty, Field } from "./shared";
+import { VideoPipelineSection } from "./VideoPipelineSection";
 import { api } from "./workspace-api";
 
 // Video steps page (CHG-0115): pick a customer, a project and one of its selected age groups, then work through the four sections.
@@ -57,12 +58,12 @@ export function VideoSteps({ section }: { section: VideoSection }) {
   }, [chooseCustomer]);
 
   const chooseProject = (id: string) => run(async () => {
-    setPid(id); setPlan(null); setSeed(undefined);
+    setPid(id); setPlan(null); setSeed(undefined); setImages([]);
     const p = projects.find((x) => x.id === id);
     const first = GENERATIONS.find((g) => (p?.directionGenerations || []).includes(g.key) && p?.audience?.[g.key]);
     setGen(first?.key || "");
     if (first) await loadPlan(cid, id, first.key);
-    if (section === "prompts") setImages((await api<{ images: LibraryImage[] }>(`video-images/${cid}/${id}`)).images);
+    if (section === "prompts" && id) setImages((await api<{ images: LibraryImage[] }>(`video-images/${cid}/${id}`)).images);
   });
   const chooseGen = (g: Generation) => run(async () => { setGen(g); setPlan(null); await loadPlan(cid, pid, g); });
   const base = `video/${cid}/${pid}/${gen}`;
@@ -113,7 +114,7 @@ export function VideoSteps({ section }: { section: VideoSection }) {
               {gen && section === "references" && <ReferencesSection {...props} />}
               {gen && section === "script" && <ScriptSection key={(plan?.script?.savedAt || "") + (seed?.n || "")} {...props} seed={seed} />}
               {gen && section === "sheets" && <SheetsSection {...props} />}
-              {gen && section === "prompts" && <PromptsSection key={plan?.prompts?.generatedAt || "none"} {...props} images={images} />}
+              {gen && section === "prompts" && <><VideoPipelineSection key={`${cid}/${pid}/${gen}`} plan={plan} cid={cid} images={images} busy={busy} onSave={save} /><details className="f-panel w-dropdown"><summary>Previous generation prompts (legacy)</summary><PromptsSection key={plan?.prompts?.generatedAt || "none"} {...props} images={images} /></details></>}
             </>
           )}
         </>
