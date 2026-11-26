@@ -8,9 +8,9 @@ import { Empty, Field } from "./shared";
 import { api, uploadFile } from "./workspace-api";
 
 // Customer account page of the video workspace (CHG-0103): the list of companies and the editor for the chosen one.
-export function CustomerAccounts() {
+export function CustomerAccounts({ initialCustomer = "" }: { initialCustomer?: string } = {}) {
   const [customers, setCustomers] = useState<CustomerAccount[]>([]);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(initialCustomer);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

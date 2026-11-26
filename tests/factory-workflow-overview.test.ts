@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { telemetry, buildOverview } from "../src/lib/factory/workflow-overview";
+import type { ApiCall } from "../src/lib/factory/costs";
+import type { CustomerAccount, Commission } from "../src/lib/factory/model";
+const row=(id:string,runId:string,amount?:number):ApiCall=>({id,runId,accountId:"c",projectId:"p",workspaceId:"factory-commissions-c",agent:"research:commission-objective",stage:"research",provider:"openai",model:"gpt-test",actor:"a",createdAt:"2026-11-26T00:00:00Z",status:"completed",...(amount===undefined?{}:{estimatedMicroUsd:amount})});
+const rows=[row("1","r",5000),row("2","r"),{...row("3","s",2000),reconciliation:{actualMicroUsd:3000,reference:"test",actor:"a",at:"t"}}, {...row("4","other",999999),accountId:"different"}];
+assert.deepEqual(telemetry(rows.slice(0,3),true),{runs:2,calls:3,knownMicroUsd:8000,unknownCosts:1});
+assert.deepEqual(telemetry(rows.slice(0,3),false),{runs:2,calls:3});
+const c={id:"c",name:"Business",website:"https://example.com",socials:{},redLines:[],brandPurpose:[]} as CustomerAccount;
+const p={id:"p",name:"Project",answers:{objective:{},product:{},audience:{},brand:{}},audience:{},directionGenerations:[]} as Commission;
+const d=buildOverview(c,p,1,[],[],[],rows,true);
+assert.equal(d.total.knownMicroUsd,8000);assert.equal(d.total.runs,2);assert.equal(d.nodes.find(n=>n.id==="objective")?.calls,3);assert.equal(d.nodes.find(n=>n.id==="script")?.status,"blocked");
+const producer=buildOverview(c,p,1,[],[],[],rows,false);
+assert.ok(!JSON.stringify(producer).includes("knownMicroUsd"));assert.ok(!JSON.stringify(producer).includes("unknownCosts"));
+console.log("workflow overview: scoped ledger, unknown pricing, run deduplication and producer redaction passed");

@@ -449,3 +449,9 @@ FAC-VWS-025, FAC-VWS-030; PRD impact 1.48.0. Owner approved compact model famili
 
 ## CHG-0125 — Model selector regression correction (26 November 2026)
 FAC-VWS-025. PRD impact: none. Factory CI 45867818223 failed on the existing dropdown markup assertion after capability labels were added; update assertions for labels and shortlist status. Correct Gemini substring classification if applicable. Governance previously passed; fresh CI pending. No deployment.
+
+
+## CHG-0126 — Project workflow overview canvas (26 November 2026)
+FAC-VWS-001/002/026/030. PRD impact 1.49.0. Owner requested node canvas and telemetry. Derived from saved customer/project/cohort plans, asset catalogue and archived+active ledger. Preserve owner-only amounts, unknown cost counts and shared-vs-project attribution. Run uses existing gated routes; input/review steps open editor, no automatic approvals. No external rendering. Branch feat/workflow-overview-canvas; UI/tests pending; no deployment.
+
+CHG-0126 UI: native SVG/CSS canvas with pan/zoom/fit, inspector, scoped navigation and explicit direct Run for brand intelligence/references/sheets. Other nodes open existing editors; no auto approval or simulated external output. Polling refresh every 8s while overview mounted. Test assertions added for cost attribution/redaction; CI pending. No React Flow dependency added.

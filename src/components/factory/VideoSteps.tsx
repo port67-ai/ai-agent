@@ -13,7 +13,7 @@ import { api } from "./workspace-api";
 export type VideoSection = "references" | "script" | "sheets" | "prompts";
 const NOTICE: Record<string, string> = { "reference-add": "Reference added.", "reference-update": "Reference saved.", "reference-remove": "Reference removed.", "reference-accept": "Updated.", "script-save": "Script saved.", "sheet-add": "Sheet added.", "sheet-update": "Sheet saved.", "sheet-remove": "Sheet removed.", "sheet-accept": "Updated.", "prompts-save": "Prompt edits saved." };
 
-export function VideoSteps({ section }: { section: VideoSection }) {
+export function VideoSteps({ section, initialCustomer = "", initialProject = "" }: { section: VideoSection; initialCustomer?: string; initialProject?: string }) {
   const [customers, setCustomers] = useState<Pick<CustomerAccount, "id" | "name">[]>([]);
   const [cid, setCid] = useState("");
   const [projects, setProjects] = useState<Commission[]>([]);
@@ -51,11 +51,12 @@ export function VideoSteps({ section }: { section: VideoSection }) {
         const d = await api<{ customers: CustomerAccount[] }>("customers");
         if (!alive) return;
         setCustomers(d.customers);
-        if (d.customers[0]) await chooseCustomer(d.customers[0].id);
+        const customer=d.customers.find(c=>c.id===initialCustomer)||d.customers[0];
+        if(customer){ await chooseCustomer(customer.id); if(customer.id===initialCustomer&&initialProject){ const list=await api<{commissions:Commission[]}>(`commissions/${customer.id}`); const p=list.commissions.find(x=>x.id===initialProject); if(p&&alive){ setPid(p.id); const first=GENERATIONS.find(g=>(p.directionGenerations||[]).includes(g.key)&&p.audience?.[g.key]); setGen(first?.key||""); if(first) await loadPlan(customer.id,p.id,first.key); if(section==="prompts") setImages((await api<{images:LibraryImage[]}>(`video-images/${customer.id}/${p.id}`)).images); } } }
       } catch (e) { if (alive) setError((e as Error).message); } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [chooseCustomer]);
+  }, [chooseCustomer,initialCustomer,initialProject,loadPlan,section]);
 
   const chooseProject = (id: string) => run(async () => {
     setPid(id); setPlan(null); setSeed(undefined); setImages([]);

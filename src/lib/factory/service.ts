@@ -87,6 +87,7 @@ import { handleCustomers, isCustomerRoute, isCustomerUpload } from "./customers-
 import { handleCommissions, isCommissionRoute } from "./commissions-api";
 import { handleBrandIntel, isBrandIntelRoute } from "./brand-intel-api";
 import { handleAgentSettings, isAgentSettingsRoute } from "./agent-settings-api";
+import { handleWorkflowOverview } from "./workflow-overview-api";
 import { handleVideo, isVideoRoute } from "./video-steps-api";
 import { handleVideoImages, isVideoImageRoute, isVideoImageUpload } from "./video-images-api";
 const json = (data: unknown, status = 200) =>
@@ -657,6 +658,7 @@ export async function handleFactory(
     if (isCommissionRoute(path)) return await handleCommissions(request, path, a, data);
     if (isBrandIntelRoute(path)) return await handleBrandIntel(request, path, a, data);
     if (isAgentSettingsRoute(path)) return await handleAgentSettings(request, path, a, data);
+    if (path[0] === "workflow-overview") return await handleWorkflowOverview(request, path, a, data);
     if (isVideoRoute(path)) return await handleVideo(request, path, a, data);
     if (isVideoImageRoute(path)) return await handleVideoImages(request, path, a, data);
     if (route === "admin/costs/series") {
