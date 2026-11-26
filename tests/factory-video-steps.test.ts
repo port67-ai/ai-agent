@@ -237,6 +237,11 @@ async function main() {
   pipeline = (await (await pipe("technical")).json()).plan.pipeline;
   pipeline = (await (await pipe("technical", "pipeline-accept", { revision: pipeline.technical.revision, text: pipeline.technical.text })).json()).plan.pipeline;
   assert.equal(pipeline.technical.accepted, true);
+  assert.equal(pipeline.technical.videoTarget, "seedance-2.5");
+  assert.equal((await pipe("technical", "pipeline-accept", { revision: pipeline.technical.revision, text: pipeline.technical.text, videoTarget: "magi-3" })).status, 400);
+  override = { text: "Concise timed shots. Audio: natural sound." };
+  pipeline = (await (await pipe("technical", "pipeline-generate", { videoTarget: "magi-3" })).json()).plan.pipeline;
+  assert.equal(pipeline.technical.skillVersion, "magi-2-lite-compat-v1");
   pipeline = (await (await pipe("info", "pipeline-accept", { revision: pipeline.info.revision, text: info + "\nEdited" })).json()).plan.pipeline;
   assert.equal(pipeline.beats, undefined); assert.equal(pipeline.technical, undefined);
   assert.ok((await ledger("synthesis:video-project-info")).length > 0);

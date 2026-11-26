@@ -169,7 +169,7 @@ async function main() {
   cHooks.deps!.enabled = () => true;
 
   // ---- Agent settings: model and prompt, shared by every project
-  sHooks.listModels = async (provider) => (provider === "openai" ? ["gpt-5-mini", "gpt-5"] : ["gemini-2.5-flash"]);
+  sHooks.listModels = async (provider) => (provider === "openai" ? ["gpt-5-mini", "gpt-5", "gpt-5-2025-08-07", "gpt-5-nano", "gpt-live-1"] : ["gemini-2.5-flash"]);
   assert.equal((await get("agent-settings/not-an-agent")).status, 404);
   assert.equal((await get("agent-settings/research:brand")).status, 404, "only the input agents");
   const sb = await (await get("agent-settings/research:commission-brand")).json();

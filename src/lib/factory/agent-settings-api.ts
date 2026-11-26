@@ -3,6 +3,7 @@ import { repository } from "./repository";
 import { PROVIDERS, SLOTS, type SlotId } from "./ai-slots";
 import { keyConfigured, listProviderModels, routingOverview, setSlotRoute } from "./ai-routing";
 import { CONTRACTS, PLACEHOLDERS, isAgentSlot, type AgentSlot } from "./agent-prompts";
+import { curatedModels } from "./curated-models";
 import { effectivePrompt, resetPrompt, savePrompt } from "./agent-settings";
 
 // Model and prompt settings for the project input agents (CHG-0113), shown in the AI agent box on each input.
@@ -35,7 +36,7 @@ export async function handleAgentSettings(request: Request, path: string[], a: P
     if (action === "route") {
       const provider = String(data.provider || ""), model = String(data.model || "");
       const eligibleProvider = PROVIDERS.find(p => p.id === provider && keyConfigured(p.id) && (def.stage !== "research" || p.research));
-      if (!eligibleProvider || !(await models(eligibleProvider.id)).includes(model)) throw new Error("Choose a model returned by the configured provider API for this agent");
+      if (!eligibleProvider || !curatedModels(eligibleProvider.id, await models(eligibleProvider.id), def.stage === "research").includes(model)) throw new Error("Choose a model returned by the configured provider API for this agent");
       await setSlotRoute(repository, slot as SlotId, { provider, model }, a.subject, "changed from the project AI agent box");
     } else if (action === "prompt") await savePrompt(repository, slot, data.body, a.subject);
     else if (action === "reset-prompt") await resetPrompt(repository, slot);
@@ -44,7 +45,7 @@ export async function handleAgentSettings(request: Request, path: string[], a: P
   const overview = await routingOverview(repository);
   const effective = overview.effective.find((e) => e.slot === slot);
   const eligible = overview.providers.filter((p) => p.keyConfigured && (def.stage !== "research" || p.research));
-  const lists = await Promise.all(eligible.map(async (p) => [p.id, await models(p.id)] as const));
+  const lists = await Promise.all(eligible.map(async (p) => [p.id, curatedModels(p.id, await models(p.id), def.stage === "research")] as const));
   const prompt = await effectivePrompt(repository, slot);
   return json({
     slot, label: def.label, stage: def.stage,

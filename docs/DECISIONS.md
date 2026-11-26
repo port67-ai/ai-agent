@@ -80,3 +80,7 @@ Owner approved FAC-VWS-028 and FAC-VWS-030 changes; PRD impact: 1.46.0. Preserve
 
 ## CHG-0122 — Three-stage video generation pipeline (26 November 2026)
 FAC-VWS-030 and FAC-VWS-025. PRD impact: 1.47.0. Owner supplied project information, director beat and technical prompt templates. Three separately metered/configurable agents; editable output and explicit approval gates; producer duration/aspect ratio; multiple selected image IDs resolved server-side. Industry-neutral prompts. Legacy prompts retained. Target label Seedance 2.5 supplied by owner, model/API capability not verified; copy-only output and image metadata, no media upload to external tool. Branch feat/video-prompt-pipeline. Implementation/CI pending.
+
+
+## CHG-0124 — Curated model selection and video target skills (26 November 2026)
+FAC-VWS-025, FAC-VWS-030; PRD impact 1.48.0. Owner approved compact model families, separate target radio controls, versioned adapted GenHQ skill profiles. Source files supplied: seedance-25 multishot and magi-2-video-prompting Lite. MAGI-3 compatibility unverified; prompt-only. Selected asset mapping, skill provenance and regeneration gates; existing routes unchanged. Workspace managed agent selectors only; legacy administrative free-text routing and image renderer unchanged. CI pending; no live calls or deployment. Branch feat/curated-models-video-skills.
