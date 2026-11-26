@@ -6,8 +6,8 @@ const row=(id:string,runId:string,amount?:number):ApiCall=>({id,runId,accountId:
 const rows=[row("1","r",5000),row("2","r"),{...row("3","s",2000),reconciliation:{actualMicroUsd:3000,reference:"test",actor:"a",at:"t"}}, {...row("4","other",999999),accountId:"different"}];
 assert.deepEqual(telemetry(rows.slice(0,3),true),{runs:2,calls:3,knownMicroUsd:8000,unknownCosts:1});
 assert.deepEqual(telemetry(rows.slice(0,3),false),{runs:2,calls:3});
-const c={id:"c",name:"Business",website:"https://example.com",socials:{},redLines:[],brandPurpose:[]} as CustomerAccount;
-const p={id:"p",name:"Project",answers:{objective:{},product:{},audience:{},brand:{}},audience:{},directionGenerations:[]} as Commission;
+const c: CustomerAccount={createdAt:"t",createdBy:"a",updatedAt:"t",updatedBy:"a",audit:[],id:"c",name:"Business",website:"https://example.com",socials:{},redLines:[],brandPurpose:[]};
+const p: Commission={customerId:"c",preserve:[],change:[],wentTooFar:"",evidence:[],confirmed:{},createdAt:"t",createdBy:"a",updatedAt:"t",updatedBy:"a",audit:[],id:"p",name:"Project",answers:{objective:{},product:{},audience:{},brand:{}},audience:{},directionGenerations:[]};
 const d=buildOverview(c,p,1,[],[],[],rows,true);
 assert.equal(d.total.knownMicroUsd,8000);assert.equal(d.total.runs,2);assert.equal(d.nodes.find(n=>n.id==="objective")?.calls,3);assert.equal(d.nodes.find(n=>n.id==="script")?.status,"blocked");
 const producer=buildOverview(c,p,1,[],[],[],rows,false);
