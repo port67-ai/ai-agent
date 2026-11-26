@@ -15,7 +15,7 @@ export function curatedModels(provider: Provider, ids: string[], research = fals
 export function modelUse(id: string): string {
   if (/opus|reasoner|-pro(?:-preview)?$/.test(id)) return "Deep reasoning / creative thinking";
   if (/sonnet/.test(id)) return "Creative writing / balanced";
-  if (/mini|flash-lite|haiku/.test(id)) return "Fast / economical";
+  if (/-mini(?:$|-)|flash-lite|haiku/.test(id)) return "Fast / economical";
   if (/flash/.test(id)) return "Research / fast synthesis";
   return "General writing / structured output";
 }

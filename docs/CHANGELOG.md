@@ -889,3 +889,7 @@ FAC-VWS-025, FAC-VWS-030. PRD impact: none; correct missing agent metadata and e
 
 ## CHG-0124 — Curated model selection and video target skills (26 November 2026)
 FAC-VWS-025, FAC-VWS-030; PRD impact 1.48.0. Owner approved compact model families, separate target radio controls, versioned adapted GenHQ skill profiles. Source files supplied: seedance-25 multishot and magi-2-video-prompting Lite. MAGI-3 compatibility unverified; prompt-only. Selected asset mapping, skill provenance and regeneration gates; existing routes unchanged. Workspace managed agent selectors only; legacy administrative free-text routing and image renderer unchanged. CI pending; no live calls or deployment. Branch feat/curated-models-video-skills.
+
+
+## CHG-0125 — Model selector regression correction (26 November 2026)
+FAC-VWS-025. PRD impact: none. Factory CI 45867818223 failed on the existing dropdown markup assertion after capability labels were added; update assertions for labels and shortlist status. Correct Gemini substring classification if applicable. Governance previously passed; fresh CI pending. No deployment.
