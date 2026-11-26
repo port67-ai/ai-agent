@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD  
-**Version:** 1.45.0  
+**Version:** 1.46.0  
 **Date:** 12 November 2026  
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending  
 **Owner:** Port67.ai — Product & Architecture  
@@ -1676,8 +1676,8 @@ Owner direction, 25 November 2026 (CHG-0113, design only). Design: `docs/superpo
 |---|---|---|
 | FAC-VWS-026 | Video steps entry | A sidebar entry after Projects, "Video steps", with four sections in order: References, Scripting, Characters, locations and props, and Video generation. It works on one project and one age group, and only age groups saved and selected for direction on the project can be used. It reads that project's inputs, the Brand Intelligence dossier and client red lines. Plans are stored per project and age group. |
 | FAC-VWS-027 | References | A reference board per project: stills or links with why each belongs and a technical read (colour palette, composition, camera and movement, film look, lens), drafted by an AI agent and confirmed by a producer. References are private and rights-confirmed. |
-| FAC-VWS-028 | Scripting | Template scripts and an AI-led conversation that produces a numbered shot-by-shot script with timing, lines and on-screen text, saved by a producer. |
+| FAC-VWS-028 | Scripting | A title and one freeform creative brief, developed by an editable AI narrative writer into continuous prose. Preserve the original brief separately from the developed narrative; only producer-saved scripts go downstream. Existing timed scripts remain readable. No shot planning or mandatory template in this stage. |
 | FAC-VWS-029 | Characters, locations and props | Sheets for people, products and locations with a fixed written description and reference images, drafted by an AI agent from the script and references, used for continuity. Each project also has an image library: producers upload PNG, JPEG or WebP images (up to 8 MB, 60 per project), each with a producer-entered title and category (Person, Product, Location, Prop, Scene), a unique title-derived @name and an optional description; prompts refer to an image as @name. Images are private to the project and shown in a carousel with a review panel. |
-| FAC-VWS-030 | Video generation prompts | An AI agent writes a generation prompt per shot from the script, sheets and references in the chosen video model's format, first for copying into the tool. |
+| FAC-VWS-030 | Video generation prompts | An AI agent breaks an approved narrative into ordered shots with durations, visual actions, optional spoken lines and on-screen text, then writes a generation prompt per shot using accepted sheets, references and project @image names. Legacy timed scripts retain their existing shot structure. Prompts are for copying into the tool. |
 
 CHG-0118: Workspace agent settings use a compact illustrated control opening the model and prompt editor. Only LLM IDs returned by configured provider APIs and eligible for the agent may be selected or saved; unavailable current routes are identified separately. Image category and title are supplied in generation prompt context.

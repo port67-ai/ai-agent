@@ -72,3 +72,7 @@ Addendum to PRODUCT-030 (25 November 2026): built as CHG-0115 with defaults, bec
 
 ## PRODUCT-031: 25 November 2026: Project image library and @names
 Images for video prompts live in a per-project library on the Characters, locations and props page. Each image has a unique name per project and prompts refer to it as @name. Library is per project, not per age group. PNG, JPEG and WebP only (no SVG), 8 MB each, 60 per project. The AI receives names and descriptions as text and may only use listed names; invented names are stripped. Owner can change the limits.
+
+
+## CHG-0121 — Narrative-first scripting (26 November 2026)
+Owner approved FAC-VWS-028 and FAC-VWS-030 changes; PRD impact: 1.46.0. Preserve raw creative brief and approved narrative separately; generation drafts are not approved automatically. Shot planning belongs to Video generation; legacy timed scripts remain compatible. Existing model routing, metering, access gates and red lines remain. Implementation on feat/narrative-first-scripting; tests and UI integration pending. No deployment or paid calls.
