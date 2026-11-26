@@ -72,6 +72,13 @@ async function main() {
   assert.equal(listed.length, 2);
   assert.ok(listed.every((i: Record<string, unknown>) => !("storageKey" in i)));
 
+  const tagged = await up(b2, "title=Hero%20Product&category=Product", png(100));
+  assert.equal(tagged.status, 201);
+  const taggedImage = (await tagged.json()).image;
+  assert.deepEqual([taggedImage.title, taggedImage.name, taggedImage.category], ["Hero Product", "Hero-Product", "Product"]);
+  assert.equal((await up(b2, "title=Invalid&category=Wrong", png(100))).status, 400);
+  assert.equal((await up(b2, "title=Missing", png(100))).status, 400);
+  assert.equal((await post(b2, { action: "remove", id: taggedImage.id })).status, 200);
   // Checks: real type, size, empty.
   assert.equal((await up(b1, "name=x.png", Buffer.from("<svg><script>alert(1)</script></svg>"))).status, 400, "SVG refused");
   assert.equal((await up(b1, "name=x.png", Buffer.from("%PDF-1.7 not an image"))).status, 400);

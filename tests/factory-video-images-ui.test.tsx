@@ -18,12 +18,16 @@ assert.match(empty, /as @name/);
 assert.doesNotMatch(empty, /Scroll images left/);
 
 const h = view([img("i1", "baker", "Maya, 30s"), img("i2", "loaf")], "i2", "2 uploaded.");
-assert.match(h, /aria-label="Scroll images left"/);
+assert.match(h, /Project assets/);
+assert.match(h, /Selected image details/);
 assert.match(h, new RegExp(`src="/api/factory/video-images/${cid}/${pid}/file/i1"`));
 assert.match(h, />@baker<\/span>/);
 assert.match(h, /aria-pressed="true"[^>]*title="loaf"/, "selected thumbnail is marked");
 assert.match(h, /2 of 2/);
-assert.match(h, /value="@loaf"/);
+assert.match(h, /value="loaf"/);
+assert.match(h, /Image title/);
+assert.match(h, /Choose category/);
+assert.match(h, /Uncategorised/);
 assert.match(h, /Copy @loaf/);
 assert.match(h, /Delete/);
 assert.match(h, /Description \(optional\)/);

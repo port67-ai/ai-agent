@@ -285,3 +285,19 @@ Queue agreed with the owner: spend caps (done), team access (done), live researc
 2026-11-25; Claude; CHG-0114: Input 5 has Generate from AI and an AI agent box (job research:commission-brand). The two brand boxes hold long labelled prose (12,000 characters). Project details gained product page link, sub-brand or collection and video format. Try live on a known brand and check the structure comes back and the run time is acceptable. The Preserve list is not filled by this agent; that could be a next step.
 2026-11-25; Claude; CHG-0115: Video steps. Sidebar group after Projects (References, Scripting, Characters/locations/props, Video generation); API `video/:customerId/:commissionId/:generation` (video-steps-api.ts, commands, run, pure rules in video-steps.ts); workspace `factory-video-<customerId>`; four AI jobs synthesis:video-*; UI in VideoSteps.tsx and VideoStepsSections.tsx. Gate: age group must be saved and selected for direction. Defaults taken for the five open questions, see DECISIONS. Never run against a live provider; no browser check. Uncommitted.
 2026-11-25; Claude; CHG-0116: project image library. Routes `video-images/:customerId/:commissionId` (list, update, remove), `/upload?name&description` raw body, `/file/:imageId`; code in video-images.ts (pure), video-image-store.ts, video-images-api.ts, ImageLibrary.tsx. Prompts get @names via videoContext. Not seen in a browser. Uncommitted.
+
+
+## CHG-0117 — Workspace UX and classified image library (25 November 2026)
+Owner requested image titles, categories and UX polish. FAC-VWS-029. PRD impact: 1.45.0. Image upload metadata queue, category filtering, title-derived unique @name, optional legacy fields, responsive review and illustrated agent control. Physical storage keys remain stable. Existing prompts are not rewritten on rename. Tests extended; execution pending GitHub CI. Reference screenshot unavailable; no production deployment or live browser verification claimed.
+
+
+## CHG-0118 — API-listed workspace agents and classified prompt context
+FAC-VWS-025, FAC-VWS-030. PRD impact: 1.45.0 clarification. Workspace model selector and route API reject unlisted IDs; current unavailable route stays visible as status, not an option. Provider listing is cached up to ten minutes and is not proof of successful generation. Agent settings refresh on opening. Prompt context includes asset titles/categories where present, not image bytes. Tests extended; pending CI. Legacy administrative routing editor remains unchanged.
+
+
+## CHG-0119 — Reference-style asset browser
+FAC-VWS-029. PRD impact: none, visual refinement of existing acceptance criteria. Owner supplied a style reference after initial implementation. Asset grid, upload drop zone, category navigation and selected-image inspector replace the horizontal-only carousel. Responsive stacking on narrower screens. Existing private storage and prompt references preserved. Automated render assertions adjusted; CI and visual acceptance pending.
+
+
+## CHG-0120 — PR #85 whitespace correction (26 November 2026)
+FAC-VWS-029. PRD impact: none; formatting only. Factory MVP workflow 45714098190 passed for 4d0b6ff; documentation structural checks passed but git diff --check failed on two whitespace-only lines in ImageLibrary.tsx. Removed trailing whitespace. Fresh CI pending; dedicated visual acceptance remains outstanding.

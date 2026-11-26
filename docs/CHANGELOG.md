@@ -852,3 +852,19 @@ CHG-0009 follow-up: remote Firestore emulator checks passed at120c947 (run432097
 - Evidence: tsc, lint, `npm test` and `npm run build` pass in a clean copy; new tests factory-video-images (rules, API, privacy, scoping, limits, delete, prompt context) and factory-video-images-ui.
 - Limitations: never opened in a real browser, so carousel layout, drag and drop and clipboard copy are unchecked. The AI is given image names and descriptions only; it does not see the pictures, and the video tool must be given the images itself. 60 images per project and 8 MB each are my choices. Images are not yet deleted when a project is deleted (projects cannot be deleted yet).
 - Status: built locally, uncommitted.
+
+
+## CHG-0117 — Workspace UX and classified image library (25 November 2026)
+Owner requested image titles, categories and UX polish. FAC-VWS-029. PRD impact: 1.45.0. Image upload metadata queue, category filtering, title-derived unique @name, optional legacy fields, responsive review and illustrated agent control. Physical storage keys remain stable. Existing prompts are not rewritten on rename. Tests extended; execution pending GitHub CI. Reference screenshot unavailable; no production deployment or live browser verification claimed.
+
+
+## CHG-0118 — API-listed workspace agents and classified prompt context
+FAC-VWS-025, FAC-VWS-030. PRD impact: 1.45.0 clarification. Workspace model selector and route API reject unlisted IDs; current unavailable route stays visible as status, not an option. Provider listing is cached up to ten minutes and is not proof of successful generation. Agent settings refresh on opening. Prompt context includes asset titles/categories where present, not image bytes. Tests extended; pending CI. Legacy administrative routing editor remains unchanged.
+
+
+## CHG-0119 — Reference-style asset browser
+FAC-VWS-029. PRD impact: none, visual refinement of existing acceptance criteria. Owner supplied a style reference after initial implementation. Asset grid, upload drop zone, category navigation and selected-image inspector replace the horizontal-only carousel. Responsive stacking on narrower screens. Existing private storage and prompt references preserved. Automated render assertions adjusted; CI and visual acceptance pending.
+
+
+## CHG-0120 — PR #85 whitespace correction (26 November 2026)
+FAC-VWS-029. PRD impact: none; formatting only. Factory MVP workflow 45714098190 passed for 4d0b6ff; documentation structural checks passed but git diff --check failed on two whitespace-only lines in ImageLibrary.tsx. Removed trailing whitespace. Fresh CI pending; dedicated visual acceptance remains outstanding.

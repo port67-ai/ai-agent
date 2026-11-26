@@ -43,7 +43,9 @@ assert.doesNotMatch(syn, /Filled in automatically/, "no placeholders for the aud
 assert.match(syn, /<button type="button" class="f-button secondary">Reset to original<\/button>/, "reset enabled once edited");
 // No key set, and a model that is not in the provider list is still shown.
 assert.match(panel({ ...settings, providers: [], route: { error: "No model chosen yet" } }), /No AI provider key with web search \(OpenAI or Gemini\) is set in Render yet/);
-assert.match(panel({ ...settings, route: { provider: "openai", model: "old-model", source: "default" } }), /<option value="openai\|old-model" selected="">openai: old-model \(current\)<\/option>/);
+const unavailable = panel({ ...settings, route: { provider: "openai", model: "old-model", source: "default" } });
+assert.doesNotMatch(unavailable, /<option value="openai\|old-model"/);
+assert.match(unavailable, /not in the current API model list/);
 
 // ---- On the project: AI agent box on Inputs 1, 3 and 4 only; Generate from AI on 1 and 3; project details; AI notes.
 const base: Commission = {
