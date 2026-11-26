@@ -23,7 +23,7 @@ type ViewProps = {
 };
 export function ImageLibraryView({ cid, images, selectedId, busy, progress, onSelect, onFiles, onSave, onRemove }: ViewProps) {
   const input = useRef<HTMLInputElement>(null);
-  
+
   const [over, setOver] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [pending, setPending] = useState<UploadItem[]>([]);
@@ -67,7 +67,7 @@ export function ImageLibraryView({ cid, images, selectedId, busy, progress, onSe
                 </li>
               ))}
             </ul>
-            
+
           </div>
           {sel && visible.some(i => i.id === sel.id) && (
             <aside className="w-review" key={sel.id} aria-label="Selected image details"><h4>Selected image</h4>

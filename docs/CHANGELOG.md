@@ -864,3 +864,7 @@ FAC-VWS-025, FAC-VWS-030. PRD impact: 1.45.0 clarification. Workspace model sele
 
 ## CHG-0119 — Reference-style asset browser
 FAC-VWS-029. PRD impact: none, visual refinement of existing acceptance criteria. Owner supplied a style reference after initial implementation. Asset grid, upload drop zone, category navigation and selected-image inspector replace the horizontal-only carousel. Responsive stacking on narrower screens. Existing private storage and prompt references preserved. Automated render assertions adjusted; CI and visual acceptance pending.
+
+
+## CHG-0120 — PR #85 whitespace correction (26 November 2026)
+FAC-VWS-029. PRD impact: none; formatting only. Factory MVP workflow 45714098190 passed for 4d0b6ff; documentation structural checks passed but git diff --check failed on two whitespace-only lines in ImageLibrary.tsx. Removed trailing whitespace. Fresh CI pending; dedicated visual acceptance remains outstanding.
