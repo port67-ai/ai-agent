@@ -1,3 +1,4 @@
+import { handleStyleReference } from "./style-reference-api";
 import type { Principal } from "./model";
 import { repository } from "./repository";
 import { CUSTOMERS_WORKSPACE } from "./customers";
@@ -47,13 +48,14 @@ export async function handleVideoImages(request: Request, path: string[], a: Pri
   const ws = videoWorkspace(cid);
   const get = request.method === "GET";
 
+  if (sub === "style" && path.length === 4) return handleStyleReference(request,cid,commissionId,a,data);
   if (path.length === 3) {
     if (get) return json({ images: view(imagesOf(await repository.read(ws), commissionId)) });
     const action = typeof data.action === "string" ? data.action : "";
     let removed: string | undefined;
     const db = await repository.mutate(ws, (d) => {
       if (action === "update") updateImage(d, commissionId, data.id, data);
-      else if (action === "remove") removed = removeImage(d, commissionId, data.id).storageKey;
+      else if (action === "remove") { if(d.projectStyles?.some(s=>s.commissionId===commissionId&&s.imageId===data.id)) throw new Error("Clear the saved style reference before deleting its source image"); removed = removeImage(d, commissionId, data.id).storageKey; }
       else throw new Error("Unknown action");
       return d;
     });

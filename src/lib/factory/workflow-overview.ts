@@ -10,14 +10,14 @@ export type OverviewData = { customer: string; project: string; projectCount: nu
 export const STAGE_AGENTS: Record<string,string[]> = {
   brandIntel: ["research:brand-intel","synthesis:brand-intel"],
   objective: ["research:commission-objective"], product: ["research:commission-product"], audience: ["synthesis:intended-audience"], expression: ["research:commission-brand"],
-  references: ["synthesis:video-references"], script: ["synthesis:video-script"], assets: ["synthesis:video-sheets"],
+  references: ["synthesis:video-references","synthesis:video-style-reference"], script: ["synthesis:video-script"], assets: ["synthesis:video-sheets"],
   info: ["synthesis:video-project-info"], beats: ["synthesis:video-director-beats"], technical: ["synthesis:video-technical","synthesis:video-prompts"],
 };
 export function telemetry(rows: ApiCall[], costs: boolean) {
   return { runs: new Set(rows.map(r=>r.runId)).size, calls: rows.length,
     ...(costs ? { knownMicroUsd: rows.reduce((n,r)=>n+(r.reconciliation?.actualMicroUsd ?? r.estimatedMicroUsd ?? 0),0), unknownCosts: rows.filter(r=>r.reconciliation?.actualMicroUsd === undefined && r.estimatedMicroUsd === undefined).length } : {}) };
 }
-export function buildOverview(c: CustomerAccount, project: Commission, projects: number, versions: BrandIntelVersion[], plans: VideoPlan[], images: VideoImage[], rows: ApiCall[], costs: boolean): OverviewData {
+export function buildOverview(c: CustomerAccount, project: Commission, projects: number, versions: BrandIntelVersion[], plans: VideoPlan[], images: VideoImage[], rows: ApiCall[], costs: boolean, style?: import("./model").ProjectStyleReference): OverviewData {
   const customerRows=rows.filter(r=>r.accountId===c.id && r.projectId===c.id && r.workspaceId===`factory-brandintel-${c.id}`);
   const projectRows=rows.filter(r=>r.accountId===c.id && r.projectId===project.id && [`factory-commissions-${c.id}`,`factory-video-${c.id}`].includes(r.workspaceId));
   const groups=GENERATIONS.filter(g=>(project.directionGenerations||[]).includes(g.key)&&project.audience?.[g.key]);
@@ -50,7 +50,7 @@ export function buildOverview(c: CustomerAccount, project: Commission, projects:
   add("script",2,"Scripting","T",status(p=>!!p.script,p=>!!p.script||p.chat.length>0),count(p=>p.script?1:0)+"/"+groups.length+" saved scripts",selected.map(p=>p.script?.narrative||p.script?.title||"").filter(Boolean).join("\n\n"),"open");
   add("assets",2,"Characters, locations & props","U",status(p=>p.sheets.some(s=>s.accepted)||images.length>0,p=>p.sheets.length>0||images.length>0),images.length+" uploaded images · "+count(p=>p.sheets.filter(s=>s.accepted).length)+" accepted sheets",images.map(i=>"@"+i.name).join("\n"),"run");
   for(const [id,title] of [["info","Project information"],["beats","Director’s beat script"],["technical","Technical prompt"]] as const){
-    const stale=selected.some(p=>p.pipeline?.[id]&&!pipelineIsCurrent({customer:c,commission:project,generation:p.generation,dossier:current},p,images));
+    const stale=selected.some(p=>p.pipeline?.[id]&&!pipelineIsCurrent({customer:c,commission:project,generation:p.generation,dossier:current},p,images,style));
     const s=status(p=>!!p.pipeline?.[id]?.accepted,p=>!!p.pipeline?.[id]);
     const locked=id==="beats"&&!selected.some(p=>p.pipeline?.info?.accepted)||id==="technical"&&!selected.some(p=>p.pipeline?.info?.accepted&&p.pipeline?.beats?.accepted);
     add(id,3,title,id==="technical"?"V":"T",stale?"stale":locked?"blocked":s,count(p=>p.pipeline?.[id]?.accepted?1:0)+"/"+groups.length+" accepted",selected.map(p=>p.pipeline?.[id]?.text||"").filter(Boolean).join("\n\n"),"open");

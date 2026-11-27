@@ -1,3 +1,4 @@
+import { styleOf } from "./style-reference";
 import type { Generation, Principal } from "./model";
 import { repository } from "./repository";
 import { CUSTOMERS_WORKSPACE } from "./customers";
@@ -63,7 +64,7 @@ export async function handleVideo(request: Request, path: string[], a: Principal
     const body = (await effectivePrompt(repository, STEP_SLOT[step])).body;
     const revising = step === "script" && !!instruction && !!existing?.script && data.template === undefined;
     const images = imagesOf(await repository.read(ws), commissionId).map((i) => ({ name: i.name, description: i.description, title: i.title, category: i.category }));
-    const { parsed, model } = await runVideoStep(repository, { customer, commission, generation, plan: existing, dossier, images, step, instruction: instruction || undefined, template: data.template as string | undefined, creative, revision }, actor, deps, body);
+    const { parsed, model } = await runVideoStep(repository, { customer, commission, generation, plan: existing, dossier, images, style:styleOf(await repository.read(ws),commissionId), step, instruction: instruction || undefined, template: data.template as string | undefined, creative, revision }, actor, deps, body);
     let draft: unknown = null;
     const plan = await repository.mutate(ws, (db) => {
       const p = planFor(db, commissionId, generation, actor);

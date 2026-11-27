@@ -9,7 +9,7 @@ import { STEP_SLOT, parseVideo, scriptText, skeleton, templateDef, videoContext,
 
 // One agent call for a Video steps step (CHG-0115). Synthesis only, no web search; metered on the admin ledger against the project.
 export const videoWorkspace = (customerId: string) => `factory-video-${customerId}`;
-export type VideoRun = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string; title?: string; category?: string }[]; step: VideoStep; instruction?: string; template?: string; creative?: { title: string; creativeBrief: string }; revision?: string };
+export type VideoRun = { style?: import("./model").ProjectStyleReference; customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string; title?: string; category?: string }[]; step: VideoStep; instruction?: string; template?: string; creative?: { title: string; creativeBrief: string }; revision?: string };
 
 function readJson(text: string, truncated: boolean): Record<string, unknown> {
   if (!text.trim()) throw new Error(truncated ? "The AI ran out of output length before it wrote anything. Try again, or choose a model with more output room in the AI agent box. Nothing was changed." : "The AI sent back an empty answer. Try again; nothing was changed.");

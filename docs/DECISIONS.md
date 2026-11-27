@@ -92,3 +92,7 @@ FAC-VWS-001/002/026/030. PRD impact 1.49.0. Owner requested node canvas and tele
 
 ## CHG-0128 — Hierarchical overview (27 November 2026)
 FAC-VWS-001/002. PRD impact 1.50.0. Owner requested larger parent nodes, smaller children below, collapse/expand, status connectors. Preserve existing telemetry and access. Native canvas. CI pending; no deployment. Branch feat/overview-hierarchy.
+
+
+## CHG-0129 — Project style reference (27 November 2026)
+FAC-VWS-026/030. PRD impact 1.51.0. ShotDeck screenshot via existing project assets, editable metadata and recreation prompt, explicit save, metered multimodal extraction using References route, style context and pipeline invalidation. One active baseline per project; no Artlist integration. Branch feat/project-style-reference. CI pending; no deployment/live AI.

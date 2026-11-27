@@ -1,3 +1,4 @@
+import { styleContext } from "./style-reference";
 import type { BrandIntelVersion, Commission, CustomerAccount, Generation, VideoPlan, VideoReference, VideoScript, VideoSheet, VideoShot } from "./model";
 import { dropUnknownMentions } from "./video-images";
 import type { VideoSlot } from "./agent-prompts";
@@ -76,7 +77,7 @@ export function promptsFields(d: Record<string, unknown>, shotCount: number) {
 
 // ---------- What the agents are given ----------
 const cap = (s: string, n = 3000) => s.trim().slice(0, n);
-export type VideoCtx = { customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string; title?: string; category?: string }[] };
+export type VideoCtx = { style?: import("./model").ProjectStyleReference; customer: CustomerAccount; commission: Commission; generation: Generation; plan?: VideoPlan; dossier?: BrandIntelVersion; images?: { name: string; description: string; title?: string; category?: string }[] };
 export function scriptText(s: VideoScript): string {
   if (s.narrative) return `Title: ${s.title}\nApproved narrative:\n${s.narrative}`;
   return `Title: ${s.title}\nTemplate: ${s.template}, ${scriptSeconds(s)} seconds\n${s.shots.map((x, i) => `Shot ${i + 1} (${x.seconds}s)\n  Visual: ${x.visual}\n  Line: ${x.line || "(none)"}\n  On-screen text: ${x.onScreen || "(none)"}`).join("\n")}`;
@@ -104,7 +105,7 @@ export function videoContext(step: VideoStep, c: VideoCtx): string {
   if ((step === "sheets" || step === "prompts") && plan?.script) parts.push(`<script>\n${scriptText(plan.script)}\n</script>`);
   if (step === "prompts") parts.push(`<sheets>\n${sheets.length ? sheets.map((s) => `- [${s.kind}] ${s.name}: ${s.description}${s.details ? ` Details: ${s.details}` : ""}`).join("\n") : "(none accepted)"}\n</sheets>`);
   if (step === "prompts") parts.push(`<images>\n${c.images?.length ? c.images.map((i) => `- @${i.name}${i.category ? ` [${i.category}]` : ""}${i.title ? ` (${i.title})` : ""}${i.description ? `: ${i.description}` : ""}`).join("\n") : "(none uploaded)"}\n</images>`);
-  return parts.join("\n\n");
+  return parts.join("\n\n") + styleContext(c.style);
 }
 
 // ---------- Schemas and checks on what the agents return ----------

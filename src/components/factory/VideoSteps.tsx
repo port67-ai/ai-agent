@@ -4,6 +4,7 @@ import type { Commission, CustomerAccount, Generation, VideoPlan } from "@/lib/f
 import { GENERATIONS } from "@/lib/factory/commissions";
 import { STEP_LABEL } from "@/lib/factory/video-steps";
 import { PromptsSection, ReferencesSection, ScriptSection, SheetsSection, type ScriptSeed } from "./VideoStepsSections";
+import { StyleReferencePanel } from "./StyleReferencePanel";
 import { ImageLibrary, type LibraryImage } from "./ImageLibrary";
 import { Empty, Field } from "./shared";
 import { VideoPipelineSection } from "./VideoPipelineSection";
@@ -104,6 +105,7 @@ export function VideoSteps({ section, initialCustomer = "", initialProject = "" 
               </select>
             </Field>
           </div>
+          {section==="references"&&pid&&<StyleReferencePanel key={cid+"/"+pid} cid={cid} pid={pid}/>}
           {library}
           {!pid ? <Empty title="Choose a project">Pick the project to work on.</Empty> : groups.length === 0 ? (
             <Empty title="Select an age group for direction first">Video steps start from a saved, selected age group. Open the project, save the audience for at least one age group on Input 4, and tick &quot;Use … for direction&quot;.</Empty>
