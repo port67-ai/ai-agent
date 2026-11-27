@@ -1,7 +1,7 @@
 # PORT67 FACTORY — MASTER PRODUCT REQUIREMENTS DOCUMENT
 
 **Document ID:** P67-FAC-PRD
-**Version:** 1.51.0
+**Version:** 1.52.0
 **Date:** 12 November 2026
 **Status:** Owner-confirmed creative direction (CHG-0003); underlying architecture/baseline proposals and Synapse audit remain pending
 **Owner:** Port67.ai — Product & Architecture
@@ -1689,3 +1689,5 @@ CHG-0126 (FAC-VWS-001, FAC-VWS-002, FAC-VWS-026, FAC-VWS-030): Overview provides
 CHG-0128 (FAC-VWS-001/002): overview uses large connected parent cards, smaller expandable child cards, stage completion, runs and scoped costs. Green complete, red failed, dark incomplete, blue active connections.
 
 CHG-0129 (FAC-VWS-026/030): project-wide saved ShotDeck visual baseline, screenshot upload, metered image-aware extraction and recreation prompt, editable structured fields, notes and explicit save; @ProjectStyle context in video agents and pipeline source hash. Source screenshot uses private project image library. External image generation deferred.
+
+CHG-0130 (FAC-VWS-025/029): expandable reference sheet generator, private producer-scoped source and output drafts, category-specific skill instructions, explicit metered image generation, GPT Image 2 preferred selectable OpenAI image route, preview/download, approve then metadata save into project assets. Up to seven source images; target 16:9 crop where supported. Visual examples interpreted into text layout profiles initially; actual binary visual templates and provider availability require follow-up verification.

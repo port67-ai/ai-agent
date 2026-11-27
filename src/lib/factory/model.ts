@@ -587,6 +587,7 @@ export type Database = {
   videoPlans?: VideoPlan[];
   /** Image library for the projects of one customer account (same workspace as videoPlans). Each image belongs to one project. */
   videoImages?: VideoImage[];
+  referenceSheetDrafts?: import("./reference-sheets").SheetDraft[];
   projectStyles?: ProjectStyleReference[];
   /** Video workspace customer accounts; used only in the system workspace `factory-customers`. */
   customers?: CustomerAccount[];

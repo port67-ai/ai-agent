@@ -1,3 +1,4 @@
+import { handleReferenceSheets } from "./reference-sheet-api";
 import { handleStyleReference } from "./style-reference-api";
 import type { Principal } from "./model";
 import { repository } from "./repository";
@@ -16,7 +17,7 @@ import { videoWorkspace } from "./video-steps-run";
 //   GET  video-images/:customerId/:commissionId/file/:imageId         the image, through this authorised route only
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" } });
 export const isVideoImageRoute = (path: string[]) => path[0] === "video-images";
-export const isVideoImageUpload = (request: Request, path: string[]) => request.method === "POST" && path[0] === "video-images" && path.length === 4 && path[3] === "upload";
+export const isVideoImageUpload = (request: Request, path: string[]) => request.method === "POST" && path[0] === "video-images" && path.length === 4 && (path[3] === "upload" || path[3] === "sheet-source");
 
 async function rawBody(request: Request, max: number): Promise<Buffer> {
   const declared = Number(request.headers.get("content-length") || 0);
@@ -48,6 +49,8 @@ export async function handleVideoImages(request: Request, path: string[], a: Pri
   const ws = videoWorkspace(cid);
   const get = request.method === "GET";
 
+  if (sub === "sheet-source" && path.length === 4 && !get) return handleReferenceSheets(request,cid,commissionId,a,data,sub,undefined,()=>rawBody(request,IMAGE_MAX_BYTES));
+  if (sub === "sheets" && (path.length === 4 || path.length === 5)) return handleReferenceSheets(request,cid,commissionId,a,data,sub,fileId);
   if (sub === "style" && path.length === 4) return handleStyleReference(request,cid,commissionId,a,data);
   if (path.length === 3) {
     if (get) return json({ images: view(imagesOf(await repository.read(ws), commissionId)) });

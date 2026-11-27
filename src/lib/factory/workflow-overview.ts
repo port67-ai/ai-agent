@@ -10,7 +10,7 @@ export type OverviewData = { customer: string; project: string; projectCount: nu
 export const STAGE_AGENTS: Record<string,string[]> = {
   brandIntel: ["research:brand-intel","synthesis:brand-intel"],
   objective: ["research:commission-objective"], product: ["research:commission-product"], audience: ["synthesis:intended-audience"], expression: ["research:commission-brand"],
-  references: ["synthesis:video-references","synthesis:video-style-reference"], script: ["synthesis:video-script"], assets: ["synthesis:video-sheets"],
+  references: ["synthesis:video-references","synthesis:video-style-reference"], script: ["synthesis:video-script"], assets: ["synthesis:video-sheets","studio:reference-sheet"],
   info: ["synthesis:video-project-info"], beats: ["synthesis:video-director-beats"], technical: ["synthesis:video-technical","synthesis:video-prompts"],
 };
 export function telemetry(rows: ApiCall[], costs: boolean) {

@@ -1,4 +1,5 @@
 "use client";
+import { ReferenceSheetGenerator } from "./ReferenceSheetGenerator";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Copy, ImagePlus, Trash2 } from "lucide-react";
 import type { VideoImage } from "@/lib/factory/model";
@@ -141,6 +142,6 @@ export function ImageLibrary({ cid, commissionId, onChange, onError }: { cid: st
     catch (e) { onError((e as Error).message); return false; }
     finally { setBusy(false); }
   };
-  return <ImageLibraryView cid={cid} images={images} selectedId={selected} busy={busy} progress={progress} onSelect={setSelected} onFiles={(f) => void upload(f)}
-    onSave={(id, d) => act({ action: "update", id, ...d })} onRemove={(id) => void act({ action: "remove", id })} />;
+  return <><ReferenceSheetGenerator key={base} cid={cid} pid={commissionId} onSaved={i=>{apply([...images,i],i.id);setProgress("Reference sheet saved to Project Assets.")}}/><ImageLibraryView cid={cid} images={images} selectedId={selected} busy={busy} progress={progress} onSelect={setSelected} onFiles={(f) => void upload(f)}
+    onSave={(id, d) => act({ action: "update", id, ...d })} onRemove={(id) => void act({ action: "remove", id })} /></>;
 }
