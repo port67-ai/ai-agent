@@ -88,3 +88,7 @@ FAC-VWS-025, FAC-VWS-030; PRD impact 1.48.0. Owner approved compact model famili
 
 ## CHG-0126 — Project workflow overview canvas (26 November 2026)
 FAC-VWS-001/002/026/030. PRD impact 1.49.0. Owner requested node canvas and telemetry. Derived from saved customer/project/cohort plans, asset catalogue and archived+active ledger. Preserve owner-only amounts, unknown cost counts and shared-vs-project attribution. Run uses existing gated routes; input/review steps open editor, no automatic approvals. No external rendering. Branch feat/workflow-overview-canvas; UI/tests pending; no deployment.
+
+
+## CHG-0128 — Hierarchical overview (27 November 2026)
+FAC-VWS-001/002. PRD impact 1.50.0. Owner requested larger parent nodes, smaller children below, collapse/expand, status connectors. Preserve existing telemetry and access. Native canvas. CI pending; no deployment. Branch feat/overview-hierarchy.
