@@ -903,3 +903,7 @@ CHG-0126 UI: native SVG/CSS canvas with pan/zoom/fit, inspector, scoped navigati
 
 ## CHG-0127 — Complete overview test fixtures (26 November 2026)
 FAC-VWS-001/002/026/030. PRD impact: none. PR #89 merged before correction 1624d05 was included. Main CI 45872414984 failed; carry forward the typed test fixture correction on fix/workflow-overview-main-tests. Fresh CI pending; no deployment.
+
+
+## CHG-0128 — Hierarchical overview (27 November 2026)
+FAC-VWS-001/002. PRD impact 1.50.0. Owner requested larger parent nodes, smaller children below, collapse/expand, status connectors. Preserve existing telemetry and access. Native canvas. CI pending; no deployment. Branch feat/overview-hierarchy.
