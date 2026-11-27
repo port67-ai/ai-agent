@@ -1,3 +1,4 @@
+import { styleOf } from "./style-reference";
 import type { Principal } from "./model";
 import { repository } from "./repository";
 import { CUSTOMERS_WORKSPACE } from "./customers";
@@ -29,5 +30,5 @@ export async function handleWorkflowOverview(request:Request,path:string[],a:Pri
   const [bdb,vdb,rows]=await Promise.all([repository.read(brandIntelWorkspace(cid)),repository.read(videoWorkspace(cid)),exportApiCalls(repository)]);
   const costs=!!a.admin&&a.identity==="firebase";
   // Never serialize ledger rows or cost amounts for producers. Only aggregate scoped execution counts and model IDs.
-  return json(buildOverview(customer,project,commissionsOf(cdb).length,versionsOf(bdb),plansOf(vdb).filter(p=>p.commissionId===pid),imagesOf(vdb,pid),rows,costs));
+  return json(buildOverview(customer,project,commissionsOf(cdb).length,versionsOf(bdb),plansOf(vdb).filter(p=>p.commissionId===pid),imagesOf(vdb,pid),rows,costs,styleOf(vdb,pid)));
 }

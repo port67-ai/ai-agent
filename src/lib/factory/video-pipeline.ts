@@ -1,3 +1,4 @@
+import { styleOf, styleContext } from "./style-reference";
 import { createHash, randomUUID } from "node:crypto";
 import type { BrandIntelVersion, Commission, CustomerAccount, Generation, PipelineStage, VideoImage, VideoPipeline, VideoPlan } from "./model";
 import type { Repository } from "./repository";
@@ -38,11 +39,11 @@ function checkText(stage: PipelineStage, text: string, assets: VideoImage[], tar
     if (unknown.length) throw new Error("Technical prompt uses an unselected or unknown asset: @" + unknown[0]);
   }
 }
-function source(c: Pick<Context, "customer" | "commission" | "generation" | "dossier">, plan: VideoPlan, images: VideoImage[]) {
-  const data = videoContext("prompts", { ...c, plan, images: metadata(images) });
+function source(c: Pick<Context, "customer" | "commission" | "generation" | "dossier">, plan: VideoPlan, images: VideoImage[], style?: import("./model").ProjectStyleReference) {
+  const data = videoContext("prompts", { ...c, plan, images: metadata(images), style });
   return data + "\n<asset_catalogue>" + JSON.stringify(metadata(images)) + "</asset_catalogue>";
 }
-export function pipelineIsCurrent(c: Pick<Context, "customer" | "commission" | "generation" | "dossier">, plan: VideoPlan, images: VideoImage[]) { return !!plan.pipeline && plan.pipeline.sourceKey === hash(source(c, plan, images)); }
+export function pipelineIsCurrent(c: Pick<Context, "customer" | "commission" | "generation" | "dossier">, plan: VideoPlan, images: VideoImage[], style?: import("./model").ProjectStyleReference) { return !!plan.pipeline && plan.pipeline.sourceKey === hash(source(c, plan, images, style)); }
 function clearAfter(p: VideoPipeline, stage: PipelineStage) {
   if (stage === "info") { delete p.beats; delete p.technical; }
   if (stage === "beats") delete p.technical;
@@ -56,7 +57,7 @@ export async function handlePipeline(repo: Repository, c: Context, d: Record<str
   const stage = stageOf(d.stage);
   const db = await repo.read(c.ws), plan = findPlan(db, c.commission.id, c.generation);
   if (!plan?.script) throw new Error("Save a script first");
-  const images = imagesOf(db, c.commission.id), data = source(c, plan, images), key = hash(data);
+  const images = imagesOf(db, c.commission.id), style=styleOf(db,c.commission.id), data = source(c, plan, images,style), key = hash(data);
   const p = plan.pipeline;
   gate(p, stage, key);
   const spec = stage === "info" && d.action === "pipeline-generate" ? settings(d) : p ? { duration: p.duration, aspectRatio: p.aspectRatio } : (() => { throw new Error("Generate project information first"); })();
@@ -73,7 +74,7 @@ export async function handlePipeline(repo: Repository, c: Context, d: Record<str
     const input = stage === "info" ? data : stage === "beats" ? JSON.stringify({ approvedProjectInformation: p!.info!.text }) : JSON.stringify({ approvedProjectInformation: p!.info!.text, approvedDirectorScript: p!.beats!.text, selectedAssets: metadata(assets).map((a,i)=>({...a, attachment: target === "seedance-2.5" ? "@Image"+(i+1) : "@"+a.name})), videoTarget: target });
     const result = await meteredInvoke(repo, { accountId: c.customer.id, workspaceId: c.ws, projectId: c.commission.id, runId: randomUUID() }, slot, "synthesis", sel, c.actor, c.deps, {
       instructions: body + (stage === "technical" ? "\n\nSelected skill takes precedence over conflicting editable style instructions: "+skill.instructions : "") + "\n\n" + CONTRACTS[slot],
-      input: input + "\n<production_settings>" + JSON.stringify(spec) + "</production_settings>\n<client_red_lines>" + JSON.stringify(c.customer.redLines) + "</client_red_lines>\n<target_age_group>" + c.generation + "</target_age_group>",
+      input: input + (stage==="info"?"":styleContext(style)) + "\n<production_settings>" + JSON.stringify(spec) + "</production_settings>\n<client_red_lines>" + JSON.stringify(c.customer.redLines) + "</client_red_lines>\n<target_age_group>" + c.generation + "</target_age_group>",
       schema: { type: "object", additionalProperties: false, required: ["text"], properties: { text: { type: "string" } } }, name: "port67_pipeline_" + stage, maxOutputTokens: 12000, reasoningEffort: "low", timeoutMs: 150000
     });
     if (result.error) throw new Error(result.error);
@@ -90,7 +91,7 @@ export async function handlePipeline(repo: Repository, c: Context, d: Record<str
   checkText(stage, output, assets, target);
   return repo.mutate(c.ws, current => {
     const latest = findPlan(current, c.commission.id, c.generation);
-    if (!latest || hash(source(c, latest, imagesOf(current, c.commission.id))) !== key || JSON.stringify(latest.pipeline || null) !== snapshot) throw new Error("Project or pipeline changed; reload and try again");
+    if (!latest || hash(source(c, latest, imagesOf(current, c.commission.id),styleOf(current,c.commission.id))) !== key || JSON.stringify(latest.pipeline || null) !== snapshot) throw new Error("Project or pipeline changed; reload and try again");
     const next = stage === "info" && d.action === "pipeline-generate" ? { ...spec, sourceKey: key } as VideoPipeline : latest.pipeline!;
     clearAfter(next, stage);
     next[stage] = { text: output, accepted: d.action === "pipeline-accept", revision: randomUUID(), generatedAt: new Date().toISOString(), by: c.actor, model, ...(stage === "technical" ? { videoTarget: target, skillVersion: skill.version, assetIds: assets.map(i => i.id), assetNames: assets.map(i => i.name) } : {}) };
