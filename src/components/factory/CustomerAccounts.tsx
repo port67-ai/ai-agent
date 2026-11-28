@@ -101,6 +101,7 @@ export function CustomerAccounts({ initialCustomer = "" }: { initialCustomer?: s
             {current ? (
               <>
               <CustomerEditor
+                tabbed
                 key={current.id}
                 customer={current}
                 busy={busy}

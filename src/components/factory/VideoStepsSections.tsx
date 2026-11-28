@@ -83,7 +83,7 @@ export function ReferencesSection({ plan, busy, generating, onSave, onGenerate }
 
 // ---------------- Scripting ----------------
 export type ScriptSeed = { title: string; creativeBrief: string; narrative: string };
-export function ScriptSection({ plan, seed, busy, generating, onSave, onGenerate }: Props & { seed?: ScriptSeed }) {
+export function ScriptSection({ plan, seed, busy, generating, onSave, onGenerate, hideHistory = false }: Props & { seed?: ScriptSeed; hideHistory?: boolean }) {
   const saved = plan?.script;
   const [title, setTitle] = useState(seed?.title ?? saved?.title ?? "");
   const [creativeBrief, setCreativeBrief] = useState(seed?.creativeBrief ?? saved?.creativeBrief ?? (saved ? scriptText(saved) : ""));
@@ -108,7 +108,7 @@ export function ScriptSection({ plan, seed, busy, generating, onSave, onGenerate
         <div><button className="f-button" disabled={locked || !title.trim() || !creativeBrief.trim() || !narrative.trim()}>Save script</button>{saved && <span className="f-small"> Saved {stamp(saved.savedAt)} by {saved.savedBy}.</span>}</div>
         <p className="f-small">Only the saved script is used in later stages. AI drafts do not replace it until you save.</p>
       </form>
-      {(plan?.chat.length || 0) > 0 && <details className="w-dropdown"><summary>Revision history</summary><ul className="f-history">{[...(plan?.chat || [])].reverse().map(c => <li key={c.id}><strong>{c.instruction}</strong> {c.reply}</li>)}</ul></details>}
+      {!hideHistory && (plan?.chat.length || 0) > 0 && <details className="w-dropdown"><summary>Revision history</summary><ul className="f-history">{[...(plan?.chat || [])].reverse().map(c => <li key={c.id}><strong>{c.instruction}</strong> {c.reply}</li>)}</ul></details>}
     </section>
   );
 }

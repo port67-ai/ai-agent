@@ -4,6 +4,8 @@ import type { Commission, CustomerAccount, Generation, VideoPlan } from "@/lib/f
 import { GENERATIONS } from "@/lib/factory/commissions";
 import { STEP_LABEL } from "@/lib/factory/video-steps";
 import { PromptsSection, ReferencesSection, ScriptSection, SheetsSection, type ScriptSeed } from "./VideoStepsSections";
+import { WorkspaceTabs } from "./WorkspaceTabs";
+import { FileText, Clapperboard, BookOpen, History, ScanEye } from "lucide-react";
 import { StyleReferencePanel } from "./StyleReferencePanel";
 import { ImageLibrary, type LibraryImage } from "./ImageLibrary";
 import { Empty, Field } from "./shared";
@@ -80,7 +82,7 @@ export function VideoSteps({ section, initialCustomer = "", initialProject = "" 
     setGenerating(false);
   };
   const props = { plan, busy, generating, onSave: save, onGenerate: generate };
-  const library = section === "sheets" && pid ? <ImageLibrary key={`${cid}/${pid}`} cid={cid} commissionId={pid} onChange={setImages} onError={setError} /> : null;
+
 
   return (
     <div className="w-page">
@@ -105,21 +107,16 @@ export function VideoSteps({ section, initialCustomer = "", initialProject = "" 
               </select>
             </Field>
           </div>
-          {section==="references"&&pid&&<StyleReferencePanel key={cid+"/"+pid} cid={cid} pid={pid}/>}
-          {library}
-          {!pid ? <Empty title="Choose a project">Pick the project to work on.</Empty> : groups.length === 0 ? (
-            <Empty title="Select an age group for direction first">Video steps start from a saved, selected age group. Open the project, save the audience for at least one age group on Input 4, and tick &quot;Use … for direction&quot;.</Empty>
-          ) : (
-            <>
-              <div className="w-tabs" role="tablist" aria-label="Age groups">
-                {groups.map((g) => <button key={g.key} type="button" role="tab" aria-selected={gen === g.key} className={"f-button small" + (gen === g.key ? "" : " secondary")} onClick={() => void chooseGen(g.key)}>{g.label} <span className="f-small">{g.range}</span></button>)}
-              </div>
-              {gen && section === "references" && <ReferencesSection {...props} />}
-              {gen && section === "script" && <ScriptSection key={(plan?.script?.savedAt || "") + (seed?.n || "")} {...props} seed={seed} />}
-              {gen && section === "sheets" && <SheetsSection {...props} />}
-              {gen && section === "prompts" && <><VideoPipelineSection key={`${cid}/${pid}/${gen}`} plan={plan} cid={cid} images={images} busy={busy} onSave={save} /><details className="f-panel w-dropdown"><summary>Previous generation prompts (legacy)</summary><PromptsSection key={plan?.prompts?.generatedAt || "none"} {...props} images={images} /></details></>}
-            </>
-          )}
+          {!pid ? <Empty title="Choose a project">Pick the project to work on.</Empty> : <div key={cid+"/"+pid}>
+            {section === "sheets" ? <ImageLibrary cid={cid} commissionId={pid} onChange={setImages} onError={setError} written={<>{groups.length===0?<Empty title="Select an age group for direction first">Save and select an audience on the project before generating written sheets.</Empty>:<><div className="w-tabs" role="tablist" aria-label="Age groups">{groups.map(g=><button key={g.key} type="button" role="tab" disabled={busy} aria-selected={gen===g.key} className={"f-button small"+(gen===g.key?"":" secondary")} onClick={()=>void chooseGen(g.key)}>{g.label} <span className="f-small">{g.range}</span></button>)}</div>{gen&&<SheetsSection {...props}/>}</>}</>} /> : section==="references" ? <WorkspaceTabs label="Reference tools" disabled={busy} tabs={[
+              {id:"style",label:"Style reference",description:"ShotDeck and visual baseline",icon:<ScanEye size={19}/>,content:<StyleReferencePanel cid={cid} pid={pid} embedded/>},
+              {id:"brief",label:"Reference brief",description:"Generate and curate references",icon:<BookOpen size={19}/>,content:groups.length===0?<Empty title="Select an age group for direction first">Save and select an audience on the project before generating a reference brief.</Empty>:<><div className="w-tabs" role="tablist" aria-label="Age groups">{groups.map(g=><button key={g.key} type="button" role="tab" disabled={busy} aria-selected={gen===g.key} className={"f-button small"+(gen===g.key?"":" secondary")} onClick={()=>void chooseGen(g.key)}>{g.label} <span className="f-small">{g.range}</span></button>)}</div>{gen&&<ReferencesSection {...props}/>}</>}
+            ]}/> : groups.length===0?<Empty title="Select an age group for direction first">Video steps start from a saved, selected age group. Open the project and select one for direction.</Empty>:<>
+              <div className="w-tabs" role="tablist" aria-label="Age groups">{groups.map(g=><button key={g.key} type="button" role="tab" disabled={busy} aria-selected={gen===g.key} className={"f-button small"+(gen===g.key?"":" secondary")} onClick={()=>void chooseGen(g.key)}>{g.label} <span className="f-small">{g.range}</span></button>)}</div>
+              {gen&&section==="script"&&<WorkspaceTabs key={gen} label="Scripting tools" disabled={busy} tabs={[{id:"editor",label:"Script editor",description:"Creative brief and narrative",icon:<FileText size={19}/>,content:<ScriptSection key={(plan?.script?.savedAt||"")+(seed?.n||"")} {...props} seed={seed} hideHistory/>},{id:"history",label:"Revision history",description:"Previous AI revisions",icon:<History size={19}/>,content:<section className="f-panel"><h3>Revision history</h3>{plan?.chat.length?<ul className="f-history">{[...plan.chat].reverse().map(c=><li key={c.id}><strong>{c.instruction}</strong> {c.reply}</li>)}</ul>:<p className="f-small">No revisions yet.</p>}</section>}]}/>}
+              {gen&&section==="prompts"&&<WorkspaceTabs key={gen} label="Video generation tools" disabled={busy} tabs={[{id:"pipeline",label:"Generation pipeline",description:"Project info, beats and technical prompt",icon:<Clapperboard size={19}/>,content:<VideoPipelineSection plan={plan} cid={cid} images={images} busy={busy} onSave={save}/>},{id:"legacy",label:"Previous prompts",description:"Legacy generation outputs",icon:<History size={19}/>,content:<PromptsSection key={plan?.prompts?.generatedAt||"none"} {...props} images={images}/>}]} />}
+            </>}
+          </div>}
         </>
       )}
     </div>

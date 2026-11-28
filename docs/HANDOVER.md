@@ -348,3 +348,7 @@ FAC-VWS-026/030. PRD impact 1.51.0. ShotDeck screenshot via existing project ass
 
 ## CHG-0130 — Character and reference sheet generator (27 November 2026)
 FAC-VWS-025/029. PRD impact 1.52.0. Expandable generator in project assets, private source/output drafts, category-specific skill profiles adapted from owner supplied SKILL/AGENTS, preferred gpt-image-2 (unverified provider access), selectable configured image model, metered explicit generation, preview/download, approve then title/category/description save; preserve project ownership. Source examples represented by textual layout guidance, binary style sheets not yet attached. PNG crop to 16:9 when supported. Unit tests added; CI pending; no live generation/deployment. Branch feat/reference-sheet-generator.
+
+
+## CHG-0131 — Tabbed workspace layout (28 November 2026)
+FAC-VWS-001/002/004/012/026/028/029/030. PRD impact 1.53.0. Shorten sidebar label to Project assets; wrap navigation safely. Shared accessible tabbed UI with focused panels for customer, project, reference, scripting, assets and generation stages; project-wide tools before audience gating, preserve mounted drafts and existing approvals. Existing data/API unchanged. Static tab markup test added; CI pending, no browser/live deployment evidence. Branch feat/workspace-tabbed-navigation.

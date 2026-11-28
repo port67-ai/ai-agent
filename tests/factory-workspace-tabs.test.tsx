@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { WorkspaceTabs } from "../src/components/factory/WorkspaceTabs";
+const html=renderToStaticMarkup(<WorkspaceTabs label="Project asset tools" tabs={[{id:"library",label:"Image library",content:<p>Library body</p>},{id:"generator",label:"Character and Reference Sheet Generator",content:<p>Generator body</p>},{id:"written",label:"Written sheets",content:<p>Written body</p>}]}/>);
+assert.match(html,/role="tablist" aria-label="Project asset tools"/);
+assert.equal((html.match(/aria-selected="true"/g)||[]).length,1);
+assert.equal((html.match(/role="tabpanel"/g)||[]).length,3);
+assert.equal((html.match(/hidden=""/g)||[]).length,2);
+assert.match(html,/Character and Reference Sheet Generator/);
+assert.match(html,/aria-controls=/);
+console.log("workspace tabs: all assertions passed");

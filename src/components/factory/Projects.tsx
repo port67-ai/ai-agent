@@ -122,7 +122,7 @@ export function Projects({ initialCustomer = "", initialProject = "" }: { initia
                   <button type="button" role="tab" aria-selected={view === "baseline"} className={"f-button" + (view === "baseline" ? "" : " secondary")} onClick={() => setView("baseline")}>Inspiration baseline</button>
                 </div>
                 {view === "inputs"
-                  ? <CommissionEditor key={detail.commission.id} commission={detail.commission} redLines={detail.redLines} busy={busy} onSave={save} onGenerate={generate} />
+                  ? <CommissionEditor tabbed key={detail.commission.id} commission={detail.commission} redLines={detail.redLines} busy={busy} onSave={save} onGenerate={generate} />
                   : <InspirationBaseline commission={detail.commission} redLines={detail.redLines} />}
               </>
             ) : (
