@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import { SHEET_STYLES,sheetKind,sheetPrompt,draftsOf,PREFERRED_SHEET_MODEL } from "../src/lib/factory/reference-sheets";
+assert.equal(PREFERRED_SHEET_MODEL,"gpt-image-2");
+assert.throws(()=>sheetKind("invalid"));
+assert.equal(SHEET_STYLES.Environment.category,"Location");
+assert.match(sheetPrompt("Character","",""),/front, side and back/);
+assert.match(sheetPrompt("Vehicle","",""),/wheelbase/);
+assert.match(sheetPrompt("Product","notes","style"),/notes/);
+assert.deepEqual(draftsOf({schemaVersion:1,projects:[],invitations:[]},"p","a"),[]);
+console.log("Reference sheet skill tests passed");

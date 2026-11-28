@@ -104,9 +104,9 @@ export function imageProviderFor(selection: { provider: string; model: string; k
  * One metered image call: reserve a ledger row (agent studio:image), generate, then finish the row with the usage reported.
  * A provider error closes the row as failed (nothing produced) or unknown (may have been billed) and is re-thrown with its message.
  */
-export async function meteredImage(repo: Repository, a: Principal, p: Project, runId: string, provider: ImageProvider, request: ImageRequest): Promise<ImageResult> {
+export async function meteredImage(repo: Repository, a: Principal, p: Pick<Project,"accountId"|"workspaceId"|"id">, runId: string, provider: ImageProvider, request: ImageRequest, agent = "studio:image"): Promise<ImageResult> {
   if (a.demo) throw new Error("Paid image generation is disabled in the synthetic demo");
-  const callId = await reserveApiCall(repo, { accountId: p.accountId || p.workspaceId, workspaceId: p.workspaceId, projectId: p.id, runId, stage: "studio", agent: "studio:image", provider: provider.provider, model: provider.model, actor: a.subject });
+  const callId = await reserveApiCall(repo, { accountId: p.accountId || p.workspaceId, workspaceId: p.workspaceId, projectId: p.id, runId, stage: "studio", agent, provider: provider.provider, model: provider.model, actor: a.subject });
   try {
     const result = await provider.generateImage(request);
     await finishApiCall(repo, callId, { status: "completed", usage: normalizeApiUsage(result.usage), rawUsage: result.rawUsage, providerRequestId: result.providerRequestId });
