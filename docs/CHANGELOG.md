@@ -919,3 +919,7 @@ FAC-VWS-025/029. PRD impact 1.52.0. Expandable generator in project assets, priv
 
 ## CHG-0131 — Tabbed workspace layout (28 November 2026)
 FAC-VWS-001/002/004/012/026/028/029/030. PRD impact 1.53.0. Shorten sidebar label to Project assets; wrap navigation safely. Shared accessible tabbed UI with focused panels for customer, project, reference, scripting, assets and generation stages; project-wide tools before audience gating, preserve mounted drafts and existing approvals. Existing data/API unchanged. Static tab markup test added; CI pending, no browser/live deployment evidence. Branch feat/workspace-tabbed-navigation.
+
+
+## CHG-0132 — Navigation regression assertions (28 November 2026)
+FAC-VWS-001/002. PRD impact: none; align existing sidebar assertions with CHG-0131 span wrappers and shorter Project assets label, retaining seven entries and access checks. Factory MVP run 46130562558 failed at customers UI assertion; security audit passed, later checks skipped. New CI pending; no deployment.
