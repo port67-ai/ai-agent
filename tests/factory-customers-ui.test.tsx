@@ -99,11 +99,11 @@ const admin: Principal = { subject: "a", workspaceId: "w", role: "operator", adm
 const shell = (p: Principal) => renderToStaticMarkup(<Shell principal={p} tab="customers" setTab={() => {}} onSignOut={() => {}}><p>body</p></Shell>);
 const asProducer = shell(producer);
 assert.deepEqual([...asProducer.matchAll(/<nav aria-label="Workspace navigation">(.*?)<\/nav>/g)][0][1].match(/<button/g)?.length, 7);
-for (const label of ["Overview", "Customer account", "Projects"]) assert.match(asProducer, new RegExp(`</svg>${label}</button>`), label);
-for (const label of ["References", "Scripting", "Characters, locations and props", "Video generation"]) assert.match(asProducer, new RegExp(`>${label}</button>`), label);
+for (const label of ["Overview", "Customer account", "Projects"]) assert.match(asProducer, new RegExp(`</svg><span>${label}</span></button>`), label);
+for (const label of ["References", "Scripting", "Project assets", "Video generation"]) assert.match(asProducer, new RegExp(`<span>${label}</span></button>`), label);
 for (const old of ["Research room", "Business brief", "Campaign direction", "Ideas bank", "Video advert", "Asset library", "Performance learning", "Capabilities", "Workspace setup", "Team access", "Skill writer", "Private API costs"])
   assert.doesNotMatch(asProducer, new RegExp(old), old + " is parked, not in the new shell");
-assert.match(asProducer, /class="active"[^>]*><svg[^>]*>.*?<\/svg>Customer account/, "current page highlighted");
+assert.match(asProducer, /class="active"[^>]*><svg[^>]*>.*?<\/svg><span>Customer account<\/span>/, "current page highlighted");
 assert.match(asProducer, /Producer<\/span>/);
 assert.doesNotMatch(asProducer, /Admin pages/, "producers do not see the admin group");
 assert.match(shell(admin), /Admin pages: AI agents, costs, team/);

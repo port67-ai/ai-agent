@@ -1,4 +1,5 @@
 "use client";
+import { WorkspaceTabs } from "./WorkspaceTabs";
 import { useState } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import type { BrandListEntry, Commission, CommissionInput, EvidenceItem, Generation, RedLine } from "@/lib/factory/model";
@@ -11,6 +12,7 @@ import { Field } from "./shared";
 
 // Commission inputs for the video workspace (CHG-0107, FAC-VWS-012 to FAC-VWS-015). Presentational: the container owns the requests.
 export type CommissionEditorProps = {
+  tabbed?: boolean;
   commission: Commission;
   redLines: RedLine[];
   busy: boolean;
@@ -185,9 +187,7 @@ function InputCard({ def, commission, redLines, busy, onSave, onGenerate }: { de
 
 export function CommissionEditor(props: CommissionEditorProps) {
   const { commission, redLines, busy, onSave, onGenerate } = props;
-  return (
-    <div className="w-stack w-inputs">
-      <section className="f-panel" aria-labelledby="proj-name">
+  const details = (<section className="f-panel" aria-labelledby="proj-name">
         <div className="f-section-heading"><h3 id="proj-name">Project</h3></div>
         <form className="f-form-grid" onSubmit={(e) => { e.preventDefault(); void onSave("rename", { name: new FormData(e.currentTarget).get("name") }); }}>
           <Field label="Project name"><input name="name" required maxLength={120} defaultValue={commission.name} /></Field>
@@ -202,7 +202,11 @@ export function CommissionEditor(props: CommissionEditorProps) {
           <Field label="Proposed video format (optional)"><input name="format" maxLength={200} defaultValue={commission.brief?.format || ""} placeholder="For example, 15 second vertical video" /></Field>
           <div><button className="f-button" disabled={busy}>Save project details</button> <span className="f-small">The AI agents on Inputs 1, 3 and 5 search for this product or service and the customer.</span></div>
         </form>
-      </section>
+      </section>);
+  if(props.tabbed)return <WorkspaceTabs label="Project inputs" disabled={busy} tabs={[{id:"details",label:"Project details",content:details},...INPUTS.map(def=>({id:def.key,label:def.title,description:STATUS_LABEL[inputStatus(commission,def.key)],content:<InputCard def={def} commission={commission} redLines={redLines} busy={busy} onSave={onSave} onGenerate={onGenerate}/>})),{id:"checks",label:"Checks & history",content:<section className="f-panel"><h3>Secondary checks</h3><p className="f-small">Not available yet.</p>{SECONDARY.map(s=><div key={s.title} className="w-locked"><h4>{s.title}</h4><p>{s.what}</p><p className="f-small">Where to look: {s.where}</p></div>)}<h3>History ({commission.audit.length})</h3><ul className="f-history">{[...commission.audit].reverse().slice(0,30).map(a=><li key={a.id}><span className="f-small">{stamp(a.at)}</span> {a.action.replace(/_/g," ")}{a.detail?`: ${a.detail}`:""} <span className="f-small">by {a.actor}</span></li>)}</ul></section>} ]}/>;
+  return (
+    <div className="w-stack w-inputs">
+      {details}
       {INPUTS.map((def) => <InputCard key={def.key} def={def} commission={commission} redLines={redLines} busy={busy} onSave={onSave} onGenerate={onGenerate} />)}
       <section aria-labelledby="secondary">
         <h3 id="secondary">Secondary checks</h3>

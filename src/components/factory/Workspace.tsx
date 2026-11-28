@@ -22,7 +22,7 @@ const NAV: { id: Tab; label: string; icon: typeof Building2 }[] = [
 /** Video steps: a group in the sidebar with its four sections underneath. */
 const VIDEO_NAV: { id: Tab; label: string }[] = [
   { id: "video-references", label: "References" }, { id: "video-script", label: "Scripting" },
-  { id: "video-sheets", label: "Characters, locations and props" }, { id: "video-prompts", label: "Video generation" },
+  { id: "video-sheets", label: "Project assets" }, { id: "video-prompts", label: "Video generation" },
 ];
 
 export function Placeholder({ title, children }: { title: string; children: string }) {
@@ -48,11 +48,11 @@ export function Shell({ principal, tab, setTab, onSignOut, children }: { princip
         <div className="f-workspace-label">CREATIVE WORKSPACE</div>
         <nav aria-label="Workspace navigation">
           {NAV.map(({ id, label: text, icon: Icon }) => (
-            <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => { setTab(id); setMobile(false); }}><Icon size={18} />{text}</button>
+            <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => { setTab(id); setMobile(false); }}><Icon size={18} /><span>{text}</span></button>
           ))}
           <div className="w-navgroup"><Clapperboard size={18} aria-hidden="true" /> Video steps</div>
           {VIDEO_NAV.map(({ id, label: text }) => (
-            <button key={id} type="button" className={"w-navsub " + (tab === id ? "active" : "")} onClick={() => { setTab(id); setMobile(false); }}>{text}</button>
+            <button key={id} type="button" className={"w-navsub " + (tab === id ? "active" : "")} onClick={() => { setTab(id); setMobile(false); }} aria-label={id==="video-sheets"?"Project assets — Characters, locations and props":text}><span>{text}</span></button>
           ))}
         </nav>
         {ownerAdmin && (

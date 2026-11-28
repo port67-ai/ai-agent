@@ -1,4 +1,5 @@
 "use client";
+import { WorkspaceTabs } from "./WorkspaceTabs";
 import { useRef, useState, type ReactNode } from "react";
 import { FileText, Image as ImageIcon, Plus, Search, Trash2 } from "lucide-react";
 import type { CustomerAccount, SocialPlatform } from "@/lib/factory/model";
@@ -19,6 +20,7 @@ function Collapsible({ id, title, summary, startOpen, children }: { id: string; 
 // Customer account editor for the video workspace (CHG-0103, FAC-VWS-004 to FAC-VWS-007). Presentational: the container owns the requests.
 export type FindResult = { pageUrl: string; found: Partial<Record<SocialPlatform, string>>; existing: Partial<Record<SocialPlatform, string>> };
 export type EditorProps = {
+  tabbed?: boolean;
   customer: CustomerAccount;
   busy: boolean;
   found?: FindResult;
@@ -188,6 +190,14 @@ export function CustomerEditor(props: EditorProps) {
   const textBits = [customer.purposeText?.trim() ? "purpose" : "", customer.knownFor?.trim() ? "known for" : ""].filter(Boolean);
   const fileCount = customer.brandPurpose.length;
   const brandSummary = textBits.length || fileCount ? `(${[...textBits, fileCount ? `${fileCount} file${fileCount === 1 ? "" : "s"}` : ""].filter(Boolean).join(", ")})` : "(empty)";
+  if(props.tabbed)return <WorkspaceTabs label="Customer account sections" disabled={props.busy} tabs={[
+    {id:"business",label:"Business",content:<Details customer={customer} busy={props.busy} onSave={props.onSave}/>},
+    {id:"social",label:"Social links",description:set+" saved",content:<section className="f-panel"><h3>Social links</h3><Socials key={customer.id+customer.updatedAt} customer={customer} busy={props.busy} found={props.found} onSave={props.onSave} onFind={props.onFind}/></section>},
+    {id:"brand",label:"Brand purpose & reputation",content:<section className="f-panel"><h3>Brand purpose and reputation</h3><BrandText key={customer.id+(customer.purposeText||"").length+(customer.knownFor||"").length} customer={customer} busy={props.busy} onSave={props.onSave} onUpload={props.onUpload}/></section>},
+    {id:"red",label:"Client red lines",description:customer.redLines.length+" recorded",content:<section className="f-panel"><h3>Client red lines</h3><RedLines customer={customer} busy={props.busy} onSave={props.onSave}/></section>},
+    {id:"intel",label:"Brand intelligence",content:props.children},
+    {id:"history",label:"History",content:<section className="f-panel"><h3>History ({customer.audit.length})</h3><ul className="f-history">{[...customer.audit].reverse().slice(0,30).map(a=><li key={a.id}><span className="f-small">{stamp(a.at)}</span> {AUDIT_LABEL[a.action]||a.action}{a.detail?`: ${a.detail}`:""} <span className="f-small">by {a.actor}</span></li>)}</ul></section>}
+  ]}/>;
   return (
     <div className="f-customer-editor">
       <Details customer={customer} busy={props.busy} onSave={props.onSave} />

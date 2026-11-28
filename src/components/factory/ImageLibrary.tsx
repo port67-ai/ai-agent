@@ -1,4 +1,7 @@
 "use client";
+import { WorkspaceTabs } from "./WorkspaceTabs";
+import { Images, Sparkles, FileText } from "lucide-react";
+import type { ReactNode } from "react";
 import { ReferenceSheetGenerator } from "./ReferenceSheetGenerator";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Copy, ImagePlus, Trash2 } from "lucide-react";
@@ -106,7 +109,7 @@ export function ImageLibraryView({ cid, images, selectedId, busy, progress, onSe
 }
 
 /** Loads and edits the library for one project. `onChange` tells the page when the set of names changed. */
-export function ImageLibrary({ cid, commissionId, onChange, onError }: { cid: string; commissionId: string; onChange?: (images: LibraryImage[]) => void; onError: (message: string) => void }) {
+export function ImageLibrary({ cid, commissionId, onChange, onError, written }: { written?: ReactNode; cid: string; commissionId: string; onChange?: (images: LibraryImage[]) => void; onError: (message: string) => void }) {
   const [images, setImages] = useState<LibraryImage[]>([]);
   const [selected, setSelected] = useState("");
   const [busy, setBusy] = useState(false);
@@ -142,6 +145,9 @@ export function ImageLibrary({ cid, commissionId, onChange, onError }: { cid: st
     catch (e) { onError((e as Error).message); return false; }
     finally { setBusy(false); }
   };
-  return <><ReferenceSheetGenerator key={base} cid={cid} pid={commissionId} onSaved={i=>{apply([...images,i],i.id);setProgress("Reference sheet saved to Project Assets.")}}/><ImageLibraryView cid={cid} images={images} selectedId={selected} busy={busy} progress={progress} onSelect={setSelected} onFiles={(f) => void upload(f)}
-    onSave={(id, d) => act({ action: "update", id, ...d })} onRemove={(id) => void act({ action: "remove", id })} /></>;
+  return <WorkspaceTabs label="Project asset tools" disabled={busy} tabs={[
+    {id:"library",label:"Image library",description:"Upload and organise project assets",icon:<Images size={19}/>,content:<ImageLibraryView cid={cid} images={images} selectedId={selected} busy={busy} progress={progress} onSelect={setSelected} onFiles={f=>void upload(f)} onSave={(id,d)=>act({action:"update",id,...d})} onRemove={id=>void act({action:"remove",id})}/>},
+    {id:"generator",label:"Character and Reference Sheet Generator",description:"Create consistent visual reference boards",icon:<Sparkles size={19}/>,content:<ReferenceSheetGenerator embedded key={base} cid={cid} pid={commissionId} onSaved={i=>{apply([...images,i],i.id);setProgress("Reference sheet saved to Project Assets.")}}/>},
+    ...(written!==undefined?[{id:"written",label:"Written sheets",description:"Character, location and prop descriptions",icon:<FileText size={19}/>,content:written}]:[])
+  ]}/>;
 }
